@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Example CSS to center content */
+.main {
+  margin: 0 auto;
+  max-width: 800px; /* or your preferred width */
+  text-align: center; /* for centering text */
+}
+
+
+/* Base tokens */
+@layer base {
+  :root {
+    --radius: 0.75rem;
+  }
+  *, *::before, *::after {
+    @apply border-slate-200 dark:border-slate-800;
+  }
+  html, body {
+    height: 100%;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+  ::selection {
+    @apply bg-indigo-600/20;
+  }
+}
+
+/* Reusable utilities */
+@layer utilities {
+  .card {
+    @apply rounded-xl border bg-white shadow-sm dark:bg-slate-900/60;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-md bg-slate-200/80 dark:bg-slate-700/50;
+  }
+}
