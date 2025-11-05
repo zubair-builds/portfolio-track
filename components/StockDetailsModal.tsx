@@ -7,9 +7,11 @@ import { Card, CardContent } from './ui/Card';
 interface StockDetailsModalProps {
   stock: Stock;
   onClose: () => void;
+  onAnalyzeWithAI?: (stock: Stock) => void;
+  onFetchSymbolData?: (stock: Stock) => void;
 }
 
-export default function StockDetailsModal({ stock, onClose }: StockDetailsModalProps) {
+export default function StockDetailsModal({ stock, onClose, onAnalyzeWithAI, onFetchSymbolData }: StockDetailsModalProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -197,7 +199,36 @@ export default function StockDetailsModal({ stock, onClose }: StockDetailsModalP
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-3">
+              {onFetchSymbolData && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onFetchSymbolData(stock);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                  </svg>
+                  Fetch Symbol Data
+                </button>
+              )}
+              {onAnalyzeWithAI && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAnalyzeWithAI(stock);
+                    onClose();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Analyze with AI
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onClose}

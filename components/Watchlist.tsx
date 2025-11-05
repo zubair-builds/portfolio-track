@@ -2,6 +2,8 @@
 
 import { WatchlistItem, StockDetails } from '../lib/portfolioData';
 import { Card, CardContent } from './ui/Card';
+import SymbolCard from './ui/SymbolCard';
+import { useSymbolMetadata } from '../hooks/useSymbolMetadata';
 
 type WatchlistEntry = WatchlistItem & {
   currentPrice: number | null;
@@ -11,17 +13,14 @@ type WatchlistEntry = WatchlistItem & {
 interface WatchlistProps {
   items: WatchlistEntry[];
   isLoading: boolean;
+  onEditItem?: (item: WatchlistEntry) => void;
+  onDeleteItem?: (item: WatchlistEntry) => void;
 }
 
-const formatTimestamp = (timestamp: number) =>
-  new Date(timestamp).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+export default function Watchlist({ items, isLoading, onEditItem, onDeleteItem }: WatchlistProps) {
+  const symbols = items.map(item => item.symbol);
+  const { metadata, loading: metadataLoading } = useSymbolMetadata(symbols);
 
-export default function Watchlist({ items, isLoading }: WatchlistProps) {
   const hasLiveData = items.some((item) => item.currentPrice !== null || item.details);
 
   return (
@@ -35,81 +34,56 @@ export default function Watchlist({ items, isLoading }: WatchlistProps) {
         )}
 
         {items.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
-            Add symbols to your watchlist to track them here.
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <svg className="h-16 w-16 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <div>
+              <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your watchlist is empty</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Track symbols you're interested in</p>
+            </div>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => {
+              const meta = metadata.get(item.symbol.toUpperCase());
               const details = item.details;
-              const hasDetails = Boolean(details);
-              const isUp = details ? details.change >= 0 : false;
-              const changeColor = hasDetails
-                ? isUp
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-rose-600 dark:text-rose-400'
-                : 'text-slate-500 dark:text-slate-400';
+
+              // Prepare actions (only delete since watchlist items are now simple)
+              const actions = [];
+              if (onDeleteItem) {
+                actions.push({
+                  label: 'Remove',
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  ),
+                  onClick: () => onDeleteItem(item),
+                  variant: 'danger' as const,
+                });
+              }
 
               return (
-                <div
+                <SymbolCard
                   key={item.symbol}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60 dark:hover:border-slate-600"
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                          {item.symbol}
-                        </span>
-                        {item.targetPrice && (
-                          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
-                            Target ₨{item.targetPrice.toFixed(0)}
-                          </span>
-                        )}
-                      </div>
-                      {item.thesis && (
-                        <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-                          {item.thesis}
-                        </p>
-                      )}
-                      {item.note && (
-                        <p className="text-xs text-slate-500 dark:text-slate-500">
-                          {item.note}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="text-right space-y-1">
-                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                        {item.currentPrice !== null ? `₨${item.currentPrice.toFixed(2)}` : '—'}
-                      </p>
-                      {hasDetails ? (
-                        <p className={`text-sm font-semibold ${changeColor}`}>
-                          {details!.change >= 0 ? '+' : ''}
-                          {details!.change.toFixed(2)} ({(details!.changePercent * 100).toFixed(2)}%)
-                        </p>
-                      ) : (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Live price unavailable
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
-                    {hasDetails && (
-                      <>
-                        <span>Volume {details!.volume.toLocaleString()}</span>
-                        <span>Trades {details!.trades.toLocaleString()}</span>
-                        <span>High ₨{details!.high.toFixed(2)}</span>
-                        <span>Low ₨{details!.low.toFixed(2)}</span>
-                        {details!.lastUpdated && (
-                          <span>Updated {formatTimestamp(details!.lastUpdated)}</span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
+                  symbol={item.symbol}
+                  name={meta?.name || item.symbol}
+                  sectorName={meta?.sectorName}
+                  isETF={meta?.isETF}
+                  isGEM={meta?.isGEM}
+                  currentPrice={item.currentPrice}
+                  priceChange={details?.change}
+                  priceChangePercent={details?.changePercent ? details.changePercent * 100 : undefined}
+                  ldcp={details?.low} // Using low as proxy for LDCP - update when we have actual LDCP field
+                  high={details?.high}
+                  low={details?.low}
+                  volume={details?.volume}
+                  trades={details?.trades}
+                  actions={actions}
+                  loading={metadataLoading && !meta}
+                />
               );
             })}
           </div>
@@ -118,4 +92,3 @@ export default function Watchlist({ items, isLoading }: WatchlistProps) {
     </Card>
   );
 }
-

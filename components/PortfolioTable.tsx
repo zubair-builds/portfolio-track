@@ -7,9 +7,11 @@ import { Card, CardContent } from './ui/Card';
 interface PortfolioTableProps {
   stocks: Stock[];
   onSelectStock: (stock: Stock) => void;
+  onEditStock?: (stock: Stock) => void;
+  onDeleteStock?: (stock: Stock) => void;
 }
 
-export default function PortfolioTable({ stocks, onSelectStock }: PortfolioTableProps) {
+export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onDeleteStock }: PortfolioTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<keyof Stock | 'gainLoss' | 'gainLossPercent'>('symbol');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -179,6 +181,13 @@ export default function PortfolioTable({ stocks, onSelectStock }: PortfolioTable
                     <SortIcon field="gainLossPercent" />
                   </button>
                 </th>
+                {(onEditStock || onDeleteStock) && (
+                  <th className="text-right py-3 px-4">
+                    <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                      Actions
+                    </span>
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -195,17 +204,12 @@ export default function PortfolioTable({ stocks, onSelectStock }: PortfolioTable
                 return (
                   <tr
                     key={stock.symbol}
-                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                    onClick={() => onSelectStock(stock)}
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        onSelectStock(stock);
-                      }
-                    }}
+                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
-                    <td className="py-3 px-4">
+                    <td 
+                      className="py-3 px-4 cursor-pointer"
+                      onClick={() => onSelectStock(stock)}
+                    >
                       <span className="font-semibold text-slate-900 dark:text-slate-100">
                         {stock.symbol}
                       </span>
@@ -231,6 +235,40 @@ export default function PortfolioTable({ stocks, onSelectStock }: PortfolioTable
                     <td className={`py-3 px-4 text-right font-semibold ${textColor}`}>
                       {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
                     </td>
+                    {(onEditStock || onDeleteStock) && (
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          {onEditStock && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditStock(stock);
+                              }}
+                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition dark:text-indigo-400 dark:hover:bg-indigo-950/30"
+                              title="Edit"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          )}
+                          {onDeleteStock && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteStock(stock);
+                              }}
+                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition dark:text-rose-400 dark:hover:bg-rose-950/30"
+                              title="Delete"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

@@ -8,48 +8,92 @@ import {
   initialWatchlistData,
   StockDetails,
 } from '../lib/portfolioData';
-import { fetchAllStockPrices, getCacheStats } from '../lib/stockApi';
+import { fetchAllStockPrices } from '../lib/stockApi';
 
 type WatchlistStock = WatchlistItem & {
   currentPrice: number | null;
   details?: StockDetails;
 };
 
-export function usePortfolioData() {
-  const [stocks, setStocks] = useState<Stock[]>(initialPortfolioData);
-  const [watchlist, setWatchlist] = useState<WatchlistStock[]>(
-    initialWatchlistData.map((item) => ({
-      ...item,
-      currentPrice: null,
-    }))
-  );
+export function usePortfolioData(userEmail?: string) {
+  const [stocks, setStocks] = useState<Stock[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistStock[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const updateLastSavedTimestamp = () => {
-    const { latestCache } = getCacheStats();
-    setLastUpdated(latestCache ? new Date(latestCache) : null);
+  const updateLastSavedTimestamp = async () => {
+    try {
+      const response = await fetch('/api/symbols/stats');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.stats.latestCache) {
+          setLastUpdated(new Date(data.stats.latestCache));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching cache stats:', error);
+    }
   };
 
   useEffect(() => {
     updateLastSavedTimestamp();
 
-    const loadStockPrices = async () => {
+    const loadPortfolioData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
+        // Fetch user's portfolio and watchlist from API
+        let portfolioHoldings = initialPortfolioData;
+        let watchlistItems = initialWatchlistData;
+
+        if (userEmail) {
+          try {
+            const [portfolioRes, watchlistRes] = await Promise.all([
+              fetch('/api/portfolio', {
+                headers: { 'X-User-Id': userEmail },
+              }),
+              fetch('/api/watchlist', {
+                headers: { 'X-User-Id': userEmail },
+              }),
+            ]);
+
+            if (portfolioRes.ok) {
+              const portfolioData = await portfolioRes.json();
+              portfolioHoldings = portfolioData.portfolio.map((p: any) => ({
+                symbol: p.symbol,
+                shares: p.shares,
+                avgBuy: p.avgBuy,
+                currentPrice: 0, // Will be filled with live data
+              }));
+            }
+
+            if (watchlistRes.ok) {
+              const watchlistData = await watchlistRes.json();
+              watchlistItems = watchlistData.watchlist.map((w: any) => ({
+                symbol: w.symbol,
+                thesis: w.thesis,
+                targetPrice: w.targetPrice,
+                note: w.note,
+              }));
+            }
+          } catch (apiError) {
+            console.warn('Failed to fetch user data, using defaults:', apiError);
+          }
+        }
+
         const symbols = Array.from(
           new Set([
-            ...initialPortfolioData.map((stock) => stock.symbol),
-            ...initialWatchlistData.map((item) => item.symbol),
+            ...portfolioHoldings.map((stock) => stock.symbol),
+            ...watchlistItems.map((item) => item.symbol),
           ])
         );
 
+        console.log('===portfolio data===symbols:', symbols.length);
         const priceData = await fetchAllStockPrices(symbols);
 
-        const updatedStocks = initialPortfolioData.map((stock) => {
+        const updatedStocks = portfolioHoldings.map((stock) => {
           const apiData = priceData.get(stock.symbol.toUpperCase());
 
           if (apiData) {
@@ -82,7 +126,7 @@ export function usePortfolioData() {
           return stock;
         });
 
-        const updatedWatchlist = initialWatchlistData.map((item) => {
+        const updatedWatchlist = watchlistItems.map((item) => {
           const apiData = priceData.get(item.symbol.toUpperCase());
 
           if (apiData) {
@@ -123,21 +167,16 @@ export function usePortfolioData() {
       } catch (err) {
         console.error('Error loading stock prices:', err);
         setError('Failed to load some stock prices. Using default values.');
-        setStocks(initialPortfolioData);
-        setWatchlist(
-          initialWatchlistData.map((item) => ({
-            ...item,
-            currentPrice: null,
-          }))
-        );
+        setStocks([]);
+        setWatchlist([]);
       } finally {
         updateLastSavedTimestamp();
         setIsLoading(false);
       }
     };
 
-    loadStockPrices();
-  }, []);
+    loadPortfolioData();
+  }, [userEmail]);
 
   return {
     stocks,

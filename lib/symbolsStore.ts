@@ -1,0 +1,415 @@
+import type { AnyBulkWriteOperation, Collection, Db } from 'mongodb';
+import clientPromise from './mongodb';
+
+export interface SymbolPriceData {
+  symbol: string;
+
+  // Basic Metadata (from symbols.ts)
+  name?: string;
+  sectorName?: string;
+  isETF?: boolean;
+  isDebt?: boolean;
+  isGEM?: boolean;
+
+  // Price Data
+  currentPrice?: number;
+  priceOpen?: number;
+  priceClose?: number;
+  priceHigh?: number;
+  priceLow?: number;
+  dayRangeLow?: number;
+  dayRangeHigh?: number;
+  weekRange52Low?: number;
+  weekRange52High?: number;
+  priceChange?: number;
+  priceChangePercent?: number;
+
+  // Volume & Trading
+  volume?: number;
+  weeklyAverageVolume?: number;
+  trades?: number;
+  value?: number;
+
+  // Market Metrics
+  marketCap?: number;
+  sharesOutstanding?: number;
+  freeFloatShares?: number;
+  freeFloatPercent?: number;
+
+  // Valuation & Financial Ratios
+  peRatio?: number;
+  pbRatio?: number;
+  dividendYield?: number;
+  earningsPerShare?: number;
+  netIncomeMargin?: number;
+
+  // Circuit Breakers
+  circuitBreakerLower?: number;
+  circuitBreakerUpper?: number;
+
+  // Bid/Ask Data
+  bidPrice?: number;
+  askPrice?: number;
+  bidVolume?: number;
+  askVolume?: number;
+
+  // Metadata
+  lastFetchedAt?: Date;
+}
+
+
+interface SymbolPriceDocument extends SymbolPriceData {
+  _id?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+async function getDb(): Promise<Db> {
+  const client = await clientPromise;
+  return client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
+}
+
+const SYMBOL_PRICES_COLLECTION = 'symbol_prices';
+
+async function getSymbolPricesCollection(): Promise<Collection<SymbolPriceDocument>> {
+  const db = await getDb();
+  const collection = db.collection<SymbolPriceDocument>(SYMBOL_PRICES_COLLECTION);
+  await collection.createIndex({ symbol: 1 }, { unique: true });
+  await collection.createIndex({ lastFetchedAt: -1 });
+  return collection;
+}
+
+export async function saveSymbolPriceData(data: SymbolPriceData): Promise<void> {
+  const collection = await getSymbolPricesCollection();
+  const now = new Date();
+
+  const updateFields: any = {
+    symbol: data.symbol.toUpperCase(),
+    updatedAt: now,
+  };
+
+  // Only update metadata fields if provided
+  if (data.name !== undefined) updateFields.name = data.name;
+  if (data.sectorName !== undefined) updateFields.sectorName = data.sectorName;
+  if (data.isETF !== undefined) updateFields.isETF = data.isETF;
+  if (data.isDebt !== undefined) updateFields.isDebt = data.isDebt;
+  if (data.isGEM !== undefined) updateFields.isGEM = data.isGEM;
+
+  // Price Data
+  if (data.currentPrice !== undefined) updateFields.currentPrice = data.currentPrice;
+  if (data.priceOpen !== undefined) updateFields.priceOpen = data.priceOpen;
+  if (data.priceClose !== undefined) updateFields.priceClose = data.priceClose;
+  if (data.priceHigh !== undefined) updateFields.priceHigh = data.priceHigh;
+  if (data.priceLow !== undefined) updateFields.priceLow = data.priceLow;
+  if (data.dayRangeLow !== undefined) updateFields.dayRangeLow = data.dayRangeLow;
+  if (data.dayRangeHigh !== undefined) updateFields.dayRangeHigh = data.dayRangeHigh;
+  if (data.weekRange52Low !== undefined) updateFields.weekRange52Low = data.weekRange52Low;
+  if (data.weekRange52High !== undefined) updateFields.weekRange52High = data.weekRange52High;
+  if (data.priceChange !== undefined) updateFields.priceChange = data.priceChange;
+  if (data.priceChangePercent !== undefined) updateFields.priceChangePercent = data.priceChangePercent;
+
+  // Volume & Trading
+  if (data.volume !== undefined) updateFields.volume = data.volume;
+  if (data.weeklyAverageVolume !== undefined) updateFields.weeklyAverageVolume = data.weeklyAverageVolume;
+  if (data.trades !== undefined) updateFields.trades = data.trades;
+  if (data.value !== undefined) updateFields.value = data.value;
+
+  // Market Metrics
+  if (data.marketCap !== undefined) updateFields.marketCap = data.marketCap;
+  if (data.sharesOutstanding !== undefined) updateFields.sharesOutstanding = data.sharesOutstanding;
+  if (data.freeFloatShares !== undefined) updateFields.freeFloatShares = data.freeFloatShares;
+  if (data.freeFloatPercent !== undefined) updateFields.freeFloatPercent = data.freeFloatPercent;
+
+  // Valuation & Financial Ratios
+  if (data.peRatio !== undefined) updateFields.peRatio = data.peRatio;
+  if (data.pbRatio !== undefined) updateFields.pbRatio = data.pbRatio;
+  if (data.dividendYield !== undefined) updateFields.dividendYield = data.dividendYield;
+  if (data.earningsPerShare !== undefined) updateFields.earningsPerShare = data.earningsPerShare;
+  if (data.netIncomeMargin !== undefined) updateFields.netIncomeMargin = data.netIncomeMargin;
+
+  // Circuit Breakers
+  if (data.circuitBreakerLower !== undefined) updateFields.circuitBreakerLower = data.circuitBreakerLower;
+  if (data.circuitBreakerUpper !== undefined) updateFields.circuitBreakerUpper = data.circuitBreakerUpper;
+
+  // Bid/Ask Data
+  if (data.bidPrice !== undefined) updateFields.bidPrice = data.bidPrice;
+  if (data.askPrice !== undefined) updateFields.askPrice = data.askPrice;
+  if (data.bidVolume !== undefined) updateFields.bidVolume = data.bidVolume;
+  if (data.askVolume !== undefined) updateFields.askVolume = data.askVolume;
+
+  // Metadata
+  if (data.lastFetchedAt !== undefined) updateFields.lastFetchedAt = data.lastFetchedAt;
+
+  await collection.updateOne(
+    { symbol: data.symbol.toUpperCase() },
+    {
+      $set: updateFields,
+      $setOnInsert: {
+        createdAt: now,
+      },
+    },
+    { upsert: true }
+  );
+}
+
+export async function getSymbolPriceData(symbol: string): Promise<SymbolPriceDocument | null> {
+  const collection = await getSymbolPricesCollection();
+  return collection.findOne({ symbol: symbol.toUpperCase() });
+}
+
+/**
+ * Batch fetch symbol metadata for multiple symbols
+ * Returns a map of symbol -> metadata for easy lookup
+ */
+export async function batchGetSymbolMetadata(symbols: string[]): Promise<Map<string, SymbolPriceDocument>> {
+  if (symbols.length === 0) {
+    return new Map();
+  }
+
+  const collection = await getSymbolPricesCollection();
+  const upperSymbols = symbols.map(s => s.toUpperCase());
+  
+  const docs = await collection
+    .find({ symbol: { $in: upperSymbols } })
+    .project({ 
+      symbol: 1, 
+      name: 1, 
+      sectorName: 1, 
+      isETF: 1, 
+      isDebt: 1,
+      isGEM: 1,
+      currentPrice: 1,
+      priceChange: 1,
+      priceChangePercent: 1
+    })
+    .toArray();
+
+  const metadataMap = new Map<string, SymbolPriceDocument>();
+  docs.forEach(doc => {
+    metadataMap.set(doc.symbol, doc);
+  });
+
+  return metadataMap;
+}
+
+/**
+ * Sync symbols from static data file (lib/symbols.ts) to MongoDB
+ * Updates existing symbols with metadata, creates new ones with default price values
+ */
+export async function syncSymbolsFromStaticData(): Promise<{
+  total: number;
+  created: number;
+  updated: number;
+  errors: number;
+}> {
+  const { symbols } = await import('./symbols');
+  const collection = await getSymbolPricesCollection();
+  
+  const operations: AnyBulkWriteOperation<SymbolPriceDocument>[] = [];
+  const now = new Date();
+
+  for (const symbolData of symbols) {
+    if (!symbolData.symbol) continue;
+
+    const symbol = symbolData.symbol.toUpperCase();
+    
+    operations.push({
+      updateOne: {
+        filter: { symbol },
+        update: {
+          $set: {
+            symbol,
+            name: symbolData.name || '',
+            sectorName: symbolData.sectorName || '',
+            isETF: symbolData.isETF || false,
+            isDebt: symbolData.isDebt || false,
+            isGEM: symbolData.isGEM || false,
+            updatedAt: now,
+          },
+          $setOnInsert: {
+            // Set default null values for price fields on insert
+            currentPrice: null,
+            priceOpen: null,
+            priceClose: null,
+            priceHigh: null,
+            priceLow: null,
+            dayRangeLow: null,
+            dayRangeHigh: null,
+            weekRange52Low: null,
+            weekRange52High: null,
+            priceChange: null,
+            priceChangePercent: null,
+            volume: null,
+            weeklyAverageVolume: null,
+            trades: null,
+            value: null,
+            marketCap: null,
+            sharesOutstanding: null,
+            freeFloatShares: null,
+            freeFloatPercent: null,
+            peRatio: null,
+            pbRatio: null,
+            dividendYield: null,
+            earningsPerShare: null,
+            netIncomeMargin: null,
+            circuitBreakerLower: null,
+            circuitBreakerUpper: null,
+            bidPrice: null,
+            askPrice: null,
+            bidVolume: null,
+            askVolume: null,
+            lastFetchedAt: null,
+            createdAt: now,
+          },
+        },
+        upsert: true,
+      },
+    });
+  }
+
+  let created = 0;
+  let updated = 0;
+  let errors = 0;
+
+  if (operations.length > 0) {
+    try {
+      const result = await collection.bulkWrite(operations, { ordered: false });
+      created = result.upsertedCount;
+      updated = result.modifiedCount;
+    } catch (error: any) {
+      // Even with errors, some operations may succeed
+      if (error.result) {
+        created = error.result.nUpserted || 0;
+        updated = error.result.nModified || 0;
+      }
+      errors = error.writeErrors?.length || 0;
+      console.error('Bulk write errors:', error.message);
+    }
+  }
+
+  return {
+    total: operations.length,
+    created,
+    updated,
+    errors,
+  };
+}
+
+/**
+ * Get statistics about cached symbol prices in the database
+ */
+export async function getSymbolPriceStats(): Promise<{
+  totalSymbols: number;
+  oldestCache: Date | null;
+  latestCache: Date | null;
+}> {
+  const collection = await getSymbolPricesCollection();
+  
+  const totalSymbols = await collection.countDocuments();
+  
+  if (totalSymbols === 0) {
+    return {
+      totalSymbols: 0,
+      oldestCache: null,
+      latestCache: null,
+    };
+  }
+  
+  // Find oldest and latest cache timestamps
+  const [oldestDoc] = await collection
+    .find({ lastFetchedAt: { $exists: true, $ne: null } })
+    .sort({ lastFetchedAt: 1 })
+    .limit(1)
+    .toArray();
+    
+  const [latestDoc] = await collection
+    .find({ lastFetchedAt: { $exists: true, $ne: null } })
+    .sort({ lastFetchedAt: -1 })
+    .limit(1)
+    .toArray();
+  
+  return {
+    totalSymbols,
+    oldestCache: oldestDoc?.lastFetchedAt || null,
+    latestCache: latestDoc?.lastFetchedAt || null,
+  };
+}
+
+/**
+ * Refresh symbol prices from PSX Terminal API
+ * Fetches latest prices for all provided symbols and updates database
+ * @param symbols Array of symbols to refresh
+ * @returns Count of successfully updated symbols
+ */
+export async function refreshSymbolPrices(symbols: string[]): Promise<number> {
+  if (symbols.length === 0) {
+    return 0;
+  }
+  
+  let successCount = 0;
+  
+  // Fetch prices from API with delay to avoid rate limiting
+  for (let i = 0; i < symbols.length; i++) {
+    const symbol = symbols[i].toUpperCase();
+    
+    try {
+      // Fetch from PSX Terminal API
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE || 'https://psxterminal.com/api'}/ticks/REG/${symbol}`,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/json',
+            'Referer': 'https://psxterminal.com/',
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch price for ${symbol}: ${response.status}`);
+        continue;
+      }
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        const apiData = result.data;
+        
+        // Transform and save to database
+        const symbolPriceData = {
+          symbol: symbol,
+          currentPrice: apiData.price || null,
+          priceChange: apiData.change || null,
+          priceChangePercent: apiData.changePercent || null,
+          priceHigh: apiData.high || null,
+          priceLow: apiData.low || null,
+          volume: apiData.volume || null,
+          trades: apiData.trades || null,
+          value: apiData.value || null,
+          bidPrice: apiData.bid || null,
+          askPrice: apiData.ask || null,
+          bidVolume: apiData.bidVol || null,
+          askVolume: apiData.askVol || null,
+          lastFetchedAt: new Date(
+            apiData.timestamp > 1_000_000_000_000 
+              ? apiData.timestamp 
+              : apiData.timestamp * 1000
+          ),
+        };
+        
+        await saveSymbolPriceData(symbolPriceData);
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`Error refreshing price for ${symbol}:`, error);
+    }
+    
+    // Add delay between requests to avoid rate limiting
+    if (i < symbols.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  return successCount;
+}
+
