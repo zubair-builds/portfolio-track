@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from './ui/Card';
+import { useAuth } from './AuthProvider';
 
 export default function CacheManager() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalSymbols: 0,
     oldestCache: null as number | null,
@@ -39,10 +41,16 @@ export default function CacheManager() {
 
     setIsRefreshing(true);
     try {
+      if (!user?.email) {
+        alert('You must be signed in to refresh prices');
+        return;
+      }
+      
       const response = await fetch('/api/symbols/refresh-prices', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-Id': user.email,
         },
       });
 

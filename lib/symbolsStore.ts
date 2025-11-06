@@ -185,7 +185,7 @@ export async function batchGetSymbolMetadata(symbols: string[]): Promise<Map<str
     .toArray();
 
   const metadataMap = new Map<string, SymbolPriceDocument>();
-  docs.forEach(doc => {
+  docs.forEach((doc: any) => {
     metadataMap.set(doc.symbol, doc);
   });
 

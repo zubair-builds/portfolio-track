@@ -18,8 +18,7 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Total Investment */}
-      <Card variant="default" className="hover:shadow-lg transition-all duration-150">
+      <Card className="hover:shadow-lg transition-all duration-150">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
@@ -40,7 +39,7 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
       </Card>
 
       {/* Current Value */}
-      <Card variant="default" className="hover:shadow-lg transition-all duration-150">
+      <Card className="hover:shadow-lg transition-all duration-150">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
@@ -61,7 +60,7 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
       </Card>
 
       {/* Total Gain/Loss */}
-      <Card variant="default" className={`hover:shadow-lg transition-all duration-150 ${gainLossBg}`}>
+      <Card className={`hover:shadow-lg transition-all duration-150 ${gainLossBg}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isPositive ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
@@ -91,7 +90,7 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
       </Card>
 
       {/* Top Performers */}
-      <Card variant="default" className="hover:shadow-lg transition-all duration-150">
+      <Card className="hover:shadow-lg transition-all duration-150">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">

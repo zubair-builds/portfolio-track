@@ -425,7 +425,7 @@ export default function PortfolioAllocation({ stocks }: PortfolioAllocationProps
                 PNG
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={handleExportCSV}
                 className="text-sm flex items-center gap-2"
               >
