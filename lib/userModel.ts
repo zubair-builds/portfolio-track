@@ -5,6 +5,8 @@ export interface UserDocument {
   name: string;
   email: string;
   passwordHash: string;
+  portfolioInitialized?: boolean;
+  watchlistInitialized?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

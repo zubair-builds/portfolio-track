@@ -32,15 +32,34 @@ export async function GET(request: NextRequest) {
 
     let portfolio = await getUserPortfolio(userId);
 
-    // Initialize with default data if empty
+    // Initialize with default data ONLY on first access (never initialized before)
     if (portfolio.length === 0) {
-      const defaultStocks = initialPortfolioData.map((stock) => ({
-        symbol: stock.symbol,
-        shares: stock.shares,
-        avgBuy: stock.avgBuy,
-      }));
-      await initializeUserPortfolio(userId, defaultStocks);
-      portfolio = await getUserPortfolio(userId);
+      // Check if user has been initialized before
+      const clientPromise = (await import('../../../lib/mongodb')).default;
+      const client = await clientPromise;
+      const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
+      const users = db.collection('users');
+      
+      const user = await users.findOne({ email: userId });
+      
+      // Only initialize if this is truly the first time (flag not set)
+      if (user && !user.portfolioInitialized) {
+        const defaultStocks = initialPortfolioData.map((stock) => ({
+          symbol: stock.symbol,
+          shares: stock.shares,
+          avgBuy: stock.avgBuy,
+        }));
+        await initializeUserPortfolio(userId, defaultStocks);
+        portfolio = await getUserPortfolio(userId);
+        
+        // Mark as initialized so we don't do this again
+        await users.updateOne(
+          { email: userId },
+          { $set: { portfolioInitialized: true } }
+        );
+      }
+      // If portfolioInitialized is true, user has intentionally emptied their portfolio
+      // Return empty array (don't re-initialize)
     }
 
     return NextResponse.json({ portfolio }, { status: 200 });

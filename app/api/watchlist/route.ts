@@ -32,16 +32,35 @@ export async function GET(request: NextRequest) {
 
     let watchlist = await getUserWatchlist(userId);
 
-    // Initialize with default data if empty
+    // Initialize with default data ONLY on first access (never initialized before)
     if (watchlist.length === 0) {
-      const defaultItems = initialWatchlistData.map((item) => ({
-        symbol: item.symbol,
-        thesis: item.thesis,
-        targetPrice: item.targetPrice,
-        note: item.note,
-      }));
-      await initializeUserWatchlist(userId, defaultItems);
-      watchlist = await getUserWatchlist(userId);
+      // Check if user has been initialized before
+      const clientPromise = (await import('../../../lib/mongodb')).default;
+      const client = await clientPromise;
+      const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
+      const users = db.collection('users');
+      
+      const user = await users.findOne({ email: userId });
+      
+      // Only initialize if this is truly the first time (flag not set)
+      if (user && !user.watchlistInitialized) {
+        const defaultItems = initialWatchlistData.map((item) => ({
+          symbol: item.symbol,
+          thesis: item.thesis,
+          targetPrice: item.targetPrice,
+          note: item.note,
+        }));
+        await initializeUserWatchlist(userId, defaultItems);
+        watchlist = await getUserWatchlist(userId);
+        
+        // Mark as initialized so we don't do this again
+        await users.updateOne(
+          { email: userId },
+          { $set: { watchlistInitialized: true } }
+        );
+      }
+      // If watchlistInitialized is true, user has intentionally emptied their watchlist
+      // Return empty array (don't re-initialize)
     }
 
     return NextResponse.json({ watchlist }, { status: 200 });

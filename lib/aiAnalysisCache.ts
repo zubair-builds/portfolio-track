@@ -12,7 +12,7 @@ interface AIAnalysisDocument {
 }
 
 const ANALYSIS_COLLECTION = 'ai_analysis_cache';
-const CACHE_TTL_HOURS = 24;
+const CACHE_TTL_HOURS = 24 * 7;
 
 async function getDb(): Promise<Db> {
   const client = await clientPromise;
@@ -34,9 +34,9 @@ export async function getCachedAnalysis(
 ): Promise<{ content: string; createdAt: Date } | null> {
   try {
     const collection = await getCollection();
-    
+
     let query: any = { mode };
-    
+
     if (mode === 'stock' && symbol) {
       query.symbol = symbol.toUpperCase();
     } else if (mode === 'portfolio' && portfolioSymbols) {
@@ -45,13 +45,13 @@ export async function getCachedAnalysis(
     } else if (mode === 'market') {
       query.symbol = 'MARKET_OVERVIEW';
     }
-    
+
     const cached = await collection.findOne(query, {
       sort: { createdAt: -1 },
     });
     console.log('cached', cached);
     if (!cached) return null;
-    
+
     return {
       content: cached.content,
       createdAt: cached.createdAt,
@@ -71,17 +71,17 @@ export async function saveAnalysis(
   try {
     const collection = await getCollection();
     const now = new Date();
-    
+
     let identifierSymbol = 'MARKET_OVERVIEW';
     let portfolioSymbolsArray: string[] | undefined;
-    
+
     if (mode === 'stock' && symbol) {
       identifierSymbol = symbol.toUpperCase();
     } else if (mode === 'portfolio' && portfolioSymbols) {
       identifierSymbol = `PORTFOLIO_${portfolioSymbols.length}`;
       portfolioSymbolsArray = portfolioSymbols.map(s => s.toUpperCase()).sort();
     }
-    
+
     const document: AIAnalysisDocument = {
       symbol: identifierSymbol,
       mode,
@@ -90,7 +90,7 @@ export async function saveAnalysis(
       createdAt: now,
       updatedAt: now,
     };
-    
+
     await collection.insertOne(document);
   } catch (error) {
     console.error('Error saving analysis to cache:', error);
@@ -103,20 +103,20 @@ export async function clearAnalysisCache(
 ): Promise<void> {
   try {
     const collection = await getCollection();
-    
+
     if (!mode) {
       await collection.deleteMany({});
       return;
     }
-    
+
     let query: any = { mode };
-    
+
     if (mode === 'stock' && symbol) {
       query.symbol = symbol.toUpperCase();
     } else if (mode === 'market') {
       query.symbol = 'MARKET_OVERVIEW';
     }
-    
+
     await collection.deleteMany(query);
   } catch (error) {
     console.error('Error clearing analysis cache:', error);
