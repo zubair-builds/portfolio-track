@@ -19,11 +19,13 @@ import PortfolioAnalytics from "../components/PortfolioAnalytics";
 import { calculatePortfolioStats, Stock, WatchlistItem } from "../lib/portfolioData";
 import { usePortfolioData } from "../hooks/usePortfolioData";
 import { useAuth } from "../components/AuthProvider";
+import { useIndexPrices } from "../hooks/useIndexPrices";
 
 export default function Page() {
   const router = useRouter();
   const { user, initializing, signout } = useAuth();
   const { stocks, watchlist, isLoading, error, lastUpdated } = usePortfolioData(user?.email);
+  const { indices: [kse100], loading: indexLoading } = useIndexPrices(['KSE100'], { autoRefresh: true, refreshInterval: 60000 });
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiAnalysisStock, setAiAnalysisStock] = useState<Stock | null>(null);
@@ -386,6 +388,63 @@ export default function Page() {
 
       <main className="flex-1 bg-slate-50 dark:bg-slate-900">
         <div className="container mx-auto max-w-7xl space-y-8 py-8 px-4">
+          {/* KSE100 Index Banner */}
+          {kse100 && (
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 shadow-sm dark:border-slate-700 dark:from-indigo-950/30 dark:to-blue-950/30">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">
+                      {kse100.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                    </h2>
+                    <Badge variant={kse100.change >= 0 ? "success" : "danger"}>
+                      <span className="font-semibold">
+                        {kse100.change >= 0 ? '+' : ''}{kse100.change.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                        {' '}
+                        ({(kse100.changePercent * 100).toFixed(2)}%)
+                      </span>
+                    </Badge>
+                  </div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {kse100.name}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Last updated: {new Date(kse100.timestamp).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+                <div className="hidden md:flex items-center gap-6 text-sm">
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">High</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      {kse100.high.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Low</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      {kse100.low.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Volume</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      {(kse100.volume / 1_000_000).toFixed(1)}M
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Trades</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      {kse100.trades.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Symbol Data Fetch Message */}
           {symbolDataMessage && (
             <div className={`rounded-lg border p-4 ${

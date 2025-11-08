@@ -11,6 +11,14 @@ export interface SymbolPriceData {
   isDebt?: boolean;
   isGEM?: boolean;
 
+  // Index & Fundamental Data (from PSX Terminal API)
+  listedIn?: string;           // Index membership (e.g., "KSE100", "KMI30,KSE100")
+  marketCapString?: string;    // Market cap with units (e.g., "511.4M", "1.2B")
+  freeFloatString?: string;    // Free float with units (e.g., "11.9M")
+  volume30Avg?: number;        // 30-day average volume
+  yearChange?: number;         // Year-to-date change %
+  isNonCompliant?: boolean;    // Compliance status
+
   // Price Data
   currentPrice?: number;
   priceOpen?: number;
@@ -411,5 +419,156 @@ export async function refreshSymbolPrices(symbols: string[]): Promise<number> {
   }
   
   return successCount;
+}
+
+/**
+ * Parse market cap or free float string to numeric value
+ * Examples: "511.4M" -> 511400000, "1.2B" -> 1200000000, "10.5K" -> 10500
+ */
+function parseNumericValue(value: string | undefined): number | undefined {
+  if (!value || typeof value !== 'string') return undefined;
+  
+  const cleaned = value.trim().toUpperCase();
+  const match = cleaned.match(/^([\d.]+)([KMB]?)$/);
+  
+  if (!match) return undefined;
+  
+  const number = parseFloat(match[1]);
+  const unit = match[2];
+  
+  if (isNaN(number)) return undefined;
+  
+  switch (unit) {
+    case 'K':
+      return number * 1_000;
+    case 'M':
+      return number * 1_000_000;
+    case 'B':
+      return number * 1_000_000_000;
+    default:
+      return number;
+  }
+}
+
+/**
+ * Get all symbols that belong to a specific index
+ * @param indexName Index name (e.g., "KSE100", "KMI30")
+ * @returns Array of symbols in that index
+ */
+export async function getSymbolsByIndex(indexName: string): Promise<string[]> {
+  const collection = await getSymbolPricesCollection();
+  
+  // Query for symbols where listedIn contains the index name
+  // This works with comma-separated strings like "ALLSHR,KSE100,KMI30"
+  const docs = await collection
+    .find({
+      listedIn: { $regex: indexName, $options: 'i' }
+    })
+    .project({ symbol: 1 })
+    .toArray();
+  
+  return docs.map(doc => doc.symbol);
+}
+
+/**
+ * Get all indices that a symbol belongs to
+ * @param symbol Stock symbol
+ * @returns Array of index names (e.g., ["KSE100", "KMI30", "ALLSHR"])
+ */
+export async function getSymbolIndices(symbol: string): Promise<string[]> {
+  const doc = await getSymbolPriceData(symbol);
+  
+  if (!doc?.listedIn) return [];
+  
+  // Parse comma-separated string
+  return doc.listedIn.split(',').map(idx => idx.trim()).filter(idx => idx.length > 0);
+}
+
+/**
+ * Get count of symbols in each index
+ * @returns Map of index name -> count
+ */
+export async function getIndexComposition(): Promise<Map<string, number>> {
+  const collection = await getSymbolPricesCollection();
+  
+  const docs = await collection
+    .find({ listedIn: { $exists: true, $ne: '' } })
+    .project({ listedIn: 1 })
+    .toArray();
+  
+  const indexCounts = new Map<string, number>();
+  
+  docs.forEach(doc => {
+    if (doc.listedIn) {
+      const indices = doc.listedIn.split(',').map(idx => idx.trim());
+      indices.forEach(idx => {
+        if (idx) {
+          indexCounts.set(idx, (indexCounts.get(idx) || 0) + 1);
+        }
+      });
+    }
+  });
+  
+  return indexCounts;
+}
+
+/**
+ * Update symbol with fundamental data from PSX Terminal API
+ */
+export async function updateSymbolFundamentals(
+  symbol: string,
+  fundamentals: {
+    listedIn?: string;
+    marketCap?: string;
+    peRatio?: number;
+    dividendYield?: number;
+    freeFloat?: string;
+    volume30Avg?: number;
+    yearChange?: number;
+    isNonCompliant?: boolean;
+    price?: number;
+    changePercent?: number;
+  }
+): Promise<void> {
+  const collection = await getSymbolPricesCollection();
+  const now = new Date();
+
+  const updateFields: any = {
+    symbol: symbol.toUpperCase(),
+    updatedAt: now,
+  };
+
+  // Fundamental data
+  if (fundamentals.listedIn !== undefined) updateFields.listedIn = fundamentals.listedIn;
+  if (fundamentals.marketCap !== undefined) {
+    updateFields.marketCapString = fundamentals.marketCap;
+    const parsed = parseNumericValue(fundamentals.marketCap);
+    if (parsed !== undefined) updateFields.marketCap = parsed;
+  }
+  if (fundamentals.freeFloat !== undefined) {
+    updateFields.freeFloatString = fundamentals.freeFloat;
+    const parsed = parseNumericValue(fundamentals.freeFloat);
+    if (parsed !== undefined) updateFields.freeFloatShares = parsed;
+  }
+  if (fundamentals.peRatio !== undefined) updateFields.peRatio = fundamentals.peRatio;
+  if (fundamentals.dividendYield !== undefined) updateFields.dividendYield = fundamentals.dividendYield;
+  if (fundamentals.volume30Avg !== undefined) updateFields.volume30Avg = fundamentals.volume30Avg;
+  if (fundamentals.yearChange !== undefined) updateFields.yearChange = fundamentals.yearChange;
+  if (fundamentals.isNonCompliant !== undefined) updateFields.isNonCompliant = fundamentals.isNonCompliant;
+  
+  // Also update price data if provided
+  if (fundamentals.price !== undefined) updateFields.currentPrice = fundamentals.price;
+  if (fundamentals.changePercent !== undefined) updateFields.priceChangePercent = fundamentals.changePercent;
+
+  await collection.updateOne(
+    { symbol: symbol.toUpperCase() },
+    {
+      $set: updateFields,
+      $setOnInsert: {
+        createdAt: now,
+      },
+    },
+    { upsert: true }
+  );
 }
 
