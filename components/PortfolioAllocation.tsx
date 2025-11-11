@@ -18,12 +18,13 @@ import DiversificationMetrics from './DiversificationMetrics';
 
 interface PortfolioAllocationProps {
   stocks: Stock[];
+  isLoading?: boolean;
 }
 
 type ViewMode = 'stock' | 'sector' | 'diversification';
 type ChartType = 'pie' | 'performance';
 
-export default function PortfolioAllocation({ stocks }: PortfolioAllocationProps) {
+export default function PortfolioAllocation({ stocks, isLoading = false }: PortfolioAllocationProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('stock');
   const [chartType, setChartType] = useState<ChartType>('pie');
   const [selectedSector, setSelectedSector] = useState<SectorAlloc | null>(null);
@@ -63,6 +64,38 @@ export default function PortfolioAllocation({ stocks }: PortfolioAllocationProps
     return calculateDiversificationMetrics(allocations, sectorAllocations);
   }, [allocations, sectorAllocations]);
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+              Loading allocation data...
+            </div>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+              {/* Skeleton Pie Chart */}
+              <div className="flex flex-col items-center justify-center gap-5">
+                <div className="h-80 w-80 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
+              </div>
+              {/* Skeleton List */}
+              <div className="space-y-4">
+                <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="h-20 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Empty state
   if (!stocks.length || !Number.isFinite(totalValue) || totalValue <= 0) {
     return (
       <Card>

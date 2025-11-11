@@ -1,31 +1,53 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { SectionTitle } from "../components/ui/SectionTitle";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import PortfolioSummary from "../components/PortfolioSummary";
-import PortfolioTable from "../components/PortfolioTable";
-import PortfolioAllocation from "../components/PortfolioAllocation";
+import Tabs, { Tab } from "../components/Tabs";
+import PortfolioTab from "../components/tabs/PortfolioTab";
+import WatchlistTab from "../components/tabs/WatchlistTab";
+import AnalyticsTab from "../components/tabs/AnalyticsTab";
+import AllocationTab from "../components/tabs/AllocationTab";
 import CacheManager from "../components/CacheManager";
 import StockDetailsModal from "../components/StockDetailsModal";
-import Watchlist from "../components/Watchlist";
 import AIInsightsModal from "../components/AIInsightsModal";
 import AddStockModal from "../components/AddStockModal";
 import EditStockModal from "../components/EditStockModal";
 import AddWatchlistModal from "../components/AddWatchlistModal";
-import PortfolioAnalytics from "../components/PortfolioAnalytics";
-import { calculatePortfolioStats, Stock, WatchlistItem } from "../lib/portfolioData";
-import { usePortfolioData } from "../hooks/usePortfolioData";
+import { Stock, WatchlistItem } from "../lib/portfolioData";
 import { useAuth } from "../components/AuthProvider";
 import { useIndexPrices } from "../hooks/useIndexPrices";
+import { usePortfolioData } from "../hooks/usePortfolioData";
 
 export default function Page() {
   const router = useRouter();
   const { user, initializing, signout } = useAuth();
-  const { stocks, watchlist, isLoading, error, lastUpdated } = usePortfolioData(user?.email);
-  const { indices: [kse100], loading: indexLoading } = useIndexPrices(['KSE100'], { autoRefresh: true, refreshInterval: 60000 });
+  
+  // Memoize the symbols array to prevent unnecessary re-fetches
+  const kse100Symbols = useMemo(() => ['KSE100'], []);
+  const { indices: [kse100], loading: kse100Loading, error: kse100Error, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
+  const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, error: portfolioError } = usePortfolioData(user?.email);
+  const [refreshingKse100, setRefreshingKse100] = useState(false);
+  
+  // Track overall loading state
+  const [pageLoaded, setPageLoaded] = useState(false);
+  const isDataLoading = kse100Loading || portfolioLoading;
+  const hasError = kse100Error || portfolioError;
+
+  // Mark page as loaded after initial data fetch completes
+  useEffect(() => {
+    if (!isDataLoading && !initializing) {
+      // Small delay to ensure smooth transition
+      const timer = setTimeout(() => setPageLoaded(true), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isDataLoading, initializing]);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('portfolio');
+  
+  // Modal states
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiAnalysisStock, setAiAnalysisStock] = useState<Stock | null>(null);
@@ -33,18 +55,9 @@ export default function Page() {
   const [symbolDataMessage, setSymbolDataMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingStock, setEditingStock] = useState<Stock | null>(null);
-  const [deletingStock, setDeletingStock] = useState<Stock | null>(null);
   const [showAddWatchlist, setShowAddWatchlist] = useState(false);
   const [importing, setImporting] = useState(false);
-  const portfolioStats = useMemo(() => calculatePortfolioStats(stocks), [stocks]);
-  const lastUpdatedLabel = lastUpdated
-    ? lastUpdated.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : 'Never';
+  const [aiStocks, setAiStocks] = useState<Stock[]>([]);
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -57,9 +70,58 @@ export default function Page() {
     router.replace('/signin');
   };
 
-  const handleAnalyzeStock = (stock: Stock) => {
+  const handleRefreshKse100 = async () => {
+    if (refreshingKse100) return;
+    
+    setRefreshingKse100(true);
+    try {
+      // Step 1: Fetch from PSX Terminal API and update DB
+      const response = await fetch('/api/indices/refresh?symbols=KSE100');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to refresh: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error('Refresh failed');
+      }
+      
+      // Step 2: Re-fetch from database to update UI
+      await refreshKse100();
+      
+    } catch (error) {
+      console.error('Error refreshing KSE100:', error);
+      alert('Failed to refresh KSE100 data. Please try again.');
+    } finally {
+      setRefreshingKse100(false);
+    }
+  };
+
+  const handleAnalyzeStock = async (stock: Stock) => {
     setAiAnalysisStock(stock);
     setShowAIInsights(true);
+    
+    // Fetch portfolio stocks for AI analysis if not already loaded
+    if (aiStocks.length === 0 && user?.email) {
+      try {
+        const response = await fetch('/api/portfolio', {
+          headers: { 'X-User-Id': user.email },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAiStocks(data.portfolio.map((p: any) => ({
+            symbol: p.symbol,
+            shares: p.shares,
+            avgBuy: p.avgBuy,
+            currentPrice: 0,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load stocks for AI:', error);
+      }
+    }
   };
 
   const handleFetchSymbolData = async (stock: Stock) => {
@@ -283,10 +345,55 @@ export default function Page() {
     window.location.reload();
   };
 
+  // Define tabs
+  const tabs: Tab[] = [
+    {
+      id: 'portfolio',
+      label: 'Portfolio',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'watchlist',
+      label: 'Watchlist',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      ),
+    },
+    {
+      id: 'allocation',
+      label: 'Allocation',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+        </svg>
+      ),
+    },
+  ];
+
   if (initializing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300">
-        Loading dashboard…
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
+          <p className="text-lg font-medium">Initializing dashboard…</p>
+        </div>
       </div>
     );
   }
@@ -294,12 +401,114 @@ export default function Page() {
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300">
-        Redirecting to sign in…
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
+          <p className="text-lg font-medium">Redirecting to sign in…</p>
+        </div>
       </div>
     );
   }
 
   return (
+    <>
+      {/* Loading Overlay */}
+      {!pageLoaded && (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-6 max-w-md mx-auto px-4">
+            {/* Spinner */}
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Loading Text */}
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                Loading Your Portfolio
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {isDataLoading ? (
+                  <>
+                    {kse100Loading && portfolioLoading && 'Fetching market data and portfolio...'}
+                    {kse100Loading && !portfolioLoading && 'Loading market indices...'}
+                    {!kse100Loading && portfolioLoading && 'Loading your holdings...'}
+                  </>
+                ) : hasError ? (
+                  <span className="text-rose-600 dark:text-rose-400">
+                    {kse100Error || portfolioError}
+                  </span>
+                ) : (
+                  'Almost ready...'
+                )}
+              </p>
+            </div>
+
+            {/* Progress Indicators */}
+            <div className="w-full space-y-2">
+              <div className="flex items-center gap-3">
+                {kse100Loading ? (
+                  <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
+                ) : kse100Error ? (
+                  <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                <span className="text-sm text-slate-600 dark:text-slate-400">Market indices</span>
+              </div>
+              <div className="flex items-center gap-3">
+                {portfolioLoading ? (
+                  <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
+                ) : portfolioError ? (
+                  <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                <span className="text-sm text-slate-600 dark:text-slate-400">Portfolio & watchlist</span>
+              </div>
+            </div>
+
+            {/* Error Message with Retry */}
+            {hasError && !isDataLoading && (
+              <div className="w-full mt-4 p-4 bg-rose-50 border border-rose-200 rounded-lg dark:bg-rose-950/20 dark:border-rose-900/50">
+                <div className="flex items-start gap-3 mb-3">
+                  <svg className="w-5 h-5 text-rose-600 dark:text-rose-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-rose-800 dark:text-rose-200 mb-1">
+                      Failed to load some data
+                    </p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400">
+                      {kse100Error && <span className="block">• {kse100Error}</span>}
+                      {portfolioError && <span className="block">• {portfolioError}</span>}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition"
+                >
+                  Retry Loading
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-950/70">
@@ -313,23 +522,13 @@ export default function Page() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {isLoading ? (
-              <Badge variant="live">
-                <span className="relative inline-flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
-                </span>
-                Loading...
-              </Badge>
-            ) : (
               <Badge variant="live">
                 <span className="relative inline-flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
                 </span>
-                Updated • {lastUpdatedLabel}
+              Live
               </Badge>
-            )}
             <div className="hidden sm:flex items-center gap-2">
               <button
                 onClick={() => handleExport('json')}
@@ -389,7 +588,7 @@ export default function Page() {
       <main className="flex-1 bg-slate-50 dark:bg-slate-900">
         <div className="container mx-auto max-w-7xl space-y-8 py-8 px-4">
           {/* KSE100 Index Banner */}
-          {kse100 && (
+          {kse100 ? (
             <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 shadow-sm dark:border-slate-700 dark:from-indigo-950/30 dark:to-blue-950/30">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -404,6 +603,26 @@ export default function Page() {
                         ({(kse100.changePercent * 100).toFixed(2)}%)
                       </span>
                     </Badge>
+                    <button
+                      onClick={handleRefreshKse100}
+                      disabled={refreshingKse100}
+                      className="p-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-900/30"
+                      title="Refresh from PSX Terminal"
+                    >
+                      <svg 
+                        className={`w-5 h-5 ${refreshingKse100 ? 'animate-spin' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                        />
+                      </svg>
+                    </button>
                   </div>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                     {kse100.name}
@@ -443,6 +662,39 @@ export default function Page() {
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    KSE-100 Index
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    No data available. Click refresh to fetch latest data from PSX Terminal.
+                  </p>
+                </div>
+                <button
+                  onClick={handleRefreshKse100}
+                  disabled={refreshingKse100}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <svg 
+                    className={`w-4 h-4 ${refreshingKse100 ? 'animate-spin' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                    />
+                  </svg>
+                  {refreshingKse100 ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Symbol Data Fetch Message */}
@@ -469,124 +721,42 @@ export default function Page() {
             </div>
           )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-              <div className="flex items-start gap-3">
-                <svg className="h-5 w-5 mt-0.5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="font-medium">{error}</p>
-                </div>
-              </div>
+          {/* Tabs Navigation */}
+          <div className="bg-white dark:bg-slate-900/60">
+            <div className="container mx-auto max-w-7xl">
+              <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
             </div>
-          )}
+          </div>
 
-          {/* Portfolio Summary */}
-          <section>
-            <SectionTitle
-              title="Portfolio Overview"
-              description="Your investment summary and key metrics"
-              icon={
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              }
-            />
-            <PortfolioSummary stats={portfolioStats} />
-          </section>
-
-          {/* Portfolio Analytics */}
-          <section>
-            <SectionTitle
-              title="Portfolio Analytics"
-              description="Key metrics and diversification insights"
-              icon={
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              }
-            />
-            <PortfolioAnalytics userEmail={user?.email} />
-          </section>
-
-          {/* Portfolio Allocation */}
-          <section>
-            <SectionTitle
-              title="Portfolio Allocation"
-              description="How your investments are distributed"
-              icon={
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                </svg>
-              }
-            />
-            <PortfolioAllocation stocks={stocks} />
-          </section>
-
-          {/* Watchlist */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <SectionTitle
-                title="Watchlist"
-                description="Symbols you're monitoring for potential entries"
-                icon={
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M1.5 12s4.5-7.5 10.5-7.5S22.5 12 22.5 12 18 19.5 12 19.5 1.5 12 1.5 12z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                }
+          {/* Tab Content */}
+          <div className="container mx-auto max-w-7xl space-y-8 py-8 px-4">
+            {activeTab === 'portfolio' && (
+              <PortfolioTab
+                stocks={portfolioStocks}
+                onSelectStock={setSelectedStock}
+                onEditStock={setEditingStock}
+                onDeleteStock={handleDeleteStock}
+                onAddStock={() => setShowAddStock(true)}
               />
-              <Button
-                variant="primary"
-                onClick={() => setShowAddWatchlist(true)}
-                className="flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Symbol
-              </Button>
-            </div>
-            <Watchlist 
-              items={watchlist} 
-              isLoading={isLoading}
-              onDeleteItem={handleDeleteWatchlist}
-            />
-          </section>
+            )}
 
-          {/* Holdings Table */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <SectionTitle
-                title="Holdings"
-                description={`${stocks.length} stocks in your portfolio`}
-                icon={
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                }
+            {activeTab === 'watchlist' && (
+              <WatchlistTab
+                watchlist={watchlist}
+                isLoading={portfolioLoading}
+                onDeleteItem={handleDeleteWatchlist}
+                onAddWatchlist={() => setShowAddWatchlist(true)}
               />
-              <Button
-                variant="primary"
-                onClick={() => setShowAddStock(true)}
-                className="flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Stock
-              </Button>
+            )}
+
+            {activeTab === 'analytics' && (
+              <AnalyticsTab userEmail={user?.email} />
+            )}
+
+            {activeTab === 'allocation' && (
+              <AllocationTab stocks={portfolioStocks} isLoading={portfolioLoading} />
+            )}
             </div>
-            <PortfolioTable 
-              stocks={stocks} 
-              onSelectStock={setSelectedStock}
-              onEditStock={setEditingStock}
-              onDeleteStock={handleDeleteStock}
-            />
-          </section>
         </div>
       </main>
 
@@ -618,7 +788,7 @@ export default function Page() {
       {/* AI Insights Modal */}
       {showAIInsights && (
         <AIInsightsModal
-          stocks={stocks}
+          stocks={aiStocks}
           onClose={() => {
             setShowAIInsights(false);
             setAiAnalysisStock(null);
@@ -660,6 +830,7 @@ export default function Page() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
 

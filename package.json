@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "sync-symbols": "tsx scripts/sync-symbols.ts",
-    "test-sync": "tsx scripts/test-sync.ts"
+    "cleanup-symbols": "tsx scripts/cleanup-symbols.ts",
+    "download-atlas-db": "tsx scripts/download-atlas-db.ts",
+    "seed-indices": "tsx scripts/seed-indices.ts",
+    "fetch-index-prices": "tsx scripts/fetch-index-prices.ts"
   },
   "dependencies": {
     "@google/genai": "^1.28.0",

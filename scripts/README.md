@@ -1,150 +1,105 @@
 # Scripts Directory
 
-This directory contains utility scripts for portfolio data management.
-
-## 📄 Files
-
-### Input Files (You Provide)
-
-#### `symbols.json`
-**Purpose**: List of symbols to fetch fundamental data for (acts as a "to-do list")
-
-**Format**: JSON array of symbol strings
-```json
-["786", "AABS", "AASM", "HUBC", "PSO", "OGDC", ...]
-```
-
-**⚠️ AUTO-UPDATE**: Script automatically removes processed symbols after each batch!
-
-**Before first run:**
-```bash
-# IMPORTANT: Backup your original file!
-cp symbols.json symbols-original.json
-```
-
-**How It Works**:
-- Script reads symbols from beginning of array
-- Processes requested count (e.g., 50 symbols)
-- Removes those 50 from symbols.json
-- Next run starts with remaining symbols
-- When array is empty → all symbols processed!
-
-**Manual Updates**:
-- Add new symbols to the array (append to end)
-- Remove symbols you don't want (delete from array)
-- Script always processes from index 0
+⚠️ **IMPORTANT**: Most data sync operations have been migrated to the Admin Dashboard at `/admin`.  
+This directory now contains only one-time setup scripts and utilities.
 
 ---
 
-### Scripts
+## 🎛️ Admin Dashboard (Recommended)
+
+For all ongoing data synchronization, use the **Admin Dashboard** at `/admin`:
+
+### Available Sync Operations:
+- ✅ **Companies Data** - Fetch company fundamentals (marketCap, shares, freeFloat, etc.)
+- ✅ **Dividends Data** - Fetch dividend history
+- ✅ **Fundamentals Data** - Fetch symbol fundamentals (sector, listedIn, PE ratio, dividendYield, etc.)
+- ✅ **Sync Indices Symbols** - Populate indices symbols from symbol_prices
+
+### Features:
+- 🔴 Start/Stop/Retry controls
+- 📊 Real-time progress via Server-Sent Events (SSE)
+- ⏱️ Execution time tracking
+- 📅 Last sync timestamps
+- 🔄 Auto-resume after interruptions
+- ❌ Failed items tracking and retry
+
+---
+
+## 📄 Remaining Scripts
+
+### One-Time Setup Scripts
 
 #### `sync-symbols.ts`
-Syncs symbol metadata from `lib/symbols.ts` to MongoDB
+Initial sync of symbol metadata from `lib/symbols.ts` to MongoDB
 
-**Run**: `npm run sync-symbols`
+**Run**: `npm run sync-symbols`  
+**When**: First time setup or when adding new symbols
 
-#### `fetch-fundamentals.ts`
-Fetches fundamental data from PSX Terminal API
+#### `seed-indices.ts`
+Seeds indices collection with metadata from `indices.json`
 
-**Run**: `npm run fetch-fundamentals`
-
-**Prerequisites**: Requires `symbols.json` file in this directory
-
----
-
-### Progress Files (Auto-Created)
-
-#### `fundamentals-progress.json`
-Tracks script progress for resuming
-
-**Auto-created**: When fetch-fundamentals runs
-**Auto-deleted**: When all symbols are completed
-**Contains**: 
-- Last processed index
-- Success/failed/skipped counts
-- Arrays of processed/failed/skipped symbols
-- Timestamp
-
-#### `failed-symbols.json`
-List of symbols that failed due to errors
-
-**Auto-created**: If any symbols fail to fetch
-**Contains**: Array of symbol strings that encountered errors
-
-#### `skipped-symbols.json`
-List of symbols that were skipped (no data)
-
-**Auto-created**: If any symbols return no data
-**Contains**: Array of symbol strings that had no fundamental data
+**Run**: `npm run seed-indices`  
+**When**: First time setup
 
 ---
 
-## 🔄 Typical Workflow
+### Utility Scripts
 
-1. **Backup original symbols.json** ⚠️ IMPORTANT
-   ```bash
-   cp symbols.json symbols-original.json
-   ```
+#### `cleanup-symbols.ts`
+Cleanup and validate symbols data
 
-2. **Run fetch-fundamentals**
-   ```bash
-   npm run fetch-fundamentals
-   # Enter batch size: 50
-   # Script processes first 50 symbols
-   # Removes them from symbols.json automatically
-   ```
+**Run**: `npm run cleanup-symbols`
 
-3. **Check remaining symbols**
-   ```bash
-   cat symbols.json  # Now has 909 symbols (50 removed)
-   ```
+#### `download-atlas-db.ts`
+Download MongoDB Atlas database for local backup
 
-4. **Continue processing**
-   ```bash
-   npm run fetch-fundamentals
-   # Enter batch size: 50
-   # Processes next 50 from the list
-   ```
+**Run**: `npm run download-atlas-db`
 
-5. **Review results**
-   ```bash
-   # Check progress
-   cat fundamentals-progress.json
-   
-   # Check failed symbols (to retry)
-   cat failed-symbols.json
-   
-   # Check skipped symbols (expected)
-   cat skipped-symbols.json
-   ```
+#### `fetch-index-prices.ts`
+Fetch current prices for PSX indices
 
-6. **Repeat until done**
-   ```bash
-   # Keep running until symbols.json is empty
-   npm run fetch-fundamentals
-   ```
+**Run**: `npm run fetch-index-prices`  
+**Note**: Can be run periodically or integrated into admin dashboard later
 
 ---
 
-## 🧹 Cleanup
+## 📄 Data Files
 
-To start fresh:
-```bash
-cd scripts
+### `symbols.json`
+Master list of PSX symbols used by background sync operations  
+**Source**: Used by admin dashboard sync operations  
+**Format**: JSON array of symbol strings
 
-# Delete progress files
-rm fundamentals-progress.json failed-symbols.json skipped-symbols.json
+### `indices.json`
+Metadata for PSX indices (KSE100, KMI30, etc.)  
+**Source**: Used by seed-indices script  
+**Format**: Array of index metadata objects
 
-# Restore original symbols list
-cp symbols-original.json symbols.json
-```
+### `skipped-symbols.json`
+Reference file of symbols that were skipped during processing
+
+### `symbols-before-cleanup.json`
+Backup of symbols before cleanup operation
 
 ---
 
-## 📝 Important Notes
+## 🔄 Migration Notes
 
-- **`symbols.json` is automatically updated** - Script removes processed symbols!
-- **Always backup first**: `cp symbols.json symbols-original.json`
-- Progress files are managed automatically by scripts
-- All JSON files can be gitignored (not committed to repo)
-- `symbols.json` becomes empty when all symbols are processed
+The following scripts have been **removed** as they're now handled by the admin dashboard:
+
+- ❌ `fetch-companies.ts` → Use Admin Dashboard "Companies Data" sync
+- ❌ `fetch-dividends.ts` → Use Admin Dashboard "Dividends Data" sync  
+- ❌ `fetch-fundamentals.ts` → Use Admin Dashboard "Fundamentals Data" sync
+- ❌ `populate-index-composition.ts` → Use Admin Dashboard "Sync Indices Symbols"
+- ❌ `test-sync.ts` → No longer needed
+- ❌ `companies-progress.json` → Stored in MongoDB
+- ❌ `dividends-progress.json` → Stored in MongoDB
+
+---
+
+## 📝 Recommendations
+
+1. **For regular syncs**: Use the Admin Dashboard at `/admin`
+2. **For initial setup**: Run `sync-symbols` and `seed-indices` once
+3. **For utilities**: Keep cleanup-symbols and download-atlas-db for maintenance
+4. **For index prices**: Use `fetch-index-prices` until integrated into admin dashboard

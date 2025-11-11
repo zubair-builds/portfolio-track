@@ -1,52 +1,49 @@
 import { NextResponse } from 'next/server';
-import { syncSymbolsFromStaticData } from '../../../../lib/symbolsStore';
+import { populateAllIndicesComposition } from '@/lib/indicesStore';
 
-/**
- * API endpoint to sync symbols from static data (lib/symbols.ts) to MongoDB
- * POST /api/admin/sync-symbols
- * 
- * This endpoint:
- * - Updates existing symbols with name, sectorName, isETF, isDebt, isGEM
- * - Creates new symbols with metadata + null price fields
- * - Returns summary of operations
- */
 export async function POST() {
   try {
-    const result = await syncSymbolsFromStaticData();
-
+    console.log('Starting indices symbols sync...');
+    const results = await populateAllIndicesComposition();
+    
+    // Calculate totals
+    let totalIndices = 0;
+    let totalSymbols = 0;
+    let successCount = 0;
+    let failureCount = 0;
+    
+    Object.entries(results).forEach(([indexSymbol, result]: [string, any]) => {
+      totalIndices++;
+      if (result.error) {
+        failureCount++;
+      } else {
+        successCount++;
+        totalSymbols += result.symbolCount || 0;
+      }
+    });
+    
+    console.log(`✓ Synced ${successCount}/${totalIndices} indices with ${totalSymbols} total symbols`);
+    
     return NextResponse.json({
       success: true,
-      message: `Successfully synced ${result.total} symbols`,
-      data: {
-        total: result.total,
-        created: result.created,
-        updated: result.updated,
-        errors: result.errors,
+      results,
+      summary: {
+        totalIndices,
+        successCount,
+        failureCount,
+        totalSymbols
       },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error syncing symbols:', error);
-    
+    console.error('Failed to sync indices symbols:', error);
     return NextResponse.json(
-      {
+      { 
         success: false,
-        message: 'Failed to sync symbols',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Failed to sync indices symbols',
+        message: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
   }
 }
-
-/**
- * GET endpoint to check sync status
- */
-export async function GET() {
-  return NextResponse.json({
-    endpoint: '/api/admin/sync-symbols',
-    method: 'POST',
-    description: 'Sync symbols from lib/symbols.ts to MongoDB',
-    usage: 'Send a POST request to this endpoint to trigger the sync',
-  });
-}
-

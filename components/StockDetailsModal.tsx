@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Stock } from '../lib/portfolioData';
 import { Card, CardContent } from './ui/Card';
+import { CompanyInfo } from './CompanyInfo';
+import { DividendHistory } from './DividendHistory';
 
 interface StockDetailsModalProps {
   stock: Stock;
@@ -12,6 +14,8 @@ interface StockDetailsModalProps {
 }
 
 export default function StockDetailsModal({ stock, onClose, onAnalyzeWithAI, onFetchSymbolData }: StockDetailsModalProps) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'company' | 'dividends'>('overview');
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -83,7 +87,44 @@ export default function StockDetailsModal({ stock, onClose, onAnalyzeWithAI, onF
               </button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'overview'
+                    ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('company')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'company'
+                    ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Company
+              </button>
+              <button
+                onClick={() => setActiveTab('dividends')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'dividends'
+                    ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Dividends
+              </button>
+            </div>
+
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
                 <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">
                   Position Overview
@@ -198,9 +239,25 @@ export default function StockDetailsModal({ stock, onClose, onAnalyzeWithAI, onF
                 )}
               </div>
             </div>
+              </>
+            )}
+
+            {/* Company Tab */}
+            {activeTab === 'company' && (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <CompanyInfo symbol={stock.symbol} />
+              </div>
+            )}
+
+            {/* Dividends Tab */}
+            {activeTab === 'dividends' && (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <DividendHistory symbol={stock.symbol} />
+              </div>
+            )}
 
             <div className="flex justify-end gap-3">
-              {onFetchSymbolData && (
+              {onFetchSymbolData && activeTab === 'overview' && (
                 <button
                   type="button"
                   onClick={() => {
@@ -214,7 +271,7 @@ export default function StockDetailsModal({ stock, onClose, onAnalyzeWithAI, onF
                   Fetch Symbol Data
                 </button>
               )}
-              {onAnalyzeWithAI && (
+              {onAnalyzeWithAI && activeTab === 'overview' && (
                 <button
                   type="button"
                   onClick={() => {
