@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFreeFloatHistory } from '../../../../../../lib/companiesStore';
+import { getFreeFloatHistory } from '../../../../../lib/companiesStore';
 
 /**
  * GET /api/companies/[symbol]/freefloat-history

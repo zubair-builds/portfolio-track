@@ -41,6 +41,24 @@ export interface SyncSession {
   options?: Record<string, any>; // batchSize, symbols, etc.
 }
 
+interface ProgressDocument {
+  _id: string;
+  total: number;
+  completed: number;
+  pending: string[];
+  failed: string[];
+  currentBatch: string[];
+}
+
+interface StatusDocument {
+  _id: string;
+  isRunning: boolean;
+  startedAt: string | null;
+  lastSync: string | null;
+  lastSyncDuration: number | null;
+  error: string | null;
+}
+
 // ============================================================================
 // Session Management Functions
 // ============================================================================
@@ -163,14 +181,14 @@ export async function getProgress(type: 'companies' | 'dividends' | 'fundamental
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const progressCollection = db.collection(`${type}_progress`);
+    const progressCollection = db.collection<ProgressDocument>(`${type}_progress`);
 
     // Get or create progress document
     let progress = await progressCollection.findOne({ _id: 'progress' });
     
     if (!progress) {
       // Initialize if doesn't exist
-      progress = {
+      const initialProgress: ProgressDocument = {
         _id: 'progress',
         total: 0,
         completed: 0,
@@ -178,7 +196,8 @@ export async function getProgress(type: 'companies' | 'dividends' | 'fundamental
         failed: [],
         currentBatch: []
       };
-      await progressCollection.insertOne(progress);
+      await progressCollection.insertOne(initialProgress);
+      progress = initialProgress;
     }
 
     return {
@@ -214,14 +233,14 @@ export async function getSyncStatus(type: 'companies' | 'dividends' | 'fundament
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const statusCollection = db.collection(`${type}_sync_status`);
+    const statusCollection = db.collection<StatusDocument>(`${type}_sync_status`);
 
     // Get or create status document
     let status = await statusCollection.findOne({ _id: 'status' });
     
     if (!status) {
       // Initialize if doesn't exist
-      status = {
+      const initialStatus: StatusDocument = {
         _id: 'status',
         isRunning: false,
         startedAt: null,
@@ -229,7 +248,8 @@ export async function getSyncStatus(type: 'companies' | 'dividends' | 'fundament
         lastSyncDuration: null,
         error: null
       };
-      await statusCollection.insertOne(status);
+      await statusCollection.insertOne(initialStatus);
+      status = initialStatus;
     }
 
     return {
@@ -268,7 +288,7 @@ export async function updateProgressByType(
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const progressCollection = db.collection(`${type}_progress`);
+    const progressCollection = db.collection<ProgressDocument>(`${type}_progress`);
 
     await progressCollection.updateOne(
       { _id: 'progress' },
@@ -297,7 +317,7 @@ export async function updateSyncStatus(
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const statusCollection = db.collection(`${type}_sync_status`);
+    const statusCollection = db.collection<StatusDocument>(`${type}_sync_status`);
 
     await statusCollection.updateOne(
       { _id: 'status' },
@@ -317,7 +337,7 @@ export async function retryFailed(type: 'companies' | 'dividends' | 'fundamental
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const progressCollection = db.collection(`${type}_progress`);
+    const progressCollection = db.collection<ProgressDocument>(`${type}_progress`);
 
     // Get current progress
     const progress = await progressCollection.findOne({ _id: 'progress' });
