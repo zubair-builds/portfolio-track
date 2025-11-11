@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { formatVolume, formatPrice, formatChange, formatPercent, getPerformanceColorClass, formatNumber } from '../../lib/formatUtils';
 
 export interface SymbolCardAction {
@@ -113,9 +114,14 @@ export default function SymbolCard({
         {/* Row 1: Symbol | Current Price */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            <Link 
+              href={`/symbol/${symbol}`}
+              className="text-lg font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
+              onClick={(e) => e.stopPropagation()}
+              title="View price history"
+            >
               {symbol}
-            </span>
+            </Link>
             {isETF && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                 ETF
