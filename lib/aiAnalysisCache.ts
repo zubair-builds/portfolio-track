@@ -1,8 +1,8 @@
-import type { Collection, Db } from 'mongodb';
+import type { Collection, Db, ObjectId } from 'mongodb';
 import clientPromise from './mongodb';
 
 interface AIAnalysisDocument {
-  _id?: string;
+  _id?: ObjectId;
   symbol: string;
   mode: 'stock' | 'portfolio' | 'market';
   content: string;
@@ -174,7 +174,7 @@ export async function getAnalysisHistory(
       .toArray();
 
     return history.map(doc => ({
-      _id: doc._id?.toString() || '',
+      _id: doc._id.toString(),
       symbol: doc.symbol,
       mode: doc.mode,
       createdAt: doc.createdAt,
