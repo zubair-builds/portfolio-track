@@ -1,5 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { batchGetSymbolMetadata } from '../../../../lib/symbolsStore';
+import { batchGetSymbolMetadata, getSymbolPriceData } from '../../../../lib/symbolsStore';
+
+/**
+ * GET /api/symbols/metadata?symbol=SYMBOL
+ * Get metadata for a single symbol
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const symbol = searchParams.get('symbol');
+
+    if (!symbol) {
+      return NextResponse.json(
+        { error: 'symbol parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    const data = await getSymbolPriceData(symbol);
+    
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Symbol not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      metadata: {
+        symbol: data.symbol,
+        name: data.name || '',
+        sectorName: data.sectorName || 'Unknown',
+        isETF: data.isETF || false,
+        isDebt: data.isDebt || false,
+        isGEM: data.isGEM || false,
+        currentPrice: data.currentPrice,
+        priceChange: data.priceChange,
+        priceChangePercent: data.priceChangePercent,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching symbol metadata:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch symbol metadata' },
+      { status: 500 }
+    );
+  }
+}
 
 /**
  * API endpoint to fetch symbol metadata in batch

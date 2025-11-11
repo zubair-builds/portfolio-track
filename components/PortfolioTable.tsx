@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { Stock } from '../lib/portfolioData';
 import { Card, CardContent } from './ui/Card';
 
@@ -206,13 +207,25 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                     key={stock.symbol}
                     className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
-                    <td 
-                      className="py-3 px-4 cursor-pointer"
-                      onClick={() => onSelectStock(stock)}
-                    >
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">
-                        {stock.symbol}
-                      </span>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Link 
+                          href={`/symbol/${stock.symbol}`}
+                          className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
+                          title="View price history"
+                        >
+                          {stock.symbol}
+                        </Link>
+                        <button
+                          onClick={() => onSelectStock(stock)}
+                          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded transition"
+                          title="View details"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
                       {stock.shares.toLocaleString()}

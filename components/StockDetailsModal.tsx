@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { Stock } from '../lib/portfolioData';
 import { Card, CardContent } from './ui/Card';
 import { CompanyInfo } from './CompanyInfo';
@@ -285,6 +286,17 @@ export default function StockDetailsModal({ stock, onClose, onAnalyzeWithAI, onF
                   </svg>
                   Analyze with AI
                 </button>
+              )}
+              {activeTab === 'overview' && (
+                <Link
+                  href={`/symbol/${stock.symbol}`}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  View Price History
+                </Link>
               )}
               <button
                 type="button"
