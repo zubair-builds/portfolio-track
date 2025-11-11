@@ -98,7 +98,8 @@ export function useIndexPrices(
     } finally {
       setLoading(false);
     }
-  }, [symbols]);
+    // Use stable string dependency instead of array reference
+  }, [symbols?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -125,7 +126,8 @@ export function useIndexPrices(
       setError('Failed to refresh index prices');
       setLoading(false);
     }
-  }, [symbols, fetchIndices]);
+    // Use stable string dependency instead of array reference
+  }, [symbols?.join(','), fetchIndices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initial fetch
   useEffect(() => {

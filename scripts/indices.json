@@ -1,0 +1,138 @@
+[
+    {
+      "symbol": "KSE100",
+      "name": "KSE 100 Index",
+      "description": "Benchmark index tracking the top 100 companies by market capitalization.",
+      "count": 100,
+      "symbols": [
+        "ABL", "ABOT", "AGP", "AICL", "AIRLINK", "AKBL", "APL", "ATRL", "BAFL", "BAHL", "BOP", "COLG", "DCR", "DGKC", "EFERT", "ENGROH", "FABL", "FATIMA", "FCCL", "FFC", "HBL", "HUBC", "KEL", "LUCK", "MARI", "MCB", "MEBL", "MLCF", "NBP", "NESTLE", "NML", "OGDC", "POL", "PPL", "PSO", "PTC", "SEARL", "SYS", "TRG", "UBL"
+      ]
+    },
+    {
+      "symbol": "KSE100PR",
+      "name": "KSE 100 Price Return Index",
+      "description": "A price return (PR) version of the KSE-100 index.",
+      "count": 100,
+      "symbols": [
+        "ABL", "ABOT", "AGP", "AICL", "AIRLINK", "AKBL", "APL", "ATRL", "BAFL", "BAHL", "BOP", "COLG", "DCR", "DGKC", "EFERT", "ENGROH", "FABL", "FATIMA", "FCCL", "FFC", "HBL", "HUBC", "KEL", "LUCK", "MARI", "MCB", "MEBL", "MLCF", "NBP", "NESTLE", "NML", "OGDC", "POL", "PPL", "PSO", "PTC", "SEARL", "SYS", "TRG", "UBL"
+      ]
+    },
+    {
+      "symbol": "ALLSHR",
+      "name": "All Share Index",
+      "description": "Measures the performance of all companies listed on the exchange.",
+      "count": "All (520+)",
+      "symbols": [] 
+    },
+    {
+      "symbol": "KSE30",
+      "name": "KSE 30 Index",
+      "description": "Tracks the top 30 most liquid companies listed on the PSX.",
+      "count": 30,
+      "symbols": [
+        "ATRL", "BAHL", "BOP", "DGKC", "EFERT", "ENGROH", "FCCL", "FFC", "GAL", "GHNI", "HBL", "HUBC", "LUCK", "MARI", "MCB", "MEBL", "OGDC", "PPL"
+      ]
+    },
+    {
+      "symbol": "KMI30",
+      "name": "KMI 30 Index",
+      "description": "Tracks the 30 most liquid Shariah-compliant companies.",
+      "count": 30,
+      "symbols": [
+        "ATRL", "AVN", "DGKC", "EFERT", "ENGROH", "FABL", "FCCL", "FFL", "GAL", "GHNI", "HCAR", "HUBC", "LUCK", "MARI", "MEBL", "MLCF", "OGDC", "PAEL", "KEL", "PPL", "PSO", "SNGP"
+      ]
+    },
+    {
+      "symbol": "BKTI",
+      "name": "Banks Tradable Index",
+      "description": "Sector index that tracks the performance of major listed banks.",
+      "count": 8,
+      "symbols": [] 
+    },
+    {
+      "symbol": "OGTI",
+      "name": "Oil & Gas Tradable Index",
+      "description": "Sector index tracking the performance of the Oil & Gas industry.",
+      "count": 4,
+      "symbols": [
+        "OGDC", "PPL", "POL", "MARI"
+      ]
+    },
+    {
+      "symbol": "KMIALLSHR",
+      "name": "PSX-KMI All Shares Index",
+      "description": "Comprises all Shariah-compliant companies listed on the PSX.",
+      "count": "All Shariah",
+      "symbols": [] 
+    },
+    {
+      "symbol": "PSXDIV20",
+      "name": "PSX Dividend 20 Index",
+      "description": "Tracks the top 20 dividend-paying companies.",
+      "count": 20,
+      "symbols": [] 
+    },
+    {
+      "symbol": "UPP9",
+      "name": "UPP9 Index",
+      "description": "Tracks top 9 companies from KSE-100 by free-float cap (excl. Oil & Gas).",
+      "count": 9,
+      "symbols": [] 
+    },
+    {
+      "symbol": "NITPGI",
+      "name": "NITPG Index",
+      "description": "Tracks stocks representing the top 50% free-float market cap of the KSE-100.",
+      "count": 14,
+      "symbols": [] 
+    },
+    {
+      "symbol": "NBPPGI",
+      "name": "NBPPGI Index",
+      "description": "Tracks the top 15 companies by free-float market cap in the KSE-100.",
+      "count": 15,
+      "symbols": [] 
+    },
+    {
+      "symbol": "MZNPI",
+      "name": "MZNPI Index (Meezan Pakistan)",
+      "description": "Tracks top 12 Shariah-compliant companies from the KMI30 Index.",
+      "count": 12,
+      "symbols": [] 
+    },
+    {
+      "symbol": "JSMFI",
+      "name": "JSMF Index",
+      "description": "A momentum-based index based on total return and traded value.",
+      "count": 10,
+      "symbols": [] 
+    },
+    {
+      "symbol": "ACI",
+      "name": "ACIETF Index (Alfalah Consumer)",
+      "description": "A consumer-focused index comprising a maximum of 20 stocks.",
+      "count": "20 (Max)",
+      "symbols": [] 
+    },
+    {
+      "symbol": "JSGBKTI",
+      "name": "JSGBKTI Index (JS Global Banking)",
+      "description": "Tracks the total return performance of the Banking Sector Tradable Index (BKTi).",
+      "count": 8,
+      "symbols": [] 
+    },
+    {
+      "symbol": "HBLTTI",
+      "name": "HBL Total Treasury Index",
+      "description": "The underlying index for the HBL Total Treasury ETF.",
+      "count": "0 (Tracks Bonds)",
+      "symbols": [] 
+    },
+    {
+      "symbol": "MII30",
+      "name": "MII30 Index (Mahaana Islamic)",
+      "description": "Tracks top 30 Shariah-compliant companies based on free-float cap.",
+      "count": 30,
+      "symbols": [] 
+    }
+  ]

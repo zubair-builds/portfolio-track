@@ -26,14 +26,21 @@ export default function Watchlist({ items, isLoading, onEditItem, onDeleteItem }
   return (
     <Card>
       <CardContent className="p-6 space-y-5">
-        {isLoading && !hasLiveData && (
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-            Refreshing watchlist prices...
+        {isLoading ? (
+          // Loading state - show skeleton cards
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-4">
+              <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+              Loading watchlist...
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+              ))}
+            </div>
           </div>
-        )}
-
-        {items.length === 0 ? (
+        ) : items.length === 0 ? (
+          // Empty state
           <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
             <svg className="h-16 w-16 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -45,6 +52,7 @@ export default function Watchlist({ items, isLoading, onEditItem, onDeleteItem }
             </div>
           </div>
         ) : (
+          // Items list
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => {
               const meta = metadata.get(item.symbol.toUpperCase());
