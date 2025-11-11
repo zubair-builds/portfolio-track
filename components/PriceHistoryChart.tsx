@@ -47,25 +47,42 @@ export default function PriceHistoryChart({
       ? '#ef4444' // rose-500
       : '#6366f1'; // indigo-500
 
+    // Detect dark mode
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#94a3b8', // slate-400
+        textColor: isDarkMode ? '#94a3b8' : '#64748b', // slate-400 for dark, slate-500 for light
+        fontSize: 12,
       },
       grid: {
-        vertLines: { color: '#e2e8f0' }, // slate-200
-        horzLines: { color: '#e2e8f0' },
+        vertLines: { 
+          color: isDarkMode ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.3)', 
+          style: LineStyle.Solid,
+        },
+        horzLines: { 
+          color: isDarkMode ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.3)',
+          style: LineStyle.Solid,
+        },
       },
       width: chartContainerRef.current.clientWidth,
       height: 384, // 96 * 4 = 384px (h-96)
       timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-        borderColor: '#e2e8f0',
+        timeVisible: false, // Hide time part for cleaner display
+        borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+        tickMarkFormatter: (time) => {
+          const date = new Date(time * 1000);
+          return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: data.length > 365 ? 'numeric' : undefined, // Show year if more than 1 year of data
+          });
+        },
       },
       rightPriceScale: {
-        borderColor: '#e2e8f0',
+        borderColor: isDarkMode ? '#334155' : '#e2e8f0',
       },
     });
 
