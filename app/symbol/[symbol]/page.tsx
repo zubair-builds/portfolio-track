@@ -3,6 +3,8 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePriceHistory } from '../../../hooks/usePriceHistory';
+import { useAuth } from '../../../components/AuthProvider';
+import { usePortfolioData } from '../../../hooks/usePortfolioData';
 import PriceHistoryChart from '../../../components/PriceHistoryChart';
 import TimeRangeSelector from '../../../components/TimeRangeSelector';
 import { CompanyInfo } from '../../../components/CompanyInfo';
@@ -33,6 +35,8 @@ export default function SymbolDetailPage({
   const resolvedParams = use(params);
   const symbol = resolvedParams.symbol.toUpperCase();
   const router = useRouter();
+  const { user } = useAuth();
+  const { stocks: portfolioStocks } = usePortfolioData(user?.email);
   
   const {
     data,
@@ -42,6 +46,7 @@ export default function SymbolDetailPage({
     hasData,
     selectedRange,
     setSelectedRange,
+    applyCustomRange,
     stats,
     dataRange,
     fetchAndStore,
@@ -49,6 +54,9 @@ export default function SymbolDetailPage({
 
   const [metadata, setMetadata] = useState<SymbolMetadata | null>(null);
   const [metadataLoading, setMetadataLoading] = useState(true);
+
+  // Check if user owns this stock
+  const ownedStock = portfolioStocks.find(s => s.symbol.toUpperCase() === symbol);
 
   // Fetch symbol metadata
   useEffect(() => {
@@ -175,6 +183,72 @@ export default function SymbolDetailPage({
               </CardContent>
             </Card>
           )}
+
+          {/* Investment Position Card (if owned) */}
+          {ownedStock && metadata?.currentPrice && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    Your Investment Position
+                  </h3>
+                  <Badge variant="success">Owned</Badge>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Shares</p>
+                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      {ownedStock.shares.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Avg Buy Price</p>
+                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ₨{formatNumber(ownedStock.avgBuy)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Total Invested</p>
+                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ₨{formatNumber(ownedStock.shares * ownedStock.avgBuy)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Current Value</p>
+                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ₨{formatNumber(ownedStock.shares * metadata.currentPrice)}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Gain/Loss</p>
+                      <p className={`text-xl font-bold ${
+                        ((metadata.currentPrice - ownedStock.avgBuy) * ownedStock.shares) >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {((metadata.currentPrice - ownedStock.avgBuy) * ownedStock.shares) >= 0 ? '+' : ''}
+                        ₨{formatNumber((metadata.currentPrice - ownedStock.avgBuy) * ownedStock.shares)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Return %</p>
+                      <p className={`text-xl font-bold ${
+                        ((metadata.currentPrice - ownedStock.avgBuy) / ownedStock.avgBuy * 100) >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {((metadata.currentPrice - ownedStock.avgBuy) / ownedStock.avgBuy * 100) >= 0 ? '+' : ''}
+                        {formatPercent(((metadata.currentPrice - ownedStock.avgBuy) / ownedStock.avgBuy * 100))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Price History Section */}
@@ -255,6 +329,7 @@ export default function SymbolDetailPage({
                   <TimeRangeSelector
                     selected={selectedRange}
                     onChange={setSelectedRange}
+                    onCustomRangeApply={applyCustomRange}
                     dataRange={dataRange || undefined}
                     disabled={loading}
                   />
@@ -327,7 +402,14 @@ export default function SymbolDetailPage({
           
           <Card>
             <CardContent className="p-6">
-              <AIStockAnalysis symbol={symbol} />
+              <AIStockAnalysis 
+                symbol={symbol}
+                investmentData={ownedStock && metadata?.currentPrice ? {
+                  shares: ownedStock.shares,
+                  avgBuy: ownedStock.avgBuy,
+                  currentPrice: metadata.currentPrice,
+                } : undefined}
+              />
             </CardContent>
           </Card>
         </div>

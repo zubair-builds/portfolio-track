@@ -57,7 +57,6 @@ export default function Page() {
   const [editingStock, setEditingStock] = useState<Stock | null>(null);
   const [showAddWatchlist, setShowAddWatchlist] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [aiStocks, setAiStocks] = useState<Stock[]>([]);
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -102,26 +101,6 @@ export default function Page() {
   const handleAnalyzeStock = async (stock: Stock) => {
     setAiAnalysisStock(stock);
     setShowAIInsights(true);
-    
-    // Fetch portfolio stocks for AI analysis if not already loaded
-    if (aiStocks.length === 0 && user?.email) {
-      try {
-        const response = await fetch('/api/portfolio', {
-          headers: { 'X-User-Id': user.email },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setAiStocks(data.portfolio.map((p: any) => ({
-            symbol: p.symbol,
-            shares: p.shares,
-            avgBuy: p.avgBuy,
-            currentPrice: 0,
-          })));
-        }
-      } catch (error) {
-        console.error('Failed to load stocks for AI:', error);
-      }
-    }
   };
 
   const handleFetchSymbolData = async (stock: Stock) => {
@@ -788,7 +767,7 @@ export default function Page() {
       {/* AI Insights Modal */}
       {showAIInsights && (
         <AIInsightsModal
-          stocks={aiStocks}
+          stocks={portfolioStocks}
           onClose={() => {
             setShowAIInsights(false);
             setAiAnalysisStock(null);

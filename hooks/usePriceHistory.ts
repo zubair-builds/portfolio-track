@@ -24,15 +24,18 @@ interface DataRange {
   availableCount: number;
 }
 
-export type TimeRange = '1m' | '6m' | '1y' | '5y';
+export type TimeRange = '1m' | '6m' | '1y' | '5y' | 'custom';
 
 export function usePriceHistory(symbol: string, timeframe: string = '1d') {
   const [data, setData] = useState<PriceData[]>([]);
+  const [allData, setAllData] = useState<PriceData[]>([]); // Store all fetched data
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasData, setHasData] = useState(false);
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1y');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [stats, setStats] = useState<Stats | null>(null);
   const [dataRange, setDataRange] = useState<DataRange | null>(null);
 
@@ -115,6 +118,23 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     }
   }, [symbol, timeframe, selectedRange]);
 
+  const calculateStats = (priceData: PriceData[]): Stats | null => {
+    if (priceData.length === 0) return null;
+
+    const prices = priceData.map(d => d.price);
+    const volumes = priceData.map(d => d.volume || 0);
+
+    return {
+      high: Math.max(...prices),
+      low: Math.min(...prices),
+      first: prices[0],
+      last: prices[prices.length - 1],
+      change: prices[prices.length - 1] - prices[0],
+      changePercent: ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100,
+      avgVolume: volumes.reduce((a, b) => a + b, 0) / volumes.length,
+    };
+  };
+
   const loadData = useCallback(async (range: TimeRange) => {
     if (!symbol || !hasData) return;
 
@@ -122,6 +142,22 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     setError(null);
 
     try {
+      // For custom range, filter from allData
+      if (range === 'custom' && customStartDate && customEndDate) {
+        const start = new Date(customStartDate).getTime();
+        const end = new Date(customEndDate).getTime();
+        
+        const filtered = allData.filter(item => {
+          const itemDate = new Date(item.date).getTime();
+          return itemDate >= start && itemDate <= end;
+        });
+
+        setData(filtered);
+        setStats(calculateStats(filtered));
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(
         `/api/klines/${symbol}?timeframe=${timeframe}&range=${range}`
       );
@@ -134,6 +170,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
 
       if (result.success) {
         setData(result.data);
+        setAllData(result.data); // Store for custom filtering
         setStats(result.stats);
         setDataRange(result.range);
       } else {
@@ -146,7 +183,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     } finally {
       setLoading(false);
     }
-  }, [symbol, timeframe, hasData]);
+  }, [symbol, timeframe, hasData, customStartDate, customEndDate, allData]);
 
   const refresh = useCallback(async () => {
     if (hasData) {
@@ -156,6 +193,12 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     }
   }, [hasData, selectedRange, loadData, fetchAndStore]);
 
+  const applyCustomRange = useCallback((startDate: string, endDate: string) => {
+    setCustomStartDate(startDate);
+    setCustomEndDate(endDate);
+    setSelectedRange('custom');
+  }, []);
+
   return {
     data,
     loading,
@@ -164,6 +207,9 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     hasData,
     selectedRange,
     setSelectedRange,
+    customStartDate,
+    customEndDate,
+    applyCustomRange,
     stats,
     dataRange,
     fetchAndStore,
