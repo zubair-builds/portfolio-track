@@ -16,6 +16,7 @@ interface IndexApiResponse {
     high: number;
     low: number;
     timestamp: number;
+    st?: string; // Market state: PRE, OPN, SUS, CLS
   };
 }
 
@@ -108,6 +109,7 @@ export async function GET(request: NextRequest) {
                 ? apiData.data.timestamp
                 : apiData.data.timestamp * 1000
             ),
+            marketState: apiData.data.st,
           };
 
           await saveIndexPrice(priceData);

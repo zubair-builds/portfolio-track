@@ -81,6 +81,8 @@ export default function Watchlist({ items, isLoading, onEditItem, onDeleteItem }
                   sectorName={meta?.sectorName}
                   isETF={meta?.isETF}
                   isGEM={meta?.isGEM}
+                  isNonCompliant={meta?.isNonCompliant}
+                  listedIn={meta?.listedIn}
                   currentPrice={item.currentPrice}
                   priceChange={details?.change}
                   priceChangePercent={details?.changePercent ? details.changePercent * 100 : undefined}

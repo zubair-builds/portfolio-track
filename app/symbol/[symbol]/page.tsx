@@ -25,6 +25,8 @@ interface SymbolMetadata {
   isETF?: boolean;
   isGEM?: boolean;
   isDebt?: boolean;
+  isNonCompliant?: boolean;
+  listedIn?: string;
 }
 
 export default function SymbolDetailPage({
@@ -137,6 +139,68 @@ export default function SymbolDetailPage({
             {metadata?.isDebt && (
               <Badge variant="neutral">Debt</Badge>
             )}
+            {metadata?.isNonCompliant !== undefined && (
+              <Badge variant={metadata.isNonCompliant ? "danger" : "success"}>
+                {metadata.isNonCompliant ? (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    Non-Shariah
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Shariah Compliant
+                  </span>
+                )}
+              </Badge>
+            )}
+            {metadata?.listedIn && (() => {
+              const rawIndices = metadata.listedIn.split(',').map(idx => idx.trim()).filter(Boolean);
+              
+              // Priority order for index badges
+              const priorityOrder = [
+                'mznpi', 'kmi30', 'mii30', 'kmiallshr', 'kse30', 'psxdiv20', 
+                'kse100', 'kse100pr', 'bkti30', 'jsmfi', 'ogti', 'upp9', 
+                'nitpgi', 'hbltti', 'jsgbkti', 'aci'
+              ];
+              
+              // Sort indices: priority indices first (in order), then rest
+              const indices = rawIndices.sort((a, b) => {
+                const aLower = a.toLowerCase();
+                const bLower = b.toLowerCase();
+                const aIndex = priorityOrder.findIndex(p => p.toLowerCase() === aLower);
+                const bIndex = priorityOrder.findIndex(p => p.toLowerCase() === bLower);
+                
+                // Both are priority indices - sort by priority order
+                if (aIndex !== -1 && bIndex !== -1) {
+                  return aIndex - bIndex;
+                }
+                // Only a is priority - a comes first
+                if (aIndex !== -1) {
+                  return -1;
+                }
+                // Only b is priority - b comes first
+                if (bIndex !== -1) {
+                  return 1;
+                }
+                // Neither is priority - maintain original order
+                return 0;
+              });
+              
+              return indices.length > 0 ? (
+                <>
+                  {indices.map((index) => (
+                    <Badge key={index} variant="neutral">
+                      {index}
+                    </Badge>
+                  ))}
+                </>
+              ) : null;
+            })()}
           </div>
         </div>
       </header>

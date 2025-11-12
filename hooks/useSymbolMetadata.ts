@@ -8,9 +8,11 @@ export interface SymbolMetadata {
   isETF?: boolean;
   isDebt?: boolean;
   isGEM?: boolean;
+  isNonCompliant?: boolean;
   currentPrice?: number;
   priceChange?: number;
   priceChangePercent?: number;
+  listedIn?: string;
 }
 
 /**

@@ -192,8 +192,9 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
 
   const loadWatchlist = useCallback(async () => {
     if (!userEmail) return; // No user
-    if (watchlist.length > 0 && !isLoadingWatchlist) return; // Already loaded
+    if (isLoadingWatchlist) return; // Already loading
 
+    console.log('[loadWatchlist] Starting to load watchlist for:', userEmail);
     setIsLoadingWatchlist(true);
     try {
       const watchlistRes = await fetch('/api/watchlist', {
@@ -202,12 +203,14 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
 
       if (watchlistRes.ok) {
         const watchlistData = await watchlistRes.json();
+        console.log('Watchlist API response:', watchlistData);
         const watchlistItems = watchlistData.watchlist.map((w: any) => ({
           symbol: w.symbol,
           thesis: w.thesis,
           targetPrice: w.targetPrice,
           note: w.note,
         }));
+        console.log('Processed watchlist items:', watchlistItems.length, watchlistItems);
 
         // Fetch prices for watchlist symbols
         const symbols = watchlistItems.map((item: any) => item.symbol);
@@ -249,14 +252,18 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
           } as WatchlistStock;
         });
 
+        console.log('[loadWatchlist] Successfully loaded', updatedWatchlist.length, 'items');
         setWatchlist(updatedWatchlist);
+      } else {
+        console.warn('[loadWatchlist] API response not OK:', watchlistRes.status);
       }
     } catch (err) {
-      console.error('Error loading watchlist:', err);
+      console.error('[loadWatchlist] Error loading watchlist:', err);
     } finally {
       setIsLoadingWatchlist(false);
+      console.log('[loadWatchlist] Finished loading');
     }
-  }, [userEmail, watchlist.length, isLoadingWatchlist]);
+  }, [userEmail, isLoadingWatchlist]);
 
   const refresh = async () => {
     await loadPortfolioData();
