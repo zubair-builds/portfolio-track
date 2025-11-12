@@ -27,7 +27,7 @@ export default function Page() {
   // Memoize the symbols array to prevent unnecessary re-fetches
   const kse100Symbols = useMemo(() => ['KSE100'], []);
   const { indices: [kse100], loading: kse100Loading, error: kse100Error, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
-  const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, error: portfolioError } = usePortfolioData(user?.email);
+  const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, error: portfolioError, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
   const [refreshingKse100, setRefreshingKse100] = useState(false);
   
   // Track overall loading state
@@ -43,9 +43,18 @@ export default function Page() {
       return () => clearTimeout(timer);
     }
   }, [isDataLoading, initializing]);
+
+  // Removed full-page loading overlay - sections now show their own loading states
   
   // Tab state
   const [activeTab, setActiveTab] = useState('portfolio');
+
+  // Lazy load watchlist when watchlist tab is opened
+  useEffect(() => {
+    if (activeTab === 'watchlist' && watchlist.length === 0 && !isLoadingWatchlist && user?.email) {
+      loadWatchlist();
+    }
+  }, [activeTab, watchlist.length, isLoadingWatchlist, user?.email, loadWatchlist]);
   
   // Modal states
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
@@ -281,7 +290,8 @@ export default function Page() {
       throw new Error(data.error || 'Failed to add to watchlist');
     }
 
-    window.location.reload();
+    // Refresh only portfolio/watchlist data instead of reloading entire page
+    await refreshPortfolioData();
   };
 
   const handleEditWatchlist = async (itemData: { symbol: string; thesis?: string; targetPrice?: number; note?: string }) => {
@@ -301,7 +311,8 @@ export default function Page() {
       throw new Error(data.error || 'Failed to update watchlist');
     }
 
-    window.location.reload();
+    // Refresh only portfolio/watchlist data instead of reloading entire page
+    await refreshPortfolioData();
   };
 
   const handleDeleteWatchlist = async (item: WatchlistItem) => {
@@ -321,7 +332,8 @@ export default function Page() {
       return;
     }
 
-    window.location.reload();
+    // Refresh only portfolio/watchlist data instead of reloading entire page
+    await refreshPortfolioData();
   };
 
   // Define tabs
@@ -390,103 +402,6 @@ export default function Page() {
 
   return (
     <>
-      {/* Loading Overlay */}
-      {!pageLoaded && (
-        <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-6 max-w-md mx-auto px-4">
-            {/* Spinner */}
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Loading Text */}
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                Loading Your Portfolio
-              </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                {isDataLoading ? (
-                  <>
-                    {kse100Loading && portfolioLoading && 'Fetching market data and portfolio...'}
-                    {kse100Loading && !portfolioLoading && 'Loading market indices...'}
-                    {!kse100Loading && portfolioLoading && 'Loading your holdings...'}
-                  </>
-                ) : hasError ? (
-                  <span className="text-rose-600 dark:text-rose-400">
-                    {kse100Error || portfolioError}
-                  </span>
-                ) : (
-                  'Almost ready...'
-                )}
-              </p>
-            </div>
-
-            {/* Progress Indicators */}
-            <div className="w-full space-y-2">
-              <div className="flex items-center gap-3">
-                {kse100Loading ? (
-                  <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
-                ) : kse100Error ? (
-                  <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-                <span className="text-sm text-slate-600 dark:text-slate-400">Market indices</span>
-              </div>
-              <div className="flex items-center gap-3">
-                {portfolioLoading ? (
-                  <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
-                ) : portfolioError ? (
-                  <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-                <span className="text-sm text-slate-600 dark:text-slate-400">Portfolio & watchlist</span>
-              </div>
-            </div>
-
-            {/* Error Message with Retry */}
-            {hasError && !isDataLoading && (
-              <div className="w-full mt-4 p-4 bg-rose-50 border border-rose-200 rounded-lg dark:bg-rose-950/20 dark:border-rose-900/50">
-                <div className="flex items-start gap-3 mb-3">
-                  <svg className="w-5 h-5 text-rose-600 dark:text-rose-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-rose-800 dark:text-rose-200 mb-1">
-                      Failed to load some data
-                    </p>
-                    <p className="text-xs text-rose-600 dark:text-rose-400">
-                      {kse100Error && <span className="block">• {kse100Error}</span>}
-                      {portfolioError && <span className="block">• {portfolioError}</span>}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="w-full px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition"
-                >
-                  Retry Loading
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
     <div className="flex min-h-screen flex-col">
       {/* Header */}
@@ -567,7 +482,17 @@ export default function Page() {
       <main className="flex-1 bg-slate-50 dark:bg-slate-900">
         <div className="container mx-auto max-w-7xl space-y-8 py-8 px-4">
           {/* KSE100 Index Banner */}
-          {kse100 ? (
+          {kse100Loading ? (
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 shadow-sm dark:border-slate-700 dark:from-indigo-950/30 dark:to-blue-950/30">
+              <div className="flex items-center justify-between">
+                <div className="space-y-3 flex-1">
+                  <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                  <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                </div>
+                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
+              </div>
+            </div>
+          ) : kse100 ? (
             <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 shadow-sm dark:border-slate-700 dark:from-indigo-950/30 dark:to-blue-950/30">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -712,6 +637,7 @@ export default function Page() {
             {activeTab === 'portfolio' && (
               <PortfolioTab
                 stocks={portfolioStocks}
+                isLoading={portfolioLoading}
                 onSelectStock={setSelectedStock}
                 onEditStock={setEditingStock}
                 onDeleteStock={handleDeleteStock}
@@ -722,7 +648,7 @@ export default function Page() {
             {activeTab === 'watchlist' && (
               <WatchlistTab
                 watchlist={watchlist}
-                isLoading={portfolioLoading}
+                isLoading={isLoadingWatchlist}
                 onDeleteItem={handleDeleteWatchlist}
                 onAddWatchlist={() => setShowAddWatchlist(true)}
               />
