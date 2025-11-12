@@ -8,6 +8,7 @@ import { calculatePortfolioStats, Stock } from '../../lib/portfolioData';
 
 interface PortfolioTabProps {
   stocks: Stock[];
+  isLoading?: boolean;
   onSelectStock: (stock: Stock) => void;
   onEditStock: (stock: Stock) => void;
   onDeleteStock: (stock: Stock) => void;
@@ -16,12 +17,30 @@ interface PortfolioTabProps {
 
 export default function PortfolioTab({
   stocks,
+  isLoading = false,
   onSelectStock,
   onEditStock,
   onDeleteStock,
   onAddStock,
 }: PortfolioTabProps) {
   const portfolioStats = useMemo(() => calculatePortfolioStats(stocks), [stocks]);
+
+  if (isLoading && stocks.length === 0) {
+    return (
+      <div className="space-y-8">
+        <section>
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-4">
+            <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+            Loading portfolio...
+          </div>
+          <div className="space-y-4">
+            <div className="h-32 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+            <div className="h-64 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
