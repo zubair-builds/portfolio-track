@@ -210,3 +210,91 @@ export async function getAnalysisById(
   }
 }
 
+// Chat History Functions
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+interface ChatHistoryDocument {
+  _id?: string;
+  userId: string;
+  messages: ChatMessage[];
+  context?: {
+    symbol?: string;
+    mode?: string;
+    portfolioSymbols?: string[];
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const CHAT_HISTORY_COLLECTION = 'ai_chat_history';
+const CHAT_HISTORY_TTL_DAYS = 30;
+
+async function getChatHistoryCollection() {
+  const db = await getDb();
+  const collection = db.collection<ChatHistoryDocument>(CHAT_HISTORY_COLLECTION);
+  
+  try {
+    await collection.createIndex({ userId: 1, createdAt: -1 });
+    await collection.createIndex({ createdAt: 1 }, { expireAfterSeconds: CHAT_HISTORY_TTL_DAYS * 24 * 60 * 60 });
+  } catch (error: any) {
+    if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
+      console.log('Chat history index already exists with different options');
+    }
+  }
+  
+  return collection;
+}
+
+export async function saveChatHistory(
+  userId: string,
+  messages: ChatMessage[],
+  context?: { symbol?: string; mode?: string; portfolioSymbols?: string[] }
+): Promise<void> {
+  try {
+    const collection = await getChatHistoryCollection();
+    const now = new Date();
+
+    const document: ChatHistoryDocument = {
+      userId,
+      messages,
+      context,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await collection.insertOne(document);
+  } catch (error) {
+    console.error('Error saving chat history:', error);
+  }
+}
+
+export async function getChatHistory(
+  userId: string,
+  limit: number = 10
+): Promise<Array<{ _id: string; messages: ChatMessage[]; createdAt: Date; context?: any }>> {
+  try {
+    const collection = await getChatHistoryCollection();
+    
+    const history = await collection
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .project({ _id: 1, messages: 1, createdAt: 1, context: 1 })
+      .toArray();
+
+    return history.map(doc => ({
+      _id: doc._id?.toString() || '',
+      messages: doc.messages,
+      createdAt: doc.createdAt,
+      context: doc.context,
+    }));
+  } catch (error) {
+    console.error('Error fetching chat history:', error);
+    return [];
+  }
+}
+
