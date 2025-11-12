@@ -10,7 +10,7 @@ import TimeRangeSelector from '../../../components/TimeRangeSelector';
 import { CompanyInfo } from '../../../components/CompanyInfo';
 import { DividendHistory } from '../../../components/DividendHistory';
 import { FreeFloatHistory } from '../../../components/FreeFloatHistory';
-import { AIStockAnalysis } from '../../../components/AIStockAnalysis';
+import AIFinancialChatbot from '../../../components/AIFinancialChatbot';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
@@ -394,25 +394,11 @@ export default function SymbolDetailPage({
           </Card>
         </div>
 
-        {/* AI Analysis Section */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 border-b pb-2 border-slate-200 dark:border-slate-700">
-            AI-Powered Insights
-          </h2>
-          
-          <Card>
-            <CardContent className="p-6">
-              <AIStockAnalysis 
-                symbol={symbol}
-                investmentData={ownedStock && metadata?.currentPrice ? {
-                  shares: ownedStock.shares,
-                  avgBuy: ownedStock.avgBuy,
-                  currentPrice: metadata.currentPrice,
-                } : undefined}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        {/* AI Financial Chatbot */}
+        <AIFinancialChatbot 
+          initialContext={{ symbol, mode: 'stock' }}
+          stocks={portfolioStocks}
+        />
 
         {/* Company Information Section */}
         <div className="space-y-6">

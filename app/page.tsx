@@ -11,7 +11,7 @@ import AnalyticsTab from "../components/tabs/AnalyticsTab";
 import AllocationTab from "../components/tabs/AllocationTab";
 import CacheManager from "../components/CacheManager";
 import StockDetailsModal from "../components/StockDetailsModal";
-import AIInsightsModal from "../components/AIInsightsModal";
+import AIFinancialChatbot from "../components/AIFinancialChatbot";
 import AddStockModal from "../components/AddStockModal";
 import EditStockModal from "../components/EditStockModal";
 import AddWatchlistModal from "../components/AddWatchlistModal";
@@ -58,8 +58,6 @@ export default function Page() {
   
   // Modal states
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
-  const [showAIInsights, setShowAIInsights] = useState(false);
-  const [aiAnalysisStock, setAiAnalysisStock] = useState<Stock | null>(null);
   const [fetchingSymbolData, setFetchingSymbolData] = useState(false);
   const [symbolDataMessage, setSymbolDataMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
@@ -108,8 +106,7 @@ export default function Page() {
   };
 
   const handleAnalyzeStock = async (stock: Stock) => {
-    setAiAnalysisStock(stock);
-    setShowAIInsights(true);
+    // AI analysis now available through chatbot
   };
 
   const handleFetchSymbolData = async (stock: Stock) => {
@@ -164,7 +161,7 @@ export default function Page() {
       throw new Error(data.error || 'Failed to add stock');
     }
 
-    window.location.reload(); // Reload to fetch updated portfolio
+    await refreshPortfolioData(); // Reload to fetch updated portfolio
   };
 
   const handleEditStock = async (stockData: { symbol: string; shares: number; avgBuy: number }) => {
@@ -184,7 +181,7 @@ export default function Page() {
       throw new Error(data.error || 'Failed to update stock');
     }
 
-    window.location.reload(); // Reload to fetch updated portfolio
+    await refreshPortfolioData(); // Reload to fetch updated portfolio
   };
 
   const handleDeleteStock = async (stock: Stock) => {
@@ -204,7 +201,7 @@ export default function Page() {
       return;
     }
 
-    window.location.reload(); // Reload to fetch updated portfolio
+    await refreshPortfolioData(); // Reload to fetch updated portfolio
   };
 
   const handleExport = async (format: 'json' | 'csv') => {
@@ -458,16 +455,6 @@ export default function Page() {
                 </svg>
               </label>
             </div>
-            <Button
-              variant="primary"
-              onClick={() => setShowAIInsights(true)}
-              className="hidden sm:flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              AI Insights
-            </Button>
             <div className="hidden text-right lg:block">
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{user.name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
@@ -690,17 +677,8 @@ export default function Page() {
         </div>
       )}
 
-      {/* AI Insights Modal */}
-      {showAIInsights && (
-        <AIInsightsModal
-          stocks={portfolioStocks}
-          onClose={() => {
-            setShowAIInsights(false);
-            setAiAnalysisStock(null);
-          }}
-          initialStock={aiAnalysisStock || undefined}
-        />
-      )}
+      {/* AI Financial Chatbot */}
+      <AIFinancialChatbot stocks={portfolioStocks} />
 
       {/* Add Stock Modal */}
       {showAddStock && (

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
-import { getCachedAnalysis, saveAnalysis } from '../../../../lib/aiAnalysisCache';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getCachedAnalysis, saveAnalysis, saveChatHistory } from '../../../../lib/aiAnalysisCache';
+import { getUserFromRequest } from '../../../../lib/jwt';
 import { saveSymbolPriceData, SymbolPriceData } from '../../../../lib/symbolsStore';
 
 const companyUrl2 = `https://dps.psx.com.pk/company/`;
@@ -87,9 +88,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { stocks, mode, symbol, forceRefresh } = body;
+    const { stocks, mode, symbol, forceRefresh, message, conversationHistory, context } = body;
 
-    console.log('AI Insights request:', { mode, symbol, stocksLength: stocks?.length, forceRefresh });
+    console.log('AI Insights request:', { mode, symbol, stocksLength: stocks?.length, forceRefresh, hasMessage: !!message });
 
     if (!mode) {
       console.error('Missing mode parameter');
@@ -99,8 +100,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Skip cache check for symbols mode (it has its own logic)
-    if (!forceRefresh && mode !== 'symbols') {
+    // Skip cache check for symbols and chat modes (they have their own logic)
+    if (!forceRefresh && mode !== 'symbols' && mode !== 'chat') {
       const portfolioSymbols = mode === 'portfolio' && Array.isArray(stocks)
         ? stocks.map((s: any) => s.symbol)
         : undefined;
@@ -591,27 +592,106 @@ Begin your portfolio review now:`;
       
       Extract all numeric values as numbers (not strings). If a field is not available, use null. Return ONLY the JSON, no other text.`;
 
+    } else if (mode === 'chat') {
+      if (!message || typeof message !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Message is required for chat mode.' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Detect intent and fetch relevant context
+      const messageLower = message.toLowerCase();
+      let contextData = '';
+      let portfolioSymbols: string[] | undefined;
+
+      // Portfolio context
+      if (messageLower.includes('portfolio') || messageLower.includes('holdings') || messageLower.includes('my stocks') || (Array.isArray(stocks) && stocks.length > 0)) {
+        if (Array.isArray(stocks) && stocks.length > 0) {
+          portfolioSymbols = stocks.map((s: any) => s.symbol);
+          const { enrichedData, kse100Data } = await fetchEnrichedPortfolioData(stocks);
+          
+          const totalInvestment = stocks.reduce((sum: number, s: any) => sum + (s.shares * s.avgBuy), 0);
+          const currentValue = stocks.reduce((sum: number, s: any) => sum + (s.shares * s.currentPrice), 0);
+          const totalReturn = ((currentValue - totalInvestment) / totalInvestment * 100);
+
+          contextData += `\n\n**PORTFOLIO CONTEXT:**\n`;
+          contextData += `- Total Holdings: ${stocks.length}\n`;
+          contextData += `- Total Investment: PKR ${totalInvestment.toLocaleString('en-PK', { minimumFractionDigits: 2 })}\n`;
+          contextData += `- Current Value: PKR ${currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2 })}\n`;
+          contextData += `- Total Return: ${totalReturn.toFixed(2)}%\n`;
+          contextData += `- Holdings: ${stocks.map((s: any) => `${s.symbol} (${s.shares} shares @ PKR ${s.avgBuy.toFixed(2)})`).join(', ')}\n`;
+          if (kse100Data) {
+            contextData += `- KSE-100 Index: ${kse100Data.price.toFixed(2)} (${kse100Data.changePercent >= 0 ? '+' : ''}${kse100Data.changePercent.toFixed(2)}%)\n`;
+          }
+        }
+      }
+
+      // Symbol context
+      if (context?.symbol || messageLower.match(/\b[A-Z]{2,5}\b/)) {
+        const symbolToAnalyze = context?.symbol || message.match(/\b([A-Z]{2,5})\b/)?.[1];
+        if (symbolToAnalyze) {
+          const { symbolData, companyData, dividendData, kse100Data } = await fetchEnrichedStockData(symbolToAnalyze);
+          
+          contextData += `\n\n**SYMBOL CONTEXT - ${symbolToAnalyze.toUpperCase()}:**\n`;
+          if (symbolData) {
+            contextData += `- Current Price: PKR ${symbolData.currentPrice?.toFixed(2) || 'N/A'}\n`;
+            contextData += `- Change: ${symbolData.priceChangePercent ? (symbolData.priceChangePercent >= 0 ? '+' : '') + symbolData.priceChangePercent.toFixed(2) + '%' : 'N/A'}\n`;
+            contextData += `- P/E: ${symbolData.peRatio?.toFixed(2) || 'N/A'}\n`;
+            contextData += `- P/B: ${symbolData.pbRatio?.toFixed(2) || 'N/A'}\n`;
+            contextData += `- Market Cap: ${symbolData.marketCapString || 'N/A'}\n`;
+            if (dividendData?.lastDividend) {
+              contextData += `- Last Dividend: PKR ${dividendData.lastDividend.amount.toFixed(2)}\n`;
+            }
+          }
+        }
+      }
+
+      // Market context
+      if (messageLower.includes('market') || messageLower.includes('kse') || messageLower.includes('index')) {
+        const { getLatestIndexPrice } = await import('../../../../lib/indicesStore');
+        const kse100Data = await getLatestIndexPrice('KSE100');
+        if (kse100Data) {
+          contextData += `\n\n**MARKET CONTEXT:**\n`;
+          contextData += `- KSE-100 Index: ${kse100Data.price.toFixed(2)} (${kse100Data.changePercent >= 0 ? '+' : ''}${kse100Data.changePercent.toFixed(2)}%)\n`;
+        }
+      }
+
+      // Build conversation history for context
+      const conversationContext = conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0
+        ? '\n\n**CONVERSATION HISTORY:**\n' + conversationHistory.slice(-5).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')
+        : '';
+
+      prompt = `You are a knowledgeable and friendly AI financial advisor specializing in the Pakistan Stock Exchange (PSX). You help users with portfolio analysis, stock recommendations, market insights, and investment advice.
+
+${contextData}
+${conversationContext}
+
+**USER QUESTION:**
+${message}
+
+**INSTRUCTIONS:**
+- Provide helpful, accurate, and actionable financial advice
+- Use the context data provided above to give informed responses
+- If the user asks about their portfolio, reference the portfolio data
+- If the user asks about a specific stock, use the symbol context
+- Be conversational and friendly, but professional
+- Format your response with markdown for better readability (use headings, bullet points, bold text)
+- If you don't have enough information, ask clarifying questions
+- Always consider risk factors and provide balanced advice
+
+Respond to the user's question:`;
+
     } else {
       console.error('Invalid mode received:', mode);
       return new Response(
-        JSON.stringify({ error: `Invalid mode "${mode}". Use "portfolio", "market", "stock", or "symbols".` }),
+        JSON.stringify({ error: `Invalid mode "${mode}". Use "portfolio", "market", "stock", "symbols", or "chat".` }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    });
-
-    const tools = [{ urlContext: {} }];
-    const config = {
-      thinkingConfig: {
-        thinkingBudget: -1,
-      },
-      tools,
-    };
-
-    const model = 'gemini-2.5-flash';
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const contents = [
       {
         role: 'user',
@@ -687,12 +767,11 @@ Begin your portfolio review now:`;
         },
       ];
 
-      const response = await ai.models.generateContent({
-        model,
+      const result = await model.generateContent({
         contents: extractionContents,
       });
-
-      const text = response.text || '';
+      const response = result.response;
+      const text = response.text();
       console.log('symbols extraction response:', text.substring(0, 200));
 
       try {
@@ -774,11 +853,7 @@ Begin your portfolio review now:`;
     }
 
     // For other modes, use streaming response
-    const response = await ai.models.generateContentStream({
-      model,
-      config,
-      contents,
-    });
+    const result = await model.generateContentStream(prompt);
 
     const encoder = new TextEncoder();
     let fullContent = '';
@@ -786,17 +861,31 @@ Begin your portfolio review now:`;
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of response) {
-            if (chunk.text) {
-              fullContent += chunk.text;
-              controller.enqueue(encoder.encode(chunk.text));
+          for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            if (chunkText) {
+              fullContent += chunkText;
+              controller.enqueue(encoder.encode(chunkText));
             }
           }
           controller.close();
 
-          // Save to cache after streaming completes
-          if (fullContent) {
+          // Save to cache after streaming completes (skip for chat mode - handled separately)
+          if (fullContent && mode !== 'chat') {
             await saveAnalysis(mode, fullContent, symbol, portfolioSymbols);
+          }
+
+          // Save chat history for chat mode
+          if (fullContent && mode === 'chat') {
+            const user = getUserFromRequest(request);
+            if (user?.email) {
+              const chatMessages = [
+                ...(conversationHistory || []),
+                { role: 'user' as const, content: message, timestamp: new Date() },
+                { role: 'assistant' as const, content: fullContent, timestamp: new Date() },
+              ];
+              await saveChatHistory(user.email, chatMessages, context);
+            }
           }
         } catch (error) {
           console.error('Streaming error:', error);
