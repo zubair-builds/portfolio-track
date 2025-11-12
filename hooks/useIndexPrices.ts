@@ -15,6 +15,7 @@ export interface IndexPrice {
   low: number;
   timestamp: Date;
   updateFrequency?: string;
+  marketState?: string; // Market state: PRE, OPN, SUS, CLS
 }
 
 interface UseIndexPricesOptions {
@@ -88,6 +89,7 @@ export function useIndexPrices(
         low: idx.latestPrice?.low || 0,
         timestamp: idx.latestPrice?.timestamp ? new Date(idx.latestPrice.timestamp) : new Date(),
         updateFrequency: idx.updateFrequency,
+        marketState: idx.latestPrice?.marketState,
       }));
 
       setIndices(transformed);

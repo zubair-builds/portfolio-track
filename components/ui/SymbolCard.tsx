@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { formatVolume, formatPrice, formatChange, formatPercent, getPerformanceColorClass, formatNumber } from '../../lib/formatUtils';
+import { Badge } from './Badge';
 
 export interface SymbolCardAction {
   label: string;
@@ -20,13 +21,15 @@ export interface SymbolCardProps {
   // Required core data
   symbol: string;
   currentPrice?: number | null;
-  
+
   // Optional metadata
   name?: string;
   sectorName?: string;
   isETF?: boolean;
   isGEM?: boolean;
-  
+  isNonCompliant?: boolean;
+  listedIn?: string;
+
   // Optional price details
   priceChange?: number;
   priceChangePercent?: number;
@@ -35,19 +38,19 @@ export interface SymbolCardProps {
   low?: number;
   volume?: number;
   trades?: number;
-  
+
   // Portfolio-specific fields (optional)
   shares?: number;
   avgBuy?: number;
   gainLoss?: number;
   gainLossPercent?: number;
-  
+
   // Additional metrics (optional, for future use)
   additionalMetrics?: AdditionalMetric[];
-  
+
   // Actions
   actions?: SymbolCardAction[];
-  
+
   // Behavior
   onClick?: () => void;
   loading?: boolean;
@@ -61,6 +64,8 @@ export default function SymbolCard({
   sectorName,
   isETF,
   isGEM,
+  isNonCompliant,
+  listedIn,
   priceChange,
   priceChangePercent,
   ldcp,
@@ -80,6 +85,41 @@ export default function SymbolCard({
 }: SymbolCardProps) {
   const performanceColor = getPerformanceColorClass(priceChange || priceChangePercent);
   const hasChange = priceChange !== undefined || priceChangePercent !== undefined;
+
+  // Parse listedIn comma-separated string into array
+  const rawIndices = listedIn
+    ? listedIn.split(',').map(idx => idx.trim()).filter(Boolean)
+    : [];
+
+  // Priority order for index badges
+  const priorityOrder = [
+    'mznpi', 'mii30', 'kmi30', 'kmiallshr', 'kse30', 'psxdiv20',
+    'kse100', 'kse100pr', 'bkti30', 'jsmfi', 'ogti', 'upp9',
+    'nitpgi', 'hbltti', 'jsgbkti', 'aci'
+  ];
+
+  // Sort indices: priority indices first (in order), then rest
+  const indices = rawIndices.sort((a, b) => {
+    const aLower = a.toLowerCase();
+    const bLower = b.toLowerCase();
+    const aIndex = priorityOrder.findIndex(p => p.toLowerCase() === aLower);
+    const bIndex = priorityOrder.findIndex(p => p.toLowerCase() === bLower);
+
+    // Both are priority indices - sort by priority order
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    // Only a is priority - a comes first
+    if (aIndex !== -1) {
+      return -1;
+    }
+    // Only b is priority - b comes first
+    if (bIndex !== -1) {
+      return 1;
+    }
+    // Neither is priority - maintain original order
+    return 0;
+  });
 
   if (loading) {
     return (
@@ -114,7 +154,7 @@ export default function SymbolCard({
         {/* Row 1: Symbol | Current Price */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Link 
+            <Link
               href={`/symbol/${symbol}`}
               className="text-lg font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
               onClick={(e) => e.stopPropagation()}
@@ -131,6 +171,31 @@ export default function SymbolCard({
               <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
                 GEM
               </span>
+            )}
+            {isNonCompliant !== undefined && (
+              <span
+                title={isNonCompliant ? 'Non-Shariah Compliant' : 'Shariah Compliant'}
+                className="inline-flex items-center"
+              >
+                {isNonCompliant ? (
+                  <svg className="w-4 h-4 text-rose-500 dark:text-rose-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-emerald-500 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </span>
+            )}
+            {indices.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {indices.slice(0, 2).map((index) => (
+                  <Badge key={index} variant="neutral" className="text-xs">
+                    {index}
+                  </Badge>
+                ))}
+              </div>
             )}
           </div>
           <div className="text-right">
@@ -188,16 +253,16 @@ export default function SymbolCard({
               <span>Trades: {formatNumber(trades)}</span>
             )}
           </div>
-          
+
           {actions && actions.length > 0 && (
             <div className="flex gap-2">
               {actions.map((action, index) => {
-                const buttonColor = 
-                  action.variant === 'danger' 
+                const buttonColor =
+                  action.variant === 'danger'
                     ? 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30'
                     : action.variant === 'primary'
-                    ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/30'
-                    : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800';
+                      ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/30'
+                      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800';
 
                 return (
                   <button

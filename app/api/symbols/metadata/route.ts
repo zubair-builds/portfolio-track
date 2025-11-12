@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
         currentPrice: data.currentPrice,
         priceChange: data.priceChange,
         priceChangePercent: data.priceChangePercent,
+        isNonCompliant: data.isNonCompliant || false,
+        listedIn: data.listedIn || undefined,
       },
     });
   } catch (error) {
@@ -81,6 +83,8 @@ export async function POST(request: NextRequest) {
         currentPrice: value.currentPrice,
         priceChange: value.priceChange,
         priceChangePercent: value.priceChangePercent,
+        isNonCompliant: value.isNonCompliant || false,
+        listedIn: value.listedIn || undefined,
       };
     });
 

@@ -102,6 +102,7 @@ export async function saveSymbolPriceData(data: SymbolPriceData): Promise<void> 
   if (data.isETF !== undefined) updateFields.isETF = data.isETF;
   if (data.isDebt !== undefined) updateFields.isDebt = data.isDebt;
   if (data.isGEM !== undefined) updateFields.isGEM = data.isGEM;
+  if (data.isNonCompliant !== undefined) updateFields.isNonCompliant = data.isNonCompliant;
 
   // Price Data
   if (data.currentPrice !== undefined) updateFields.currentPrice = data.currentPrice;
@@ -188,7 +189,9 @@ export async function batchGetSymbolMetadata(symbols: string[]): Promise<Map<str
       isGEM: 1,
       currentPrice: 1,
       priceChange: 1,
-      priceChangePercent: 1
+      priceChangePercent: 1,
+      isNonCompliant: 1,
+      listedIn: 1
     })
     .toArray();
 

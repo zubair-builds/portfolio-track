@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -50,11 +50,14 @@ export default function Page() {
   const [activeTab, setActiveTab] = useState('portfolio');
 
   // Lazy load watchlist when watchlist tab is opened
+  const prevTabRef = useRef<string>('portfolio');
   useEffect(() => {
-    if (activeTab === 'watchlist' && watchlist.length === 0 && !isLoadingWatchlist && user?.email) {
+    // Only load when switching TO watchlist tab (not already on it)
+    if (activeTab === 'watchlist' && prevTabRef.current !== 'watchlist' && !isLoadingWatchlist && user?.email) {
       loadWatchlist();
     }
-  }, [activeTab, watchlist.length, isLoadingWatchlist, user?.email, loadWatchlist]);
+    prevTabRef.current = activeTab;
+  }, [activeTab, isLoadingWatchlist, user?.email, loadWatchlist]);
   
   // Modal states
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
@@ -413,13 +416,29 @@ export default function Page() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-              <Badge variant="live">
-                <span className="relative inline-flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
-                </span>
-              Live
-              </Badge>
+            {!kse100Loading && kse100 && (() => {
+              const stateMap: Record<string, { label: string; variant: 'success' | 'danger' | 'neutral' | 'live'; showPulse: boolean }> = {
+                'OPN': { label: 'Live', variant: 'live', showPulse: true },
+                'CLS': { label: 'Closed', variant: 'neutral', showPulse: false },
+                'SUS': { label: 'Suspended', variant: 'danger', showPulse: false },
+                'PRE': { label: 'Pre-market', variant: 'neutral', showPulse: false },
+              };
+              const stateInfo = stateMap[kse100.marketState || 'OPN'] || { label: 'Live', variant: 'live' as const, showPulse: true };
+              return (
+                <Badge 
+                  variant={stateInfo.variant}
+                  className={kse100.marketState === 'PRE' ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-300' : ''}
+                >
+                  {stateInfo.showPulse && (
+                    <span className="relative inline-flex h-2 w-2 mr-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
+                    </span>
+                  )}
+                  {stateInfo.label}
+                </Badge>
+              );
+            })()}
             <div className="hidden sm:flex items-center gap-2">
               <button
                 onClick={() => handleExport('json')}
@@ -483,10 +502,30 @@ export default function Page() {
             <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 shadow-sm dark:border-slate-700 dark:from-indigo-950/30 dark:to-blue-950/30">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">
                       {kse100.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                     </h2>
+                    {/*
+                    kse100.marketState && (() => {
+                      const stateMap: Record<string, { label: string; variant: 'success' | 'danger' | 'neutral' | 'live' }> = {
+                        'OPN': { label: 'Open', variant: 'success' },
+                        'CLS': { label: 'Closed', variant: 'neutral' },
+                        'SUS': { label: 'Suspended', variant: 'danger' },
+                        'PRE': { label: 'Pre-market', variant: 'neutral' },
+                      };
+                      const stateInfo = stateMap[kse100.marketState] || { label: kse100.marketState, variant: 'neutral' as const };
+                      return (
+                        <Badge 
+                          variant={stateInfo.variant} 
+                          title={`Market State: ${stateInfo.label}`}
+                          className={kse100.marketState === 'PRE' ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-300' : ''}
+                        >
+                          {stateInfo.label}
+                        </Badge>
+                      );
+                    })()
+                    */}
                     <Badge variant={kse100.change >= 0 ? "success" : "danger"}>
                       <span className="font-semibold">
                         {kse100.change >= 0 ? '+' : ''}{kse100.change.toLocaleString('en-US', { maximumFractionDigits: 2 })}
@@ -561,7 +600,7 @@ export default function Page() {
                     KSE-100 Index
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    No data available. Click refresh to fetch latest data from PSX Terminal.
+                    No data available. Click refresh to fetch latest data.
                   </p>
                 </div>
                 <button

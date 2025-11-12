@@ -17,6 +17,7 @@ export interface IndexLatestPrice {
   high: number;
   low: number;
   timestamp: Date;
+  marketState?: string; // Market state: PRE, OPN, SUS, CLS
 }
 
 export interface IndexMetadata {
@@ -42,6 +43,7 @@ export interface IndexPriceData {
   high: number;
   low: number;
   timestamp: Date;
+  marketState?: string; // Market state: PRE, OPN, SUS, CLS
 }
 
 interface IndexMetadataDocument extends IndexMetadata {
@@ -178,6 +180,7 @@ export async function saveIndexPrice(priceData: IndexPriceData): Promise<void> {
     high: priceData.high,
     low: priceData.low,
     timestamp: priceData.timestamp,
+    marketState: priceData.marketState,
   };
 
   await indicesCollection.updateOne(
@@ -202,6 +205,7 @@ export async function saveIndexPrice(priceData: IndexPriceData): Promise<void> {
     high: priceData.high,
     low: priceData.low,
     timestamp: priceData.timestamp,
+    marketState: priceData.marketState,
   });
 }
 

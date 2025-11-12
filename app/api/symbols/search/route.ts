@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
           isDebt: 1,
           isGEM: 1,
           currentPrice: 1,
+          isNonCompliant: 1,
         })
         .sort({ symbol: 1 }) // Sort alphabetically
         .skip(offset)
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
         isDebt: s.isDebt || false,
         isGEM: s.isGEM || false,
         currentPrice: s.currentPrice,
+        isNonCompliant: s.isNonCompliant || false,
       })),
       total,
       hasMore: offset + symbols.length < total,
