@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
         priceChangePercent: data.priceChangePercent,
         isNonCompliant: data.isNonCompliant || false,
         listedIn: data.listedIn || undefined,
+        lastFetchedAt: data.lastFetchedAt || undefined,
       },
     });
   } catch (error) {

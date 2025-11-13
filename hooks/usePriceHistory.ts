@@ -39,18 +39,6 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
   const [stats, setStats] = useState<Stats | null>(null);
   const [dataRange, setDataRange] = useState<DataRange | null>(null);
 
-  // Check if data exists on mount
-  useEffect(() => {
-    checkExisting();
-  }, [symbol, timeframe]);
-
-  // Load data when range changes (if data exists)
-  useEffect(() => {
-    if (hasData) {
-      loadData(selectedRange);
-    }
-  }, [selectedRange, hasData]);
-
   const checkExisting = useCallback(async () => {
     if (!symbol) return;
 
@@ -75,6 +63,11 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
       setHasData(false);
     }
   }, [symbol, timeframe]);
+
+  // Check if data exists on mount
+  useEffect(() => {
+    checkExisting();
+  }, [symbol, timeframe, checkExisting]);
 
   const fetchAndStore = useCallback(async () => {
     if (!symbol || fetching) return;
@@ -103,8 +96,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
 
       if (result.success) {
         setHasData(true);
-        // Load the data for the current selected range
-        await loadData(selectedRange);
+        // The useEffect watching hasData will automatically load data for selectedRange
         return result;
       } else {
         throw new Error(result.error || 'Failed to fetch data');
@@ -116,7 +108,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     } finally {
       setFetching(false);
     }
-  }, [symbol, timeframe, selectedRange]);
+  }, [symbol, timeframe]);
 
   const calculateStats = (priceData: PriceData[]): Stats | null => {
     if (priceData.length === 0) return null;
@@ -142,25 +134,18 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     setError(null);
 
     try {
-      // For custom range, filter from allData
+      let url = `/api/klines/${symbol}?timeframe=${timeframe}`;
+      
+      // For custom range, use start and end query parameters
       if (range === 'custom' && customStartDate && customEndDate) {
-        const start = new Date(customStartDate).getTime();
-        const end = new Date(customEndDate).getTime();
-        
-        const filtered = allData.filter(item => {
-          const itemDate = new Date(item.date).getTime();
-          return itemDate >= start && itemDate <= end;
-        });
-
-        setData(filtered);
-        setStats(calculateStats(filtered));
-        setLoading(false);
-        return;
+        const startTimestamp = new Date(customStartDate).getTime();
+        const endTimestamp = new Date(customEndDate).getTime();
+        url += `&start=${startTimestamp}&end=${endTimestamp}`;
+      } else {
+        url += `&range=${range}`;
       }
 
-      const response = await fetch(
-        `/api/klines/${symbol}?timeframe=${timeframe}&range=${range}`
-      );
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error('Failed to load data');
@@ -170,7 +155,10 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
 
       if (result.success) {
         setData(result.data);
-        setAllData(result.data); // Store for custom filtering
+        // Store all data for reference (only for non-custom ranges to avoid overwriting)
+        if (range !== 'custom') {
+          setAllData(result.data);
+        }
         setStats(result.stats);
         setDataRange(result.range);
       } else {
@@ -183,7 +171,21 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     } finally {
       setLoading(false);
     }
-  }, [symbol, timeframe, hasData, customStartDate, customEndDate, allData]);
+  }, [symbol, timeframe, hasData, customStartDate, customEndDate]);
+
+  // Load data when range changes (if data exists)
+  useEffect(() => {
+    if (hasData) {
+      loadData(selectedRange);
+    }
+  }, [selectedRange, hasData, loadData]);
+
+  // Load data when custom dates change (if custom range is selected)
+  useEffect(() => {
+    if (hasData && selectedRange === 'custom' && customStartDate && customEndDate) {
+      loadData('custom');
+    }
+  }, [customStartDate, customEndDate, hasData, selectedRange, loadData]);
 
   const refresh = useCallback(async () => {
     if (hasData) {
