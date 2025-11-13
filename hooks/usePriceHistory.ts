@@ -31,20 +31,25 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
   const [allData, setAllData] = useState<PriceData[]>([]); // Store all fetched data
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [checking, setChecking] = useState(true); // Initial check state
   const [error, setError] = useState<string | null>(null);
   const [hasData, setHasData] = useState(false);
-  const [selectedRange, setSelectedRange] = useState<TimeRange>('1y');
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('1m');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [stats, setStats] = useState<Stats | null>(null);
   const [dataRange, setDataRange] = useState<DataRange | null>(null);
 
   const checkExisting = useCallback(async () => {
-    if (!symbol) return;
+    if (!symbol) {
+      setChecking(false);
+      return;
+    }
 
+    setChecking(true);
     try {
       const response = await fetch(
-        `/api/klines/${symbol}?timeframe=${timeframe}&range=1y`
+        `/api/klines/${symbol}?timeframe=${timeframe}&range=1m`
       );
 
       if (response.ok) {
@@ -57,10 +62,14 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
         } else {
           setHasData(false);
         }
+      } else {
+        setHasData(false);
       }
     } catch (err) {
       console.error('Error checking existing data:', err);
       setHasData(false);
+    } finally {
+      setChecking(false);
     }
   }, [symbol, timeframe]);
 
@@ -205,6 +214,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
     data,
     loading,
     fetching,
+    checking,
     error,
     hasData,
     selectedRange,
