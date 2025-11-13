@@ -65,6 +65,10 @@ export async function GET(
         isDebt: 1,
         isGEM: 1,
         currentPrice: 1,
+        priceChange: 1,
+        priceChangePercent: 1,
+        listedIn: 1,
+        marketCapString: 1,
         isNonCompliant: 1,
       })
       .sort({ symbol: 1 }) // Sort alphabetically
@@ -80,7 +84,11 @@ export async function GET(
         isETF: p.isETF || false,
         isDebt: p.isDebt || false,
         isGEM: p.isGEM || false,
-        currentPrice: p.currentPrice,
+        currentPrice: p.currentPrice || null,
+        priceChange: p.priceChange || null,
+        priceChangePercent: p.priceChangePercent || null,
+        listedIn: p.listedIn || '',
+        marketCapString: p.marketCapString || null,
         isNonCompliant: p.isNonCompliant || false,
       })),
       count: peers.length,
