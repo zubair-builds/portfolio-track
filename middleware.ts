@@ -1,42 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  // Handle CORS for API routes - allow all origins
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    // Handle preflight requests
-    if (request.method === 'OPTIONS') {
-      const response = new NextResponse(null, { status: 200 });
-      
-      response.headers.set('Access-Control-Allow-Origin', '*');
-      response.headers.set(
-        'Access-Control-Allow-Methods',
-        'GET, POST, PUT, DELETE, PATCH, OPTIONS'
-      );
-      response.headers.set(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version'
-      );
-      response.headers.set('Access-Control-Max-Age', '86400');
-      
-      return response;
-    }
+// CORS headers to apply to preflight OPTIONS requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version',
+  'Access-Control-Max-Age': '86400',
+};
 
-    // Handle actual requests
-    const response = NextResponse.next();
-    
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set(
-      'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, PATCH, OPTIONS'
-    );
-    response.headers.set(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version'
-    );
-    
+export function middleware(request: NextRequest) {
+  // Handle CORS preflight (OPTIONS) requests for API routes
+  // Regular requests get CORS headers from next.config.js headers()
+  const pathname = request.nextUrl.pathname;
+  const method = request.method;
+  
+  if (pathname.startsWith('/api/') && method === 'OPTIONS') {
+    const response = new NextResponse(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
     return response;
   }
 
+  // For non-OPTIONS requests, pass through (headers from next.config.js will be applied)
   return NextResponse.next();
 }
 
