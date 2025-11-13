@@ -1,0 +1,797 @@
+{
+  "info": {
+    "name": "Portfolio Track API",
+    "description": "Complete API collection for Portfolio Track - Pakistan Stock Exchange Portfolio Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "1"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Sign Up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('userId', jsonData.user.email);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sign In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('userId', jsonData.user.email);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signin"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/check",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "check"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sign Out",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/signout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signout"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Portfolio",
+      "item": [
+        {
+          "name": "Get Portfolio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/portfolio",
+              "host": ["{{baseUrl}}"],
+              "path": ["portfolio"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"OGDC\",\n  \"shares\": 500,\n  \"avgBuy\": 85.50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/portfolio",
+              "host": ["{{baseUrl}}"],
+              "path": ["portfolio"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Stock",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/portfolio?symbol=OGDC",
+              "host": ["{{baseUrl}}"],
+              "path": ["portfolio"],
+              "query": [
+                {
+                  "key": "symbol",
+                  "value": "OGDC"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Portfolio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/portfolio/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["portfolio", "export"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Import Portfolio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"csvData\": \"Symbol,Shares,AvgBuy\\nOGDC,500,85.50\\nPPL,300,120.75\",\n  \"mode\": \"merge\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/portfolio/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["portfolio", "import"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Watchlist",
+      "item": [
+        {
+          "name": "Get Watchlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/watchlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["watchlist"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add to Watchlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"HBL\",\n  \"thesis\": \"Bullish\",\n  \"targetPrice\": 150.00,\n  \"note\": \"Strong banking fundamentals\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/watchlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["watchlist"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete from Watchlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/watchlist?symbol=HBL",
+              "host": ["{{baseUrl}}"],
+              "path": ["watchlist"],
+              "query": [
+                {
+                  "key": "symbol",
+                  "value": "HBL"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Symbols",
+      "item": [
+        {
+          "name": "Get Symbol Metadata",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/symbols/metadata?symbol=OGDC",
+              "host": ["{{baseUrl}}"],
+              "path": ["symbols", "metadata"],
+              "query": [
+                {
+                  "key": "symbol",
+                  "value": "OGDC"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Batch Get Metadata",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbols\": [\"OGDC\", \"PPL\", \"HBL\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/symbols/metadata",
+              "host": ["{{baseUrl}}"],
+              "path": ["symbols", "metadata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Symbols",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/symbols/search?q=oil&limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["symbols", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "oil"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Prices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbols\": [\"OGDC\", \"PPL\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/symbols/refresh-prices",
+              "host": ["{{baseUrl}}"],
+              "path": ["symbols", "refresh-prices"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Symbol Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/symbols/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["symbols", "stats"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "Get Company Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/OGDC",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "OGDC"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Company Data",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/OGDC/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "OGDC", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Free Float History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/OGDC/freefloat-history?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "OGDC", "freefloat-history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies?limit=50&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dividends",
+      "item": [
+        {
+          "name": "Get Dividend History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dividends/OGDC?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["dividends", "OGDC"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "year",
+                  "value": "2025",
+                  "disabled": true
+                },
+                {
+                  "key": "summary",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Dividend Data",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dividends/OGDC/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["dividends", "OGDC", "refresh"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Price History (K-Lines)",
+      "item": [
+        {
+          "name": "Get Price History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/klines/OGDC?interval=1d&limit=365",
+              "host": ["{{baseUrl}}"],
+              "path": ["klines", "OGDC"],
+              "query": [
+                {
+                  "key": "interval",
+                  "value": "1d"
+                },
+                {
+                  "key": "limit",
+                  "value": "365"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch and Store History",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"OGDC\",\n  \"interval\": \"1d\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/klines/fetch",
+              "host": ["{{baseUrl}}"],
+              "path": ["klines", "fetch"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Indices",
+      "item": [
+        {
+          "name": "Get All Indices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/indices",
+              "host": ["{{baseUrl}}"],
+              "path": ["indices"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Index Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/indices/KSE100",
+              "host": ["{{baseUrl}}"],
+              "path": ["indices", "KSE100"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Index History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/indices/KSE100/history?days=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["indices", "KSE100", "history"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Indices",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/indices/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["indices", "refresh"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Portfolio Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Insights",
+      "item": [
+        {
+          "name": "Stock Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"stock\",\n  \"symbol\": \"OGDC\",\n  \"forceRefresh\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai", "insights"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Portfolio Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"portfolio\",\n  \"stocks\": [\n    {\"symbol\": \"OGDC\", \"shares\": 500, \"avgBuy\": 85.50},\n    {\"symbol\": \"PPL\", \"shares\": 300, \"avgBuy\": 120.75}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai", "insights"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Market Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"market\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai", "insights"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Extract Symbol Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"symbols\",\n  \"symbol\": \"OGDC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai", "insights"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
+
