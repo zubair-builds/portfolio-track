@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import Tabs, { Tab } from "../components/Tabs";
@@ -15,6 +16,7 @@ import AIFinancialChatbot from "../components/AIFinancialChatbot";
 import AddStockModal from "../components/AddStockModal";
 import EditStockModal from "../components/EditStockModal";
 import AddWatchlistModal from "../components/AddWatchlistModal";
+import HeaderSymbolSearch from "../components/HeaderSymbolSearch";
 import { Stock, WatchlistItem } from "../lib/portfolioData";
 import { useAuth } from "../components/AuthProvider";
 import { useIndexPrices } from "../hooks/useIndexPrices";
@@ -406,8 +408,8 @@ export default function Page() {
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-950/70">
-        <div className="container mx-auto max-w-7xl flex items-center justify-between py-6 px-4">
-          <div className="space-y-1">
+        <div className="container mx-auto max-w-7xl flex items-center justify-between py-6 px-4 gap-4">
+          <div className="space-y-1 flex-shrink-0">
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               My Portfolio
             </h1>
@@ -415,7 +417,18 @@ export default function Page() {
               Track your stock investments and performance
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4 flex-1 max-w-md mx-4">
+            <Link
+              href="/companies"
+              className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition"
+            >
+              Companies
+            </Link>
+            <div className="flex-1">
+              <HeaderSymbolSearch />
+            </div>
+          </div>
+          <div className="flex items-center gap-4 flex-shrink-0">
             {!kse100Loading && kse100 && (() => {
               const stateMap: Record<string, { label: string; variant: 'success' | 'danger' | 'neutral' | 'live'; showPulse: boolean }> = {
                 'OPN': { label: 'Live', variant: 'live', showPulse: true },
