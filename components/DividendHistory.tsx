@@ -1,20 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDividendHistory } from '../hooks/useDividendHistory';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 
 interface DividendHistoryProps {
   symbol: string;
+  currentPrice?: number;
 }
 
-export function DividendHistory({ symbol }: DividendHistoryProps) {
+export function DividendHistory({ symbol, currentPrice }: DividendHistoryProps) {
   const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
   const { dividends, summary, loading, error, refreshing, refresh } = useDividendHistory(
     symbol,
     { year: selectedYear, limit: selectedYear ? undefined : 10 }
   );
+
+  // Calculate dividend yield if current price is available
+  const dividendYield = useMemo(() => {
+    if (!currentPrice || !summary?.lastDividend?.amount) return null;
+    return (summary.lastDividend.amount / currentPrice) * 100;
+  }, [currentPrice, summary]);
 
   const availableYears = Array.from(
     new Set(dividends.map(d => new Date(d.exDate).getFullYear()))
@@ -84,85 +91,96 @@ export function DividendHistory({ symbol }: DividendHistoryProps) {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Dividends</p>
-            <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 p-3">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total Dividends</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
               Rs. {summary.totalDividends.toFixed(2)}
             </p>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Count</p>
-            <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 p-3">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Count</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
               {summary.dividendCount}
             </p>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Average</p>
-            <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 p-3">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Average</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
               Rs. {summary.avgDividend.toFixed(2)}
             </p>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Last Amount</p>
-            <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 p-3">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Last Amount</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
               Rs. {summary.lastDividend?.amount.toFixed(2) || 'N/A'}
             </p>
+          </div>
+
+          {dividendYield !== null && (
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-800 p-3">
+              <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-1">Dividend Yield</p>
+              <p className="text-lg font-bold text-indigo-900 dark:text-indigo-100 font-mono">
+                {dividendYield.toFixed(2)}%
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Year Filter - More Prominent */}
+      {availableYears.length > 1 && (
+        <div className="flex items-center gap-3 flex-wrap p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Filter by year:</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={() => setSelectedYear(undefined)}
+              variant={selectedYear === undefined ? 'primary' : 'secondary'}
+              className="text-xs px-3 py-1.5"
+            >
+              All
+            </Button>
+            {availableYears.map(year => (
+              <Button
+                key={year}
+                onClick={() => setSelectedYear(year)}
+                variant={selectedYear === year ? 'primary' : 'secondary'}
+                className="text-xs px-3 py-1.5"
+              >
+                {year}
+              </Button>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Year Filter */}
-      {availableYears.length > 1 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-slate-600 dark:text-slate-400">Filter by year:</span>
-          <Button
-            onClick={() => setSelectedYear(undefined)}
-            variant={selectedYear === undefined ? 'primary' : 'secondary'}
-            className="text-sm"
-          >
-            All
-          </Button>
-          {availableYears.map(year => (
-            <Button
-              key={year}
-              onClick={() => setSelectedYear(year)}
-              variant={selectedYear === year ? 'primary' : 'secondary'}
-              className="text-sm"
-            >
-              {year}
-            </Button>
-          ))}
-        </div>
-      )}
-
-      {/* Dividend Table */}
+      {/* Dividend Table with Sticky Header */}
       <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-700/50">
+            <thead className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Ex-Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Payment Date
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Year
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
               {dividends.map((dividend, index) => {
                 const exDate = new Date(dividend.exDate);
                 const paymentDate = new Date(dividend.paymentDate);
@@ -171,26 +189,45 @@ export function DividendHistory({ symbol }: DividendHistoryProps) {
                 const isUpcoming = exDate > today;
 
                 return (
-                  <tr key={index} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
-                      {exDate.toLocaleDateString()}
+                  <tr
+                    key={index}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100 font-mono">
+                      {exDate.toLocaleDateString('en-PK', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
-                      {paymentDate.toLocaleDateString()}
+                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100 font-mono">
+                      {paymentDate.toLocaleDateString('en-PK', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-right text-slate-900 dark:text-slate-100">
+                    <td className="px-4 py-3 text-sm font-semibold text-right text-slate-900 dark:text-slate-100 font-mono">
                       Rs. {dividend.amount.toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Badge variant="neutral">{dividend.year}</Badge>
+                      <Badge variant="neutral" className="text-xs">
+                        {dividend.year}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {isUpcoming ? (
-                        <Badge variant="live">Upcoming</Badge>
+                        <Badge variant="live" className="text-xs font-medium">
+                          Upcoming
+                        </Badge>
                       ) : isPaid ? (
-                        <Badge variant="success">Paid</Badge>
+                        <Badge variant="success" className="text-xs font-medium">
+                          Paid
+                        </Badge>
                       ) : (
-                        <Badge variant="neutral">Pending</Badge>
+                        <Badge variant="neutral" className="text-xs font-medium">
+                          Pending
+                        </Badge>
                       )}
                     </td>
                   </tr>

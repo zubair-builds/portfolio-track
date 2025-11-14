@@ -629,7 +629,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-[100px] flex flex-col">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`w-2 h-2 rounded-full animate-pulse ${getConnectionStatusColor()}`}></div>
@@ -744,15 +744,48 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
 
       {/* Show message when no updates yet */}
       {updates.length === 0 && connectionState === 'connected' && (
-        <div className="text-center py-8 bg-slate-900 dark:bg-slate-800 rounded-lg border border-slate-700 dark:border-slate-600">
-          <div className="text-slate-500 dark:text-slate-400 mb-2">
-            <svg className="w-8 h-8 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+        <div className="text-center py-8 bg-slate-900 dark:bg-slate-800 rounded-lg border border-slate-700 dark:border-slate-600 flex-1 flex items-center justify-center">
+          <div>
+            <div className="text-slate-500 dark:text-slate-400 mb-2">
+              <svg className="w-8 h-8 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-slate-400 dark:text-slate-500 text-sm">
+              Waiting for market data updates...
+            </p>
           </div>
-          <p className="text-slate-400 dark:text-slate-500 text-sm">
-            Waiting for market data updates...
-          </p>
+        </div>
+      )}
+
+      {/* Show placeholder when stopped/disconnected/connecting to maintain height */}
+      {(connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'connecting' || connectionState === 'reconnecting') && updates.length === 0 && (
+        <div className="flex-1 flex items-center justify-center min-h-[60px] bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className="text-center">
+            {(connectionState === 'connecting' || connectionState === 'reconnecting') ? (
+              <>
+                <div className="text-slate-400 dark:text-slate-500 mb-2">
+                  <svg className="w-6 h-6 mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                  {connectionState === 'connecting' ? 'Connecting...' : 'Reconnecting...'}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-slate-400 dark:text-slate-500 mb-2">
+                  <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                  Ticker stopped. Click Start to begin receiving live updates.
+                </p>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

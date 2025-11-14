@@ -14,15 +14,16 @@ import { useSymbolMetadata } from '../hooks/useSymbolMetadata';
 
 interface PortfolioTableProps {
   stocks: Stock[];
-  onSelectStock: (stock: Stock) => void;
   onEditStock?: (stock: Stock) => void;
   onDeleteStock?: (stock: Stock) => void;
 }
 
-export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onDeleteStock }: PortfolioTableProps) {
+export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: PortfolioTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<keyof Stock | 'gainLoss' | 'gainLossPercent'>('symbol');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'details'>('overview');
   
   // Fetch metadata for all stocks to get isNonCompliant
   const symbols = useMemo(() => stocks.map(s => s.symbol), [stocks]);
@@ -37,10 +38,50 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
     }
   };
 
+  // Calculate total portfolio value for weight calculation
+  const totalPortfolioValue = useMemo(() => {
+    return stocks.reduce((sum, stock) => sum + (stock.shares * stock.currentPrice), 0);
+  }, [stocks]);
+
   const filteredAndSortedStocks = useMemo(() => {
     let result = [...stocks];
 
-    // Filter
+    // Apply quick filters
+    if (activeFilter) {
+      switch (activeFilter) {
+        case 'gainers':
+          result = result.filter((stock) => {
+            const gainLoss = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
+            return gainLoss > 0;
+          });
+          break;
+        case 'losers':
+          result = result.filter((stock) => {
+            const gainLoss = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
+            return gainLoss < 0;
+          });
+          break;
+        case 'topHoldings': {
+          const totalValue = result.reduce((sum, stock) => sum + (stock.shares * stock.currentPrice), 0);
+          result = result.filter((stock) => {
+            const currentValue = stock.shares * stock.currentPrice;
+            return (currentValue / totalValue) * 100 >= 5; // Top 5% or more
+          });
+          break;
+        }
+        case 'newPositions': {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          result = result.filter((stock) => {
+            if (!stock.purchaseDate) return false;
+            return new Date(stock.purchaseDate) >= thirtyDaysAgo;
+          });
+          break;
+        }
+      }
+    }
+
+    // Filter by search term
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       result = result.filter((stock) =>
@@ -72,7 +113,7 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
     });
 
     return result;
-  }, [stocks, searchTerm, sortField, sortDirection]);
+  }, [stocks, searchTerm, sortField, sortDirection, activeFilter]);
 
   const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) {
@@ -96,8 +137,9 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
   return (
     <Card>
       <CardContent className="p-6">
-        {/* Search Bar */}
-        <div className="mb-6">
+        {/* Search and Quick Filters */}
+        <div className="mb-6 space-y-4">
+          {/* Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,13 +164,107 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
               </button>
             )}
           </div>
+          
+          {/* Quick Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Quick Filters:</span>
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'gainers' ? null : 'gainers')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                activeFilter === 'gainers'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+              }`}
+            >
+              Gainers
+            </button>
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'losers' ? null : 'losers')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                activeFilter === 'losers'
+                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+              }`}
+            >
+              Losers
+            </button>
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'topHoldings' ? null : 'topHoldings')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                activeFilter === 'topHoldings'
+                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+              }`}
+            >
+              Top Holdings
+            </button>
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'newPositions' ? null : 'newPositions')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                activeFilter === 'newPositions'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+              }`}
+            >
+              New Positions
+            </button>
+            {activeFilter && (
+              <button
+                onClick={() => setActiveFilter(null)}
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Column View Tabs */}
+        <div className="mb-4 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'overview'
+                  ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('performance')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'performance'
+                  ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Performance
+            </button>
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'details'
+                  ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Details
+            </button>
+          </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
+        <div className="overflow-x-auto -mx-6 px-6">
+          <table className={`table-professional table-sticky-header w-full ${
+            activeTab === 'overview' ? 'min-w-[600px]' :
+            activeTab === 'performance' ? 'min-w-[700px]' :
+            'min-w-[750px]'
+          }`}>
+            <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/50">
               <tr className="border-b border-slate-200 dark:border-slate-700">
+                {/* Symbol - Always visible */}
                 <th className="text-left py-3 px-4">
                   <button
                     onClick={() => handleSort('symbol')}
@@ -138,76 +274,147 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                     <SortIcon field="symbol" />
                   </button>
                 </th>
-                <th className="text-right py-3 px-4">
-                  <button
-                    onClick={() => handleSort('shares')}
-                    className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
-                    Shares
-                    <SortIcon field="shares" />
-                  </button>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <button
-                    onClick={() => handleSort('avgBuy')}
-                    className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
-                    Avg Buy
-                    <SortIcon field="avgBuy" />
-                  </button>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <button
-                    onClick={() => handleSort('currentPrice')}
-                    className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
-                    Current Price
-                    <SortIcon field="currentPrice" />
-                  </button>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                    Investment
-                  </span>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                    Current Value
-                  </span>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <button
-                    onClick={() => handleSort('gainLoss')}
-                    className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
-                    Gain/Loss
-                    <SortIcon field="gainLoss" />
-                  </button>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <button
-                    onClick={() => handleSort('gainLossPercent')}
-                    className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
-                    Gain/Loss %
-                    <SortIcon field="gainLossPercent" />
-                  </button>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                    Purchase Date
-                  </span>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                    Days Held
-                  </span>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                    Annualized Return
-                  </span>
-                </th>
+                
+                {/* Overview Tab Columns */}
+                {activeTab === 'overview' && (
+                  <>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('currentPrice')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Current Price
+                        <SortIcon field="currentPrice" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Current Value
+                      </span>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Weight
+                      </span>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('gainLoss')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Gain/Loss
+                        <SortIcon field="gainLoss" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('gainLossPercent')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Gain/Loss %
+                        <SortIcon field="gainLossPercent" />
+                      </button>
+                    </th>
+                  </>
+                )}
+
+                {/* Performance Tab Columns */}
+                {activeTab === 'performance' && (
+                  <>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('avgBuy')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Avg Buy
+                        <SortIcon field="avgBuy" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('currentPrice')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Current Price
+                        <SortIcon field="currentPrice" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Investment
+                      </span>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('gainLoss')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Gain/Loss
+                        <SortIcon field="gainLoss" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('gainLossPercent')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Gain/Loss %
+                        <SortIcon field="gainLossPercent" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Annualized Return
+                      </span>
+                    </th>
+                  </>
+                )}
+
+                {/* Details Tab Columns */}
+                {activeTab === 'details' && (
+                  <>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('shares')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Shares
+                        <SortIcon field="shares" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <button
+                        onClick={() => handleSort('avgBuy')}
+                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        Avg Buy
+                        <SortIcon field="avgBuy" />
+                      </button>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Purchase Date
+                      </span>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Days Held
+                      </span>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Investment
+                      </span>
+                    </th>
+                    <th className="text-right py-3 px-4">
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                        Current Value
+                      </span>
+                    </th>
+                  </>
+                )}
+
+                {/* Actions - Always visible */}
                 {(onEditStock || onDeleteStock) && (
                   <th className="text-right py-3 px-4">
                     <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
@@ -228,6 +435,7 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-rose-600 dark:text-rose-400';
                 
+                  const bgColor = isPositive ? 'bg-emerald-50/50 dark:bg-emerald-900/50' : 'bg-rose-50/50 dark:bg-rose-900/50';
                 // Calculate time-based metrics
                 const daysHeld = calculateDaysHeld(stock.purchaseDate);
                 const annualizedReturn = calculateAnnualizedReturn(
@@ -241,6 +449,7 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                     key={stock.symbol}
                     className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
+                    {/* Symbol - Always visible */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <Link 
@@ -269,55 +478,81 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                             </span>
                           );
                         })()}
-                        <button
-                          onClick={() => onSelectStock(stock)}
-                          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded transition"
-                          title="View details"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </button>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
-                      {stock.shares.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
-                      ₨{stock.avgBuy.toFixed(2)}
-                    </td>
-                    <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
-                      ₨{stock.currentPrice.toFixed(2)}
-                    </td>
-                    <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
-                      ₨{investment.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
-                      ₨{currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className={`py-3 px-4 text-right font-semibold ${textColor}`}>
-                      {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className={`py-3 px-4 text-right font-semibold ${textColor}`}>
-                      {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
-                    </td>
-                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm">
-                      {formatPurchaseDate(stock.purchaseDate)}
-                    </td>
-                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm">
-                      {formatDaysHeld(daysHeld)}
-                    </td>
-                    <td className={`py-3 px-4 text-right text-sm font-medium ${
-                      annualizedReturn !== null
-                        ? annualizedReturn >= 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-rose-600 dark:text-rose-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      {annualizedReturn !== null
-                        ? `${annualizedReturn >= 0 ? '+' : ''}${annualizedReturn.toFixed(2)}%`
-                        : 'N/A'}
-                    </td>
+
+                    {/* Overview Tab Cells */}
+                    {activeTab === 'overview' && (
+                      <>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{stock.currentPrice.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 tabular-nums text-sm">
+                          {totalPortfolioValue > 0 ? ((currentValue / totalPortfolioValue) * 100).toFixed(2) : '0.00'}%
+                        </td>
+                        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
+                          {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
+                          {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
+                        </td>
+                      </>
+                    )}
+
+                    {/* Performance Tab Cells */}
+                    {activeTab === 'performance' && (
+                      <>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{stock.avgBuy.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{stock.currentPrice.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{investment.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
+                          {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
+                          {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
+                        </td>
+                        <td className={`py-3 px-4 text-right text-sm font-medium tabular-nums ${textColor} ${bgColor}`}>
+                          {annualizedReturn !== null
+                            ? `${annualizedReturn >= 0 ? '+' : ''}${annualizedReturn.toFixed(2)}%`
+                            : 'N/A'}
+                        </td>
+                      </>
+                    )}
+
+                    {/* Details Tab Cells */}
+                    {activeTab === 'details' && (
+                      <>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          {stock.shares.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{stock.avgBuy.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm tabular-nums">
+                          {formatPurchaseDate(stock.purchaseDate)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm tabular-nums">
+                          {formatDaysHeld(daysHeld)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{investment.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
+                          ₨{currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </>
+                    )}
+
+                    {/* Actions - Always visible */}
                     {(onEditStock || onDeleteStock) && (
                       <td className="py-3 px-4 text-right">
                         <div className="flex justify-end gap-2">

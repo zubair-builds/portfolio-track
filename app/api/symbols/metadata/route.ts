@@ -41,6 +41,14 @@ export async function GET(request: NextRequest) {
         isNonCompliant: data.isNonCompliant || false,
         listedIn: data.listedIn || undefined,
         lastFetchedAt: data.lastFetchedAt || undefined,
+        peRatio: data.peRatio,
+        pbRatio: data.pbRatio,
+        earningsPerShare: data.earningsPerShare,
+        dividendYield: data.dividendYield,
+        freeFloatPercent: data.freeFloatPercent,
+        freeFloatString: data.freeFloatString,
+        marketCapString: data.marketCapString,
+        volume: data.volume,
       },
     });
   } catch (error) {
