@@ -74,6 +74,7 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
               symbol: p.symbol,
               shares: p.shares,
               avgBuy: p.avgBuy,
+              purchaseDate: p.purchaseDate ? new Date(p.purchaseDate) : undefined,
               currentPrice: 0, // Will be filled with live data
             }));
           }

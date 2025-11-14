@@ -8,7 +8,7 @@ import { SearchSymbol } from '../hooks/useSymbolSearch';
 
 interface AddStockModalProps {
   onClose: () => void;
-  onSave: (stock: { symbol: string; shares: number; avgBuy: number }) => Promise<void>;
+  onSave: (stock: { symbol: string; shares: number; avgBuy: number; purchaseDate?: Date }) => Promise<void>;
 }
 
 export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
@@ -16,6 +16,11 @@ export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
   const [selectedMetadata, setSelectedMetadata] = useState<SearchSymbol | null>(null);
   const [shares, setShares] = useState('');
   const [avgBuy, setAvgBuy] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState(() => {
+    // Default to today's date in YYYY-MM-DD format
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
@@ -82,7 +87,13 @@ export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
 
     setSaving(true);
     try {
-      await onSave({ symbol: symbol.trim().toUpperCase(), shares: sharesNum, avgBuy: avgBuyNum });
+      const purchaseDateObj = purchaseDate ? new Date(purchaseDate) : undefined;
+      await onSave({ 
+        symbol: symbol.trim().toUpperCase(), 
+        shares: sharesNum, 
+        avgBuy: avgBuyNum,
+        purchaseDate: purchaseDateObj
+      });
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to add stock');
@@ -173,6 +184,21 @@ export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
                 placeholder="e.g., 80.46"
                 min="0.01"
                 step="0.01"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                disabled={saving}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="purchaseDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Purchase Date
+              </label>
+              <input
+                id="purchaseDate"
+                type="date"
+                value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 disabled={saving}
               />

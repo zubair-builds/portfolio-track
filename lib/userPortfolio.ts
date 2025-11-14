@@ -8,6 +8,7 @@ export interface PortfolioDocument {
   symbol: string;
   shares: number;
   avgBuy: number;
+  purchaseDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +17,7 @@ export interface PortfolioInput {
   symbol: string;
   shares: number;
   avgBuy: number;
+  purchaseDate?: Date;
 }
 
 // Watchlist Document
@@ -71,18 +73,27 @@ export async function savePortfolioStock(userId: string, input: PortfolioInput):
   const collection = await getPortfolioCollection();
   const now = new Date();
 
+  const updateFields: any = {
+    userId,
+    symbol: input.symbol.toUpperCase(),
+    shares: input.shares,
+    avgBuy: input.avgBuy,
+    updatedAt: now,
+  };
+
+  // Only set purchaseDate if provided
+  if (input.purchaseDate) {
+    updateFields.purchaseDate = new Date(input.purchaseDate);
+  }
+
   await collection.updateOne(
     { userId, symbol: input.symbol.toUpperCase() },
     {
-      $set: {
-        userId,
-        symbol: input.symbol.toUpperCase(),
-        shares: input.shares,
-        avgBuy: input.avgBuy,
-        updatedAt: now,
-      },
+      $set: updateFields,
       $setOnInsert: {
         createdAt: now,
+        // If purchaseDate not provided and this is a new document, use createdAt
+        ...(input.purchaseDate ? {} : { purchaseDate: now }),
       },
     },
     { upsert: true }
@@ -109,6 +120,7 @@ export async function initializeUserPortfolio(userId: string, stocks: PortfolioI
     symbol: stock.symbol.toUpperCase(),
     shares: stock.shares,
     avgBuy: stock.avgBuy,
+    purchaseDate: stock.purchaseDate ? new Date(stock.purchaseDate) : now,
     createdAt: now,
     updatedAt: now,
   }));

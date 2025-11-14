@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
           symbol: stock.symbol,
           shares: stock.shares,
           avgBuy: stock.avgBuy,
+          purchaseDate: stock.purchaseDate,
         }));
         await initializeUserPortfolio(userId, defaultStocks);
         portfolio = await getUserPortfolio(userId);
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { symbol, shares, avgBuy } = body;
+    const { symbol, shares, avgBuy, purchaseDate } = body;
 
     if (!symbol || typeof symbol !== 'string') {
       return NextResponse.json({ error: 'Invalid symbol.' }, { status: 400 });
@@ -95,7 +96,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Average buy price must be a positive number.' }, { status: 400 });
     }
 
-    const input: PortfolioInput = { symbol, shares, avgBuy };
+    // Validate purchaseDate if provided
+    let purchaseDateObj: Date | undefined;
+    if (purchaseDate) {
+      if (typeof purchaseDate === 'string') {
+        purchaseDateObj = new Date(purchaseDate);
+        if (isNaN(purchaseDateObj.getTime())) {
+          return NextResponse.json({ error: 'Invalid purchase date format.' }, { status: 400 });
+        }
+      } else if (purchaseDate instanceof Date) {
+        purchaseDateObj = purchaseDate;
+      } else {
+        return NextResponse.json({ error: 'Invalid purchase date format.' }, { status: 400 });
+      }
+    }
+
+    const input: PortfolioInput = { symbol, shares, avgBuy, purchaseDate: purchaseDateObj };
     await savePortfolioStock(userId, input);
 
     return NextResponse.json(
