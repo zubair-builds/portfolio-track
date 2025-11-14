@@ -2,7 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Stock } from '../lib/portfolioData';
+import { 
+  Stock, 
+  calculateDaysHeld, 
+  calculateAnnualizedReturn,
+  formatPurchaseDate,
+  formatDaysHeld
+} from '../lib/portfolioData';
 import { Card, CardContent } from './ui/Card';
 import { useSymbolMetadata } from '../hooks/useSymbolMetadata';
 
@@ -187,6 +193,21 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                     <SortIcon field="gainLossPercent" />
                   </button>
                 </th>
+                <th className="text-right py-3 px-4">
+                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                    Purchase Date
+                  </span>
+                </th>
+                <th className="text-right py-3 px-4">
+                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                    Days Held
+                  </span>
+                </th>
+                <th className="text-right py-3 px-4">
+                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                    Annualized Return
+                  </span>
+                </th>
                 {(onEditStock || onDeleteStock) && (
                   <th className="text-right py-3 px-4">
                     <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
@@ -206,6 +227,14 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                 const textColor = isPositive
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-rose-600 dark:text-rose-400';
+                
+                // Calculate time-based metrics
+                const daysHeld = calculateDaysHeld(stock.purchaseDate);
+                const annualizedReturn = calculateAnnualizedReturn(
+                  stock.avgBuy,
+                  stock.currentPrice,
+                  daysHeld
+                );
 
                 return (
                   <tr
@@ -271,6 +300,23 @@ export default function PortfolioTable({ stocks, onSelectStock, onEditStock, onD
                     </td>
                     <td className={`py-3 px-4 text-right font-semibold ${textColor}`}>
                       {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
+                    </td>
+                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm">
+                      {formatPurchaseDate(stock.purchaseDate)}
+                    </td>
+                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm">
+                      {formatDaysHeld(daysHeld)}
+                    </td>
+                    <td className={`py-3 px-4 text-right text-sm font-medium ${
+                      annualizedReturn !== null
+                        ? annualizedReturn >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}>
+                      {annualizedReturn !== null
+                        ? `${annualizedReturn >= 0 ? '+' : ''}${annualizedReturn.toFixed(2)}%`
+                        : 'N/A'}
                     </td>
                     {(onEditStock || onDeleteStock) && (
                       <td className="py-3 px-4 text-right">

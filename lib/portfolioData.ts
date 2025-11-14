@@ -18,6 +18,7 @@ export interface Stock {
   shares: number;
   avgBuy: number;
   currentPrice: number;
+  purchaseDate?: Date;
   details?: StockDetails;
 }
 
@@ -81,5 +82,61 @@ export function calculatePortfolioStats(stocks: Stock[]): PortfolioStats {
     topGainer,
     topLoser,
   };
+}
+
+/**
+ * Calculate days held from purchase date
+ */
+export function calculateDaysHeld(purchaseDate?: Date): number | null {
+  if (!purchaseDate) return null;
+  const now = new Date();
+  const purchase = new Date(purchaseDate);
+  const diffTime = now.getTime() - purchase.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
+
+/**
+ * Calculate annualized return percentage
+ * Formula: ((currentPrice / avgBuy) ^ (365 / daysHeld) - 1) * 100
+ */
+export function calculateAnnualizedReturn(
+  avgBuy: number,
+  currentPrice: number,
+  daysHeld: number | null
+): number | null {
+  if (!daysHeld || daysHeld <= 0) return null;
+  if (avgBuy <= 0) return null;
+  
+  const returnRatio = currentPrice / avgBuy;
+  const yearsHeld = daysHeld / 365;
+  
+  if (yearsHeld <= 0) return null;
+  
+  const annualizedReturn = (Math.pow(returnRatio, 1 / yearsHeld) - 1) * 100;
+  return annualizedReturn;
+}
+
+/**
+ * Format purchase date for display
+ */
+export function formatPurchaseDate(purchaseDate?: Date): string {
+  if (!purchaseDate) return 'N/A';
+  const date = new Date(purchaseDate);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Format days held for display
+ */
+export function formatDaysHeld(daysHeld: number | null): string {
+  if (daysHeld === null) return 'N/A';
+  if (daysHeld === 0) return 'Today';
+  if (daysHeld === 1) return '1 day';
+  return `${daysHeld} days`;
 }
 

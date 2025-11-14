@@ -161,7 +161,7 @@ export default function Page() {
     }
   };
 
-  const handleAddStock = async (stockData: { symbol: string; shares: number; avgBuy: number }) => {
+  const handleAddStock = async (stockData: { symbol: string; shares: number; avgBuy: number; purchaseDate?: Date }) => {
     if (!user?.email) return;
 
     const response = await fetch('/api/portfolio', {
@@ -170,7 +170,10 @@ export default function Page() {
         'Content-Type': 'application/json',
         'X-User-Id': user.email,
       },
-      body: JSON.stringify(stockData),
+      body: JSON.stringify({
+        ...stockData,
+        purchaseDate: stockData.purchaseDate?.toISOString(),
+      }),
     });
 
     if (!response.ok) {
@@ -181,7 +184,7 @@ export default function Page() {
     await refreshPortfolioData(); // Reload to fetch updated portfolio
   };
 
-  const handleEditStock = async (stockData: { symbol: string; shares: number; avgBuy: number }) => {
+  const handleEditStock = async (stockData: { symbol: string; shares: number; avgBuy: number; purchaseDate?: Date }) => {
     if (!user?.email) return;
 
     const response = await fetch('/api/portfolio', {
@@ -190,7 +193,10 @@ export default function Page() {
         'Content-Type': 'application/json',
         'X-User-Id': user.email,
       },
-      body: JSON.stringify(stockData),
+      body: JSON.stringify({
+        ...stockData,
+        purchaseDate: stockData.purchaseDate?.toISOString(),
+      }),
     });
 
     if (!response.ok) {

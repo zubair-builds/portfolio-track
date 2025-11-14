@@ -126,12 +126,13 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
   // ⚙️ BATCH FLUSH INTERVAL: Change this value to adjust how often updates are saved to database (in milliseconds)
   // Current: 30 seconds (30000ms). To change: update the value below.
   const BATCH_FLUSH_INTERVAL = 30000; // 30 seconds - Database update frequency
-  
+
   // ⚙️ BATCH SIZE THRESHOLD: Safety valve to flush if too many unique symbols accumulate
   // Set to 0 to disable threshold-based flushing (recommended if time-based flushing is sufficient)
   // Set to a high number (100+) to act as a safety valve for unexpected bursts
   const BATCH_SIZE_THRESHOLD = 0; // Disabled - relies on time-based flushing only
   const flushBatchUpdatesRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const isDisconnectedRef = useRef(false);
 
   // Update ref whenever filteredSymbols prop changes
   useEffect(() => {
@@ -140,6 +141,12 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
 
   // Flush batch updates to database
   const flushBatchUpdates = useCallback(async () => {
+    // Don't flush if disconnected
+    if (isDisconnectedRef.current) {
+      console.log('[LiveTicker] Skipping flush - connection is disconnected');
+      return;
+    }
+
     const batch = batchUpdatesRef.current;
     if (batch.size === 0) {
       // No updates to flush - this is normal if no updates received yet
@@ -149,9 +156,9 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
     // Convert Map to array of updates
     const updatesArray = Array.from(batch.values());
     const batchSize = updatesArray.length;
-    
+
     console.log(`[LiveTicker] Flushing ${batchSize} symbol updates to database`);
-    
+
     // Clear the batch before sending (so new updates can accumulate)
     batch.clear();
 
@@ -231,6 +238,23 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
       reconnectTimeoutRef.current = null;
     }
 
+    // Clear batch flush interval immediately
+    if (batchFlushIntervalRef.current) {
+      clearInterval(batchFlushIntervalRef.current);
+      batchFlushIntervalRef.current = null;
+      console.log('[LiveTicker] Cleared batch flush interval on disconnect');
+    }
+
+    // Flush any remaining batch updates before disconnecting (do this BEFORE setting disconnected flag)
+    if (batchUpdatesRef.current.size > 0 && flushBatchUpdatesRef.current) {
+      console.log(`[LiveTicker] Flushing ${batchUpdatesRef.current.size} remaining updates before disconnect`);
+      // Flush synchronously - we're still connected at this point
+      flushBatchUpdatesRef.current();
+    }
+
+    // NOW set disconnected flag to prevent any future flushes
+    isDisconnectedRef.current = true;
+
     // Unsubscribe
     unsubscribe();
 
@@ -251,6 +275,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
     // Reset reconnection attempts and manual disconnect flag
     reconnectAttemptsRef.current = 0;
     isManualDisconnectRef.current = false;
+    isDisconnectedRef.current = false; // Reset disconnected flag
     setConnectionState('connecting');
     setError(null);
 
@@ -269,26 +294,32 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
           console.warn('[LiveTicker] flushBatchUpdatesRef not set yet, setting it now');
           flushBatchUpdatesRef.current = flushBatchUpdates;
         }
-        
+
         console.log(`[LiveTicker] Setting up batch flush interval: ${BATCH_FLUSH_INTERVAL}ms (${BATCH_FLUSH_INTERVAL / 1000}s)`);
         console.log(`[LiveTicker] Current batch size: ${batchUpdatesRef.current.size} symbols`);
-        
+
         // Clear any existing interval first
         if (batchFlushIntervalRef.current) {
           clearInterval(batchFlushIntervalRef.current);
         }
-        
+
         batchFlushIntervalRef.current = setInterval(() => {
+          // Check if disconnected before processing
+          if (isDisconnectedRef.current) {
+            console.log('[LiveTicker] Interval triggered but connection is disconnected, skipping flush');
+            return;
+          }
+
           const batchSize = batchUpdatesRef.current.size;
           console.log(`[LiveTicker] Interval triggered - batch size: ${batchSize} symbols`);
-          
+
           if (flushBatchUpdatesRef.current) {
             flushBatchUpdatesRef.current();
           } else {
             console.error('[LiveTicker] ERROR: Interval triggered but flushBatchUpdatesRef.current is not set!');
             // Try to set it again as fallback
             flushBatchUpdatesRef.current = flushBatchUpdates;
-            if (flushBatchUpdatesRef.current && batchSize > 0) {
+            if (flushBatchUpdatesRef.current && batchSize > 0 && !isDisconnectedRef.current) {
               console.log('[LiveTicker] Retrying flush after setting ref');
               flushBatchUpdatesRef.current();
             }
@@ -337,7 +368,10 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
               const tick = tickUpdate.tick;
 
               const symbol = (tick.s || tickUpdate.symbol || '').toUpperCase();
-
+              // if (tickUpdate.market === 'IDX') {
+              //   console.log('market:', tickUpdate.market);
+              //   console.log('symbol:', tick.s);
+              // }
               // Add to batch for database update (ALL symbols, not just filtered ones)
               // Filtering is only for display purposes
               const wasNewSymbol = !batchUpdatesRef.current.has(symbol);
@@ -357,7 +391,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
                 askVolume: tick.av,
                 lastFetchedAt: tick.t || tickUpdate.timestamp,
               });
-              
+
               // Log batch status periodically (only for new symbols to avoid spam)
               if (wasNewSymbol && batchUpdatesRef.current.size % 10 === 0) {
                 console.log(`[LiveTicker] Batch now contains ${batchUpdatesRef.current.size} unique symbols (will flush in ${BATCH_FLUSH_INTERVAL / 1000}s)`);
@@ -407,7 +441,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
               // Update latest value for this symbol in the map
               const wasNew = !updatesMapRef.current.has(symbol);
               updatesMapRef.current.set(symbol, marketUpdate);
-              
+
               // Maintain stable insertion order (don't reorder on updates for smooth animation)
               if (wasNew) {
                 symbolOrderRef.current.push(symbol);
@@ -421,12 +455,12 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
               }
               // Don't reorder existing symbols - just update their values in place
               // This keeps the animation smooth
-              
+
               // Convert map to array maintaining stable order
               const orderedUpdates = symbolOrderRef.current
                 .map(sym => updatesMapRef.current.get(sym))
                 .filter((update): update is MarketUpdate => update !== undefined);
-              
+
               setUpdates(orderedUpdates);
               break;
 
@@ -457,15 +491,24 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
         subscriptionKeyRef.current = null;
         wsRef.current = null;
 
+        // Set disconnected flag to prevent future flushes
+        isDisconnectedRef.current = true;
+
         // Clear batch flush interval
         if (batchFlushIntervalRef.current) {
           clearInterval(batchFlushIntervalRef.current);
           batchFlushIntervalRef.current = null;
+          console.log('[LiveTicker] Cleared batch flush interval in onclose handler');
         }
 
-        // Flush any remaining batch updates before closing
-        if (batchUpdatesRef.current.size > 0 && flushBatchUpdatesRef.current) {
-          flushBatchUpdatesRef.current();
+        // Flush any remaining batch updates before closing (only if not manually disconnected)
+        // If manually disconnected, we already flushed in disconnect()
+        if (!isManualDisconnectRef.current && batchUpdatesRef.current.size > 0 && flushBatchUpdatesRef.current) {
+          // Temporarily allow flush for this final batch
+          isDisconnectedRef.current = false;
+          flushBatchUpdatesRef.current().finally(() => {
+            isDisconnectedRef.current = true;
+          });
         }
 
         // Only attempt reconnection if it wasn't a manual disconnect
@@ -602,8 +645,8 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
             onClick={handleToggleConnection}
             disabled={connectionState === 'connecting' || connectionState === 'reconnecting'}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${connectionState === 'connected' || connectionState === 'reconnecting'
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-                : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50'
+              ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
+              : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50'
               } disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5`}
           >
             {connectionState === 'connected' || connectionState === 'reconnecting' ? (
