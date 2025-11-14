@@ -11,17 +11,19 @@ import WatchlistTab from "../components/tabs/WatchlistTab";
 import AnalyticsTab from "../components/tabs/AnalyticsTab";
 import AllocationTab from "../components/tabs/AllocationTab";
 import CacheManager from "../components/CacheManager";
-import StockDetailsModal from "../components/StockDetailsModal";
 import AIFinancialChatbot from "../components/AIFinancialChatbot";
 import AddStockModal from "../components/AddStockModal";
 import EditStockModal from "../components/EditStockModal";
 import AddWatchlistModal from "../components/AddWatchlistModal";
 import HeaderSymbolSearch from "../components/HeaderSymbolSearch";
 import LiveTicker from "../components/LiveTicker";
-import { Stock, WatchlistItem } from "../lib/portfolioData";
+import { Stock, WatchlistItem, calculatePortfolioStats } from "../lib/portfolioData";
 import { useAuth } from "../components/AuthProvider";
 import { useIndexPrices } from "../hooks/useIndexPrices";
 import { usePortfolioData } from "../hooks/usePortfolioData";
+import ProfessionalHeader from "../components/ProfessionalHeader";
+import PortfolioHero from "../components/PortfolioHero";
+import KSE100Widget from "../components/KSE100Widget";
 
 export default function Page() {
   const router = useRouter();
@@ -74,7 +76,6 @@ export default function Page() {
   }, [activeTab, isLoadingWatchlist, user?.email, loadWatchlist]);
   
   // Modal states
-  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [fetchingSymbolData, setFetchingSymbolData] = useState(false);
   const [symbolDataMessage, setSymbolDataMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
@@ -356,6 +357,10 @@ export default function Page() {
     await refreshPortfolioData();
   };
 
+  // Calculate portfolio stats for hero component (must be before conditional returns)
+  const portfolioStats = useMemo(() => calculatePortfolioStats(portfolioStocks), [portfolioStocks]);
+  const portfolioReturn = portfolioStats.totalGainLossPercent;
+
   // Define tabs
   const tabs: Tab[] = [
     {
@@ -424,238 +429,56 @@ export default function Page() {
     <>
       {/* Main Content */}
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-950/70">
-        <div className="container mx-auto max-w-7xl flex items-center justify-between py-6 px-4 gap-4">
-          <div className="space-y-1 flex-shrink-0">
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-              My Portfolio
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Track your stock investments and performance
-            </p>
-          </div>
-          <div className="hidden md:flex items-center gap-4 flex-1 max-w-md mx-4">
-            <Link
-              href="/companies"
-              className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition"
-            >
-              Companies
-            </Link>
-            <div className="flex-1">
-              <HeaderSymbolSearch />
-            </div>
-          </div>
-          <div className="flex items-center gap-4 flex-shrink-0">
-            {!kse100Loading && kse100 && (() => {
-              const stateMap: Record<string, { label: string; variant: 'success' | 'danger' | 'neutral' | 'live'; showPulse: boolean }> = {
-                'OPN': { label: 'Live', variant: 'live', showPulse: true },
-                'CLS': { label: 'Closed', variant: 'neutral', showPulse: false },
-                'SUS': { label: 'Suspended', variant: 'danger', showPulse: false },
-                'PRE': { label: 'Pre-market', variant: 'neutral', showPulse: false },
-              };
-              const stateInfo = stateMap[kse100.marketState || 'OPN'] || { label: 'Live', variant: 'live' as const, showPulse: true };
-              return (
-                <Badge 
-                  variant={stateInfo.variant}
-                  className={kse100.marketState === 'PRE' ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-300' : ''}
-                >
-                  {stateInfo.showPulse && (
-                    <span className="relative inline-flex h-2 w-2 mr-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
-                    </span>
-                  )}
-                  {stateInfo.label}
-                </Badge>
-              );
-            })()}
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={() => handleExport('json')}
-                className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/30"
-                title="Export as JSON"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-              </button>
-              <button
-                onClick={() => handleExport('csv')}
-                className="p-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/30"
-                title="Export as CSV"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </button>
-              <label
-                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30"
-                title="Import Portfolio"
-              >
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImport}
-                  disabled={importing}
-                  className="hidden"
-                />
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </label>
-            </div>
-            <div className="hidden text-right lg:block">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{user.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
-            </div>
-            <Button variant="secondary" onClick={handleSignOut}>
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Professional Header */}
+      <ProfessionalHeader
+        user={user}
+        onSignOut={handleSignOut}
+        marketState={kse100?.marketState}
+        onExport={handleExport}
+        onImport={handleImport}
+        importing={importing}
+        onRefresh={handleRefreshKse100}
+      />
 
       <main className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <div className="container mx-auto max-w-7xl space-y-8 py-8 px-4">
-          {/* KSE100 Index Banner */}
-          {kse100Loading ? (
-            <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 shadow-sm dark:border-slate-700 dark:from-indigo-950/30 dark:to-blue-950/30">
-              <div className="flex items-center justify-between">
-                <div className="space-y-3 flex-1">
-                  <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                  <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                </div>
-                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin dark:border-indigo-900 dark:border-t-indigo-400" />
+        <div className="container mx-auto max-w-7xl space-y-4 sm:space-y-5 py-4 sm:py-6 px-4">
+          {/* Portfolio Hero Section */}
+          {activeTab === 'portfolio' && (
+            <PortfolioHero 
+              stats={portfolioStats} 
+              totalStocks={portfolioStocks.length}
+              isLoading={portfolioLoading && portfolioStocks.length === 0}
+              benchmarkReturn={kse100 ? kse100.changePercent * 100 : undefined}
+              benchmarkName="KSE-100"
+            />
+          )}
+
+          {/* KSE-100 Widget and Live Ticker Row */}
+          {activeTab === 'portfolio' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="lg:col-span-1">
+              <KSE100Widget
+                index={kse100}
+                isLoading={kse100Loading}
+                onRefresh={handleRefreshKse100}
+                refreshing={refreshingKse100}
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <div className="rounded-lg border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <LiveTicker 
+                  marketType="REG" 
+                  autoConnect={false}
+                  filteredSymbols={tickerFilteredSymbols}
+                />
               </div>
             </div>
-          ) : kse100 ? (
-            <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 shadow-sm dark:border-slate-700 dark:from-indigo-950/30 dark:to-blue-950/30">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">
-                      {kse100.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                    </h2>
-                    {/*
-                    kse100.marketState && (() => {
-                      const stateMap: Record<string, { label: string; variant: 'success' | 'danger' | 'neutral' | 'live' }> = {
-                        'OPN': { label: 'Open', variant: 'success' },
-                        'CLS': { label: 'Closed', variant: 'neutral' },
-                        'SUS': { label: 'Suspended', variant: 'danger' },
-                        'PRE': { label: 'Pre-market', variant: 'neutral' },
-                      };
-                      const stateInfo = stateMap[kse100.marketState] || { label: kse100.marketState, variant: 'neutral' as const };
-                      return (
-                        <Badge 
-                          variant={stateInfo.variant} 
-                          title={`Market State: ${stateInfo.label}`}
-                          className={kse100.marketState === 'PRE' ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-300' : ''}
-                        >
-                          {stateInfo.label}
-                        </Badge>
-                      );
-                    })()
-                    */}
-                    <Badge variant={kse100.change >= 0 ? "success" : "danger"}>
-                      <span className="font-semibold">
-                        {kse100.change >= 0 ? '+' : ''}{kse100.change.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                        {' '}
-                        ({(kse100.changePercent * 100).toFixed(2)}%)
-                      </span>
-                    </Badge>
-                    <button
-                      onClick={handleRefreshKse100}
-                      disabled={refreshingKse100}
-                      className="p-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-900/30"
-                      title="Refresh from PSX Terminal"
-                    >
-                      <svg 
-                        className={`w-5 h-5 ${refreshingKse100 ? 'animate-spin' : ''}`}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    {kse100.name}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Last updated: {new Date(kse100.timestamp).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-                <div className="hidden md:flex items-center gap-6 text-sm">
-                  <div className="text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">High</p>
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">
-                      {kse100.high.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Low</p>
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">
-                      {kse100.low.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Volume</p>
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">
-                      {(kse100.volume / 1_000_000).toFixed(1)}M
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Trades</p>
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">
-                      {kse100.trades.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    KSE-100 Index
-                  </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    No data available. Click refresh to fetch latest data.
-                  </p>
-                </div>
-                <button
-                  onClick={handleRefreshKse100}
-                  disabled={refreshingKse100}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <svg 
-                    className={`w-4 h-4 ${refreshingKse100 ? 'animate-spin' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                    />
-                  </svg>
-                  {refreshingKse100 ? 'Refreshing...' : 'Refresh'}
-                </button>
-              </div>
-            </div>
+          </div>
+          )}
+
+          {/* Visual Separator */}
+          {activeTab === 'portfolio' && (
+            <div className="border-t border-slate-200 dark:border-slate-700" />
           )}
 
           {/* Symbol Data Fetch Message */}
@@ -682,29 +505,19 @@ export default function Page() {
             </div>
           )}
 
-          {/* Live Ticker */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <LiveTicker 
-              marketType="REG" 
-              autoConnect={false}
-              filteredSymbols={tickerFilteredSymbols}
-            />
-          </div>
-
           {/* Tabs Navigation */}
-          <div className="bg-white dark:bg-slate-900/60">
+          <div className="bg-white dark:bg-slate-900/60 sticky top-12 z-40 border-b border-slate-200 dark:border-slate-700">
             <div className="container mx-auto max-w-7xl">
               <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
             </div>
           </div>
 
           {/* Tab Content */}
-          <div className="container mx-auto max-w-7xl space-y-8 py-8 px-4">
+          <div className="container mx-auto max-w-7xl space-y-6 py-6 px-4">
             {activeTab === 'portfolio' && (
               <PortfolioTab
                 stocks={portfolioStocks}
                 isLoading={portfolioLoading}
-                onSelectStock={setSelectedStock}
                 onEditStock={setEditingStock}
                 onDeleteStock={handleDeleteStock}
                 onAddStock={() => setShowAddStock(true)}
@@ -734,15 +547,6 @@ export default function Page() {
       {/* Cache Manager */}
       <CacheManager />
 
-      {/* Stock Details Modal */}
-      {selectedStock && (
-        <StockDetailsModal
-          stock={selectedStock}
-          onClose={() => setSelectedStock(null)}
-          onAnalyzeWithAI={handleAnalyzeStock}
-          onFetchSymbolData={handleFetchSymbolData}
-        />
-      )}
 
       {/* Fetching Symbol Data Loading Indicator */}
       {fetchingSymbolData && (

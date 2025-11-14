@@ -4,12 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { SectionTitle } from '../ui/SectionTitle';
 import PortfolioSummary from '../PortfolioSummary';
 import PortfolioTable from '../PortfolioTable';
+import PortfolioPerformanceChart from '../PortfolioPerformanceChart';
 import { calculatePortfolioStats, Stock } from '../../lib/portfolioData';
 
 interface PortfolioTabProps {
   stocks: Stock[];
   isLoading?: boolean;
-  onSelectStock: (stock: Stock) => void;
   onEditStock: (stock: Stock) => void;
   onDeleteStock: (stock: Stock) => void;
   onAddStock: () => void;
@@ -18,7 +18,6 @@ interface PortfolioTabProps {
 export default function PortfolioTab({
   stocks,
   isLoading = false,
-  onSelectStock,
   onEditStock,
   onDeleteStock,
   onAddStock,
@@ -58,6 +57,7 @@ export default function PortfolioTab({
         <PortfolioSummary stats={portfolioStats} />
       </section>
 
+
       {/* Holdings Table */}
       <section>
         <div className="flex items-center justify-between mb-4">
@@ -82,7 +82,6 @@ export default function PortfolioTab({
         </div>
         <PortfolioTable 
           stocks={stocks} 
-          onSelectStock={onSelectStock}
           onEditStock={onEditStock}
           onDeleteStock={onDeleteStock}
         />

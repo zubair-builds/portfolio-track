@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Badge } from './ui/Badge';
 import { Card, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
+import { MiniSparkline } from './MiniSparkline';
 
 export interface Company {
   symbol: string;
@@ -15,6 +16,7 @@ export interface Company {
   listedIn?: string;
   isNonCompliant: boolean;
   marketCapString?: string | null;
+  priceHistory?: number[]; // Optional price history for sparkline
 }
 
 export interface FilterOptions {
@@ -44,6 +46,8 @@ interface CompaniesTableProps {
   total?: number;
   onPageChange?: (page: number) => void;
   itemsPerPage?: number;
+  onAddToWatchlist?: (symbol: string) => void;
+  watchlistSymbols?: Set<string>;
 }
 
 // Priority order for indices
@@ -104,6 +108,8 @@ export default function CompaniesTable({
   total = 0,
   onPageChange,
   itemsPerPage = 50,
+  onAddToWatchlist,
+  watchlistSymbols,
 }: CompaniesTableProps) {
   const hasActiveFilters = searchQuery || selectedIndex || selectedSector || shariahFilter !== 'all';
 
@@ -264,6 +270,18 @@ export default function CompaniesTable({
                     <th className="py-3 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Change %
                     </th>
+                    {simplified && (
+                      <>
+                        <th className="py-3 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          Trend
+                        </th>
+                        {onAddToWatchlist && (
+                          <th className="py-3 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        )}
+                      </>
+                    )}
                     {!simplified && (
                       <>
                         <th className="py-3 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -310,9 +328,22 @@ export default function CompaniesTable({
                         <td className="py-3 px-4 text-right text-slate-900 dark:text-slate-100">
                           {company.currentPrice ? `₨${formatNumber(company.currentPrice)}` : 'N/A'}
                         </td>
-                        <td className={`py-3 px-4 text-right font-medium ${priceChangeColor}`}>
+                        <td className={`py-3 px-4 text-right font-medium font-mono ${priceChangeColor}`}>
                           {formatPercent(company.priceChangePercent)}
                         </td>
+                        {simplified && (
+                          <td className="py-3 px-4 text-center">
+                            {company.priceHistory && company.priceHistory.length > 0 ? (
+                              <MiniSparkline
+                                data={company.priceHistory}
+                                width={60}
+                                height={20}
+                              />
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </td>
+                        )}
                         {!simplified && (
                           <>
                             <td className="py-3 px-4">
@@ -351,6 +382,41 @@ export default function CompaniesTable({
                               {company.marketCapString || 'N/A'}
                             </td>
                           </>
+                        )}
+                        {simplified && onAddToWatchlist && (
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <Link
+                                href={`/symbol/${company.symbol}`}
+                                className="p-1.5 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition"
+                                title="View details"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </Link>
+                              <button
+                                onClick={() => onAddToWatchlist(company.symbol)}
+                                className={`p-1.5 transition ${
+                                  watchlistSymbols?.has(company.symbol)
+                                    ? 'text-rose-600 dark:text-rose-400'
+                                    : 'text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400'
+                                }`}
+                                title={watchlistSymbols?.has(company.symbol) ? 'Remove from watchlist' : 'Add to watchlist'}
+                              >
+                                {watchlistSymbols?.has(company.symbol) ? (
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          </td>
                         )}
                       </tr>
                     );

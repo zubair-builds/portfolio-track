@@ -31,7 +31,7 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">
               Total Investment
             </p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
               ₨{stats.totalInvestment.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
@@ -52,7 +52,7 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">
               Current Value
             </p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
               ₨{stats.currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
@@ -79,10 +79,10 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">
               Total Gain/Loss
             </p>
-            <p className={`text-2xl font-bold ${gainLossColor}`}>
+            <p className={`text-2xl font-bold tabular-nums ${gainLossColor}`}>
               {isPositive ? '+' : ''}₨{stats.totalGainLoss.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <p className={`text-sm font-medium mt-1 ${gainLossColor}`}>
+            <p className={`text-sm font-medium mt-1 tabular-nums ${gainLossColor}`}>
               {isPositive ? '+' : ''}{stats.totalGainLossPercent.toFixed(2)}%
             </p>
           </div>
@@ -108,7 +108,7 @@ export default function PortfolioSummary({ stats }: PortfolioSummaryProps) {
                 <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
                   {stats.topGainer.symbol}
                 </p>
-                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
                   +{stats.topGainer.gainPercent.toFixed(2)}%
                 </p>
               </div>
