@@ -167,6 +167,139 @@ export async function getSymbolPriceData(symbol: string): Promise<SymbolPriceDoc
 }
 
 /**
+ * Batch save symbol price data using MongoDB bulkWrite for better performance
+ * This is much faster than calling saveSymbolPriceData multiple times
+ */
+export async function batchSaveSymbolPriceData(updates: SymbolPriceData[]): Promise<{
+  updated: number;
+  total: number;
+  errors: string[];
+}> {
+  if (updates.length === 0) {
+    return { updated: 0, total: 0, errors: [] };
+  }
+
+  const collection = await getSymbolPricesCollection();
+  const now = new Date();
+  const operations: AnyBulkWriteOperation<SymbolPriceDocument>[] = [];
+  const errors: string[] = [];
+
+  for (const data of updates) {
+    if (!data.symbol) {
+      errors.push('Missing symbol in update');
+      continue;
+    }
+
+    const symbol = data.symbol.toUpperCase();
+    const updateFields: any = {
+      symbol,
+      updatedAt: now,
+    };
+
+    // Only update fields that are provided (same logic as saveSymbolPriceData)
+    if (data.name !== undefined) updateFields.name = data.name;
+    if (data.sectorName !== undefined) updateFields.sectorName = data.sectorName;
+    if (data.isETF !== undefined) updateFields.isETF = data.isETF;
+    if (data.isDebt !== undefined) updateFields.isDebt = data.isDebt;
+    if (data.isGEM !== undefined) updateFields.isGEM = data.isGEM;
+    if (data.isNonCompliant !== undefined) updateFields.isNonCompliant = data.isNonCompliant;
+
+    // Price Data
+    if (data.currentPrice !== undefined) updateFields.currentPrice = data.currentPrice;
+    if (data.priceOpen !== undefined) updateFields.priceOpen = data.priceOpen;
+    if (data.priceClose !== undefined) updateFields.priceClose = data.priceClose;
+    if (data.priceHigh !== undefined) updateFields.priceHigh = data.priceHigh;
+    if (data.priceLow !== undefined) updateFields.priceLow = data.priceLow;
+    if (data.dayRangeLow !== undefined) updateFields.dayRangeLow = data.dayRangeLow;
+    if (data.dayRangeHigh !== undefined) updateFields.dayRangeHigh = data.dayRangeHigh;
+    if (data.weekRange52Low !== undefined) updateFields.weekRange52Low = data.weekRange52Low;
+    if (data.weekRange52High !== undefined) updateFields.weekRange52High = data.weekRange52High;
+    if (data.priceChange !== undefined) updateFields.priceChange = data.priceChange;
+    if (data.priceChangePercent !== undefined) updateFields.priceChangePercent = data.priceChangePercent;
+
+    // Volume & Trading
+    if (data.volume !== undefined) updateFields.volume = data.volume;
+    if (data.weeklyAverageVolume !== undefined) updateFields.weeklyAverageVolume = data.weeklyAverageVolume;
+    if (data.trades !== undefined) updateFields.trades = data.trades;
+    if (data.value !== undefined) updateFields.value = data.value;
+
+    // Market Metrics
+    if (data.marketCap !== undefined) updateFields.marketCap = data.marketCap;
+    if (data.sharesOutstanding !== undefined) updateFields.sharesOutstanding = data.sharesOutstanding;
+    if (data.freeFloatShares !== undefined) updateFields.freeFloatShares = data.freeFloatShares;
+    if (data.freeFloatPercent !== undefined) updateFields.freeFloatPercent = data.freeFloatPercent;
+
+    // Valuation & Financial Ratios
+    if (data.peRatio !== undefined) updateFields.peRatio = data.peRatio;
+    if (data.pbRatio !== undefined) updateFields.pbRatio = data.pbRatio;
+    if (data.dividendYield !== undefined) updateFields.dividendYield = data.dividendYield;
+    if (data.earningsPerShare !== undefined) updateFields.earningsPerShare = data.earningsPerShare;
+    if (data.netIncomeMargin !== undefined) updateFields.netIncomeMargin = data.netIncomeMargin;
+
+    // Circuit Breakers
+    if (data.circuitBreakerLower !== undefined) updateFields.circuitBreakerLower = data.circuitBreakerLower;
+    if (data.circuitBreakerUpper !== undefined) updateFields.circuitBreakerUpper = data.circuitBreakerUpper;
+
+    // Bid/Ask Data
+    if (data.bidPrice !== undefined) updateFields.bidPrice = data.bidPrice;
+    if (data.askPrice !== undefined) updateFields.askPrice = data.askPrice;
+    if (data.bidVolume !== undefined) updateFields.bidVolume = data.bidVolume;
+    if (data.askVolume !== undefined) updateFields.askVolume = data.askVolume;
+
+    // Metadata
+    if (data.lastFetchedAt !== undefined) updateFields.lastFetchedAt = data.lastFetchedAt;
+
+    operations.push({
+      updateOne: {
+        filter: { symbol },
+        update: {
+          $set: updateFields,
+          $setOnInsert: {
+            createdAt: now,
+          },
+        },
+        upsert: true,
+      },
+    });
+  }
+
+  if (operations.length === 0) {
+    return { updated: 0, total: updates.length, errors };
+  }
+
+  try {
+    // Use ordered: false for better performance - operations can run in parallel
+    const result = await collection.bulkWrite(operations, { ordered: false });
+    return {
+      updated: result.modifiedCount + result.upsertedCount,
+      total: updates.length,
+      errors,
+    };
+  } catch (error: any) {
+    console.error('Error in batchSaveSymbolPriceData:', error);
+    // Even with errors, some operations may succeed
+    let updated = 0;
+    if (error.result) {
+      updated = (error.result.nModified || 0) + (error.result.nUpserted || 0);
+      // Extract individual write errors if available
+      if (error.writeErrors && Array.isArray(error.writeErrors)) {
+        for (const writeError of error.writeErrors) {
+          errors.push(`Operation ${writeError.index}: ${writeError.errmsg || 'Unknown error'}`);
+        }
+      }
+    } else {
+      // If no result object, add the error message
+      errors.push(error instanceof Error ? error.message : 'Unknown error in batch update');
+    }
+    return {
+      updated,
+      total: updates.length,
+      errors,
+    };
+  }
+}
+
+/**
  * Batch fetch symbol metadata for multiple symbols
  * Returns a map of symbol -> metadata for easy lookup
  */
@@ -382,10 +515,10 @@ export async function refreshSymbolPrices(symbols: string[]): Promise<number> {
       }
       
       const result = await response.json();
-      
+      console.log('result', result);
       if (result.success && result.data) {
         const apiData = result.data;
-        
+        console.log('apiData price', apiData.price);
         // Transform and save to database
         const symbolPriceData = {
           symbol: symbol,

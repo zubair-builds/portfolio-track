@@ -30,6 +30,7 @@ export async function GET(
     // Calculate date range based on range parameter
     let startDate: Date | undefined;
     let endDate: Date | undefined;
+    let useDefaultLimit = false;
     
     if (range) {
       const now = new Date();
@@ -37,19 +38,19 @@ export async function GET(
       
       switch (range) {
         case '1m':
-          // ~22 trading days (1 month)
+          // ~22 trading days (1 month) - 30 calendar days
           startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
         case '6m':
-          // ~126 trading days (6 months)
+          // ~126 trading days (6 months) - 180 calendar days
           startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
           break;
         case '1y':
-          // ~252 trading days (1 year)
+          // ~252 trading days (1 year) - 365 calendar days
           startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
           break;
         case '5y':
-          // ~1260 trading days (5 years)
+          // ~1260 trading days (5 years) - 5 * 365 calendar days
           startDate = new Date(now.getTime() - 5 * 365 * 24 * 60 * 60 * 1000);
           break;
         default:
@@ -61,11 +62,44 @@ export async function GET(
     } else if (startParam || endParam) {
       // Custom date range
       if (startParam) {
-        startDate = new Date(parseInt(startParam));
+        const startTimestamp = parseInt(startParam);
+        if (isNaN(startTimestamp)) {
+          return NextResponse.json(
+            { error: 'Invalid start timestamp' },
+            { status: 400 }
+          );
+        }
+        startDate = new Date(startTimestamp);
       }
       if (endParam) {
-        endDate = new Date(parseInt(endParam));
+        const endTimestamp = parseInt(endParam);
+        if (isNaN(endTimestamp)) {
+          return NextResponse.json(
+            { error: 'Invalid end timestamp' },
+            { status: 400 }
+          );
+        }
+        endDate = new Date(endTimestamp);
       }
+    } else {
+      // No date range specified - use default limit to prevent fetching all data
+      // Default to last 3 months (90 days) with a limit
+      const now = new Date();
+      endDate = now;
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      useDefaultLimit = true;
+    }
+    
+    // Ensure endDate is not in the future and startDate is before endDate
+    const now = new Date();
+    if (!endDate || endDate > now) {
+      endDate = now;
+    }
+    if (startDate && startDate >= endDate) {
+      return NextResponse.json(
+        { error: 'Start date must be before end date' },
+        { status: 400 }
+      );
     }
     
     // Get the data range info
@@ -84,20 +118,44 @@ export async function GET(
       });
     }
     
-    // Fetch closing prices for chart
+    // Determine appropriate limit based on timeframe and date range
+    // For high-frequency timeframes, apply reasonable limits
+    let queryLimit: number | undefined;
+    if (useDefaultLimit) {
+      // Calculate approximate number of records for the range
+      const daysDiff = startDate && endDate 
+        ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 90;
+      
+      // Estimate max records based on timeframe
+      const recordsPerDay = timeframe === '1m' ? 390 : // ~390 1-min intervals in trading day
+                           timeframe === '5m' ? 78 :
+                           timeframe === '15m' ? 26 :
+                           timeframe === '1h' ? 8 :
+                           timeframe === '4h' ? 2 :
+                           1; // 1d
+      
+      const estimatedRecords = daysDiff * recordsPerDay;
+      // Cap at 10,000 records for safety
+      queryLimit = Math.min(estimatedRecords, 10000);
+    }
+    
+    // Fetch closing prices for chart (will use date filtering)
     const priceData = await getClosingPrices(
       upperSymbol,
       timeframe,
       startDate,
-      endDate
+      endDate,
+      queryLimit
     );
     
-    // Also get full K-Line data for stats calculations
+    // Also get full K-Line data for stats calculations (will use date filtering)
     const fullData = await getKlines(
       upperSymbol,
       timeframe,
       startDate,
-      endDate
+      endDate,
+      queryLimit
     );
     
     // Calculate stats for the selected range
