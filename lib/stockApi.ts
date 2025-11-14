@@ -57,7 +57,6 @@ export async function fetchAllStockPrices(symbols: string[]): Promise<Map<string
   }
 
   try {
-    console.log('======fetching batch stock prices:', symbols.length);
     // Make batch request to API
     const response = await fetch('/api/symbols/fetch-price', {
       method: 'POST',

@@ -99,7 +99,6 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
         ])
       );
 
-      console.log('===portfolio data===symbols:', symbols.length);
       const priceData = await fetchAllStockPrices(symbols);
 
       const updatedStocks = portfolioHoldings.map((stock) => {

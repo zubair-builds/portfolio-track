@@ -30,13 +30,31 @@ async function getKlinesCollection(): Promise<Collection<KlineDocument>> {
   const collection = db.collection<KlineDocument>(KLINES_COLLECTION);
   
   // Create compound unique index on symbol + timeframe + timestamp
-  await collection.createIndex(
-    { symbol: 1, timeframe: 1, timestamp: 1 },
-    { unique: true }
-  );
+  // This index is optimized for queries filtering by symbol, timeframe, and timestamp range
+  // The order: symbol (exact match) -> timeframe (exact match) -> timestamp (range/sort)
+  // This allows MongoDB to efficiently use the index for both filtering and sorting
+  try {
+    await collection.createIndex(
+      { symbol: 1, timeframe: 1, timestamp: 1 },
+      { unique: true, name: 'symbol_timeframe_timestamp_unique' }
+    );
+  } catch (error: any) {
+    // Index may already exist, ignore
+    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
+      console.error('Error creating compound index:', error);
+    }
+  }
   
-  // Create index on timestamp for sorting
-  await collection.createIndex({ timestamp: -1 });
+  // Additional index on timestamp for queries that only filter by timestamp
+  // (though the compound index above is more commonly used)
+  try {
+    await collection.createIndex({ timestamp: -1 }, { name: 'timestamp_desc' });
+  } catch (error: any) {
+    // Index may already exist, ignore
+    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
+      console.error('Error creating timestamp index:', error);
+    }
+  }
   
   return collection;
 }
@@ -92,6 +110,7 @@ export async function saveKlinesBatch(data: KlineData[]): Promise<number> {
 
 /**
  * Get K-Lines for a symbol with optional date filtering
+ * Optimized to use compound index efficiently: { symbol: 1, timeframe: 1, timestamp: 1 }
  */
 export async function getKlines(
   symbol: string,
@@ -102,22 +121,39 @@ export async function getKlines(
 ): Promise<KlineDocument[]> {
   const collection = await getKlinesCollection();
   
+  // Build query that efficiently uses the compound index
+  // Index: { symbol: 1, timeframe: 1, timestamp: 1 }
   const query: any = {
     symbol: symbol.toUpperCase(),
     timeframe,
   };
   
+  // Add date filtering to use the timestamp part of the compound index
+  // MongoDB can efficiently use the compound index when filtering by prefix fields + range on last field
   if (startDate || endDate) {
     query.timestamp = {};
-    if (startDate) query.timestamp.$gte = startDate;
-    if (endDate) query.timestamp.$lte = endDate;
+    if (startDate) {
+      // Ensure date is properly normalized (remove milliseconds for consistency)
+      const normalizedStart = new Date(startDate);
+      normalizedStart.setMilliseconds(0);
+      query.timestamp.$gte = normalizedStart;
+    }
+    if (endDate) {
+      // Ensure date is properly normalized and includes the full end date
+      const normalizedEnd = new Date(endDate);
+      normalizedEnd.setMilliseconds(999);
+      query.timestamp.$lte = normalizedEnd;
+    }
   }
   
+  // Use compound index efficiently: symbol + timeframe are exact matches, timestamp is range
+  // Sort order matches the compound index structure for optimal performance
   let cursor = collection
     .find(query)
-    .sort({ timestamp: 1 }); // Ascending for chart display
+    .sort({ timestamp: 1 }); // Ascending for chart display - uses index efficiently
   
-  if (limit) {
+  // Apply limit to prevent fetching too much data
+  if (limit && limit > 0) {
     cursor = cursor.limit(limit);
   }
   
@@ -204,9 +240,10 @@ export async function getClosingPrices(
   symbol: string,
   timeframe: string,
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  limit?: number
 ): Promise<Array<{ date: string; price: number; volume?: number }>> {
-  const klines = await getKlines(symbol, timeframe, startDate, endDate);
+  const klines = await getKlines(symbol, timeframe, startDate, endDate, limit);
   
   return klines.map((kline) => ({
     date: kline.timestamp.toISOString(),

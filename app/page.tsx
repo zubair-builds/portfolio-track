@@ -17,6 +17,7 @@ import AddStockModal from "../components/AddStockModal";
 import EditStockModal from "../components/EditStockModal";
 import AddWatchlistModal from "../components/AddWatchlistModal";
 import HeaderSymbolSearch from "../components/HeaderSymbolSearch";
+import LiveTicker from "../components/LiveTicker";
 import { Stock, WatchlistItem } from "../lib/portfolioData";
 import { useAuth } from "../components/AuthProvider";
 import { useIndexPrices } from "../hooks/useIndexPrices";
@@ -30,6 +31,17 @@ export default function Page() {
   const kse100Symbols = useMemo(() => ['KSE100'], []);
   const { indices: [kse100], loading: kse100Loading, error: kse100Error, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
   const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, error: portfolioError, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
+  
+  // Extract symbols from portfolio, watchlist, and indices for LiveTicker filter
+  const tickerFilteredSymbols = useMemo(() => {
+    const portfolioSymbols = portfolioStocks.map(stock => stock.symbol.toUpperCase());
+    const watchlistSymbols = watchlist.map(item => item.symbol.toUpperCase());
+    // Include index symbols (e.g., KSE100)
+    const indexSymbols = kse100 ? ['KSE100'] : [];
+    // Combine and remove duplicates
+    const allSymbols = [...new Set([...portfolioSymbols, ...watchlistSymbols, ...indexSymbols])];
+    return allSymbols;
+  }, [portfolioStocks, watchlist, kse100]);
   const [refreshingKse100, setRefreshingKse100] = useState(false);
   
   // Track overall loading state
@@ -663,6 +675,15 @@ export default function Page() {
               </div>
             </div>
           )}
+
+          {/* Live Ticker */}
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <LiveTicker 
+              marketType="REG" 
+              autoConnect={false}
+              filteredSymbols={tickerFilteredSymbols}
+            />
+          </div>
 
           {/* Tabs Navigation */}
           <div className="bg-white dark:bg-slate-900/60">
