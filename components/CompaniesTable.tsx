@@ -16,6 +16,7 @@ export interface Company {
   listedIn?: string;
   isNonCompliant: boolean;
   marketCapString?: string | null;
+  peRatio?: number | null;
   priceHistory?: number[]; // Optional price history for sparkline
 }
 
@@ -48,6 +49,9 @@ interface CompaniesTableProps {
   itemsPerPage?: number;
   onAddToWatchlist?: (symbol: string) => void;
   watchlistSymbols?: Set<string>;
+  sortField?: 'price' | 'changePercent' | 'marketCap' | 'peRatio' | null;
+  sortDirection?: 'asc' | 'desc';
+  onSort?: (field: 'price' | 'changePercent' | 'marketCap' | 'peRatio' | null) => void;
 }
 
 // Priority order for indices
@@ -82,9 +86,11 @@ const formatNumber = (num: number | null | undefined) => {
 
 const formatPercent = (num: number | null | undefined) => {
   if (num === undefined || num === null) return 'N/A';
-  const formatted = num.toFixed(2);
+  const formatted = num.toFixed(4);
   return num >= 0 ? `+${formatted}%` : `${formatted}%`;
 };
+
+type SortField = 'price' | 'changePercent' | 'marketCap' | 'peRatio' | null;
 
 export default function CompaniesTable({
   companies,
@@ -110,8 +116,36 @@ export default function CompaniesTable({
   itemsPerPage = 50,
   onAddToWatchlist,
   watchlistSymbols,
+  sortField = null,
+  sortDirection = 'asc',
+  onSort,
 }: CompaniesTableProps) {
   const hasActiveFilters = searchQuery || selectedIndex || selectedSector || shariahFilter !== 'all';
+
+  const handleSort = (field: SortField) => {
+    if (onSort) {
+      onSort(field);
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDirection === 'asc' ? (
+      <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -249,34 +283,46 @@ export default function CompaniesTable({
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
               <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b-2 border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Symbol
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Company Name
                     </th>
                     {!simplified && (
-                      <th className="py-3 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                         Sector
                       </th>
                     )}
-                    <th className="py-3 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Price
+                    <th 
+                      className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                      onClick={onSort ? () => handleSort('price') : undefined}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Price</span>
+                        {onSort && <SortIcon field="price" />}
+                      </div>
                     </th>
-                    <th className="py-3 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Change %
+                    <th 
+                      className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-36 ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                      onClick={onSort ? () => handleSort('changePercent') : undefined}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Change %</span>
+                        {onSort && <SortIcon field="changePercent" />}
+                      </div>
                     </th>
                     {simplified && (
                       <>
-                        <th className="py-3 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <th className="py-4 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                           Trend
                         </th>
                         {onAddToWatchlist && (
-                          <th className="py-3 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          <th className="py-4 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                             Actions
                           </th>
                         )}
@@ -284,20 +330,35 @@ export default function CompaniesTable({
                     )}
                     {!simplified && (
                       <>
-                        <th className="py-3 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                           Indices
                         </th>
-                        <th className="py-3 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <th className="py-4 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                           Shariah
                         </th>
-                        <th className="py-3 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                          Market Cap
+                        <th 
+                          className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                          onClick={onSort ? () => handleSort('marketCap') : undefined}
+                        >
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span>Market Cap</span>
+                            {onSort && <SortIcon field="marketCap" />}
+                          </div>
+                        </th>
+                        <th 
+                          className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                          onClick={onSort ? () => handleSort('peRatio') : undefined}
+                        >
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span>P/E Ratio</span>
+                            {onSort && <SortIcon field="peRatio" />}
+                          </div>
                         </th>
                       </>
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
                   {companies.map((company) => {
                     const indices = getSortedIndices(company.listedIn);
                     const priceChangeColor = (company.priceChangePercent || 0) >= 0
@@ -307,32 +368,34 @@ export default function CompaniesTable({
                     return (
                       <tr
                         key={company.symbol}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                       >
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-4">
                           <Link
                             href={`/symbol/${company.symbol}`}
-                            className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
+                            className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline transition-colors"
                           >
                             {company.symbol}
                           </Link>
                         </td>
-                        <td className="py-3 px-4 text-slate-900 dark:text-slate-100">
-                          {company.name}
+                        <td className="py-4 px-4 text-slate-900 dark:text-slate-100">
+                          <span className="font-medium">{company.name}</span>
                         </td>
                         {!simplified && (
-                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                          <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">
                             {company.sectorName}
                           </td>
                         )}
-                        <td className="py-3 px-4 text-right text-slate-900 dark:text-slate-100">
-                          {company.currentPrice ? `₨${formatNumber(company.currentPrice)}` : 'N/A'}
+                        <td className="py-4 px-4 text-right">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">
+                            {company.currentPrice ? `₨${formatNumber(company.currentPrice)}` : <span className="text-slate-400">N/A</span>}
+                          </span>
                         </td>
-                        <td className={`py-3 px-4 text-right font-medium font-mono ${priceChangeColor}`}>
+                        <td className={`py-4 px-4 text-right font-semibold font-mono w-36 ${priceChangeColor}`}>
                           {formatPercent(company.priceChangePercent)}
                         </td>
                         {simplified && (
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-4 px-4 text-center">
                             {company.priceHistory && company.priceHistory.length > 0 ? (
                               <MiniSparkline
                                 data={company.priceHistory}
@@ -346,21 +409,21 @@ export default function CompaniesTable({
                         )}
                         {!simplified && (
                           <>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-1 flex-wrap">
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 {indices.slice(0, 3).map((index) => (
-                                  <Badge key={index} variant="neutral" className="text-xs">
+                                  <Badge key={index} variant="neutral" className="text-xs font-medium">
                                     {index}
                                   </Badge>
                                 ))}
                                 {indices.length > 3 && (
-                                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                     +{indices.length - 3}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-center">
+                            <td className="py-4 px-4 text-center">
                               {company.isNonCompliant !== undefined && (
                                 <span
                                   title={company.isNonCompliant ? 'Non-Shariah Compliant' : 'Shariah Compliant'}
@@ -378,13 +441,22 @@ export default function CompaniesTable({
                                 </span>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400">
-                              {company.marketCapString || 'N/A'}
+                            <td className="py-4 px-4 text-right">
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {company.marketCapString || <span className="text-slate-400">N/A</span>}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {company.peRatio !== null && company.peRatio !== undefined 
+                                  ? company.peRatio.toFixed(2) 
+                                  : <span className="text-slate-400">N/A</span>}
+                              </span>
                             </td>
                           </>
                         )}
                         {simplified && onAddToWatchlist && (
-                          <td className="py-3 px-4">
+                          <td className="py-4 px-4">
                             <div className="flex items-center justify-center gap-2">
                               <Link
                                 href={`/symbol/${company.symbol}`}

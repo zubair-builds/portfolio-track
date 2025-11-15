@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 
 /**
- * API endpoint to list companies with filtering and pagination
- * GET /api/companies?q=searchTerm&index=KSE100&sector=Technology&shariah=compliant&limit=50&offset=0
+ * API endpoint to list companies with filtering, pagination, and sorting
+ * GET /api/companies?q=searchTerm&index=KSE100&sector=Technology&shariah=compliant&limit=50&offset=0&sortBy=price&sortDir=asc
  */
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const shariah = searchParams.get('shariah') || ''; // 'compliant', 'non-compliant', or empty for all
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100); // Max 100
     const offset = parseInt(searchParams.get('offset') || '0');
+    const sortBy = searchParams.get('sortBy') || 'symbol'; // 'price', 'changePercent', 'marketCap', 'peRatio', or 'symbol'
+    const sortDir = searchParams.get('sortDir') === 'desc' ? -1 : 1;
 
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
@@ -65,7 +67,26 @@ export async function GET(request: NextRequest) {
     filter.isDebt = { $ne: true };
     filter.name = { $exists: true, $ne: '' };
 
-    // Execute query with pagination
+    // Build sort object
+    let sortObj: any = {};
+    switch (sortBy) {
+      case 'price':
+        sortObj = { currentPrice: sortDir, symbol: 1 }; // Secondary sort by symbol for consistency
+        break;
+      case 'changePercent':
+        sortObj = { priceChangePercent: sortDir, symbol: 1 };
+        break;
+      case 'marketCap':
+        sortObj = { marketCap: sortDir, symbol: 1 };
+        break;
+      case 'peRatio':
+        sortObj = { peRatio: sortDir, symbol: 1 };
+        break;
+      default:
+        sortObj = { symbol: 1 };
+    }
+
+    // Execute query with pagination and sorting
     const [companies, total] = await Promise.all([
       collection
         .find(filter)
@@ -79,8 +100,10 @@ export async function GET(request: NextRequest) {
           listedIn: 1,
           isNonCompliant: 1,
           marketCapString: 1,
+          marketCap: 1, // Include numeric marketCap for sorting
+          peRatio: 1,
         })
-        .sort({ symbol: 1 }) // Sort alphabetically by symbol
+        .sort(sortObj)
         .skip(offset)
         .limit(limit)
         .toArray(),
@@ -98,6 +121,7 @@ export async function GET(request: NextRequest) {
         listedIn: c.listedIn || '',
         isNonCompliant: c.isNonCompliant || false,
         marketCapString: c.marketCapString || null,
+        peRatio: c.peRatio || null,
       })),
       total,
       hasMore: offset + companies.length < total,
