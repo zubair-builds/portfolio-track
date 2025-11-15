@@ -8,6 +8,15 @@ interface PriceData {
   volume?: number;
 }
 
+export interface OHLCData {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
+
 interface Stats {
   high: number;
   low: number;
@@ -28,6 +37,7 @@ export type TimeRange = '1m' | '6m' | '1y' | '5y' | 'custom';
 
 export function usePriceHistory(symbol: string, timeframe: string = '1d') {
   const [data, setData] = useState<PriceData[]>([]);
+  const [ohlcData, setOhlcData] = useState<OHLCData[]>([]);
   const [allData, setAllData] = useState<PriceData[]>([]); // Store all fetched data
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -57,6 +67,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
         if (result.success && result.count > 0) {
           setHasData(true);
           setData(result.data);
+          setOhlcData(result.ohlc || []);
           setStats(result.stats);
           setDataRange(result.range);
         } else {
@@ -164,6 +175,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
 
       if (result.success) {
         setData(result.data);
+        setOhlcData(result.ohlc || []);
         // Store all data for reference (only for non-custom ranges to avoid overwriting)
         if (range !== 'custom') {
           setAllData(result.data);
@@ -212,6 +224,7 @@ export function usePriceHistory(symbol: string, timeframe: string = '1d') {
 
   return {
     data,
+    ohlcData,
     loading,
     fetching,
     checking,

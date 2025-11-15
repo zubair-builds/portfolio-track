@@ -7,6 +7,7 @@ import {
   WatchlistItem,
   initialWatchlistData,
   StockDetails,
+  aggregatePositionsBySymbol,
 } from '../lib/portfolioData';
 import { fetchAllStockPrices } from '../lib/stockApi';
 
@@ -70,13 +71,29 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
 
           if (portfolioRes.ok) {
             const portfolioData = await portfolioRes.json();
-            portfolioHoldings = portfolioData.portfolio.map((p: any) => ({
-              symbol: p.symbol,
-              shares: p.shares,
-              avgBuy: p.avgBuy,
-              purchaseDate: p.purchaseDate ? new Date(p.purchaseDate) : undefined,
-              currentPrice: 0, // Will be filled with live data
-            }));
+            console.log('[usePortfolioData] Raw portfolio data:', portfolioData);
+            console.log('[usePortfolioData] Raw portfolio data count:', portfolioData.portfolio?.length || 0);
+            
+            if (portfolioData.portfolio && Array.isArray(portfolioData.portfolio) && portfolioData.portfolio.length > 0) {
+              // Aggregate multiple positions by symbol (weighted average buy price, sum shares)
+              const rawPositions = portfolioData.portfolio.map((p: any) => ({
+                _id: p._id?.toString(),
+                symbol: p.symbol,
+                shares: p.shares,
+                avgBuy: p.avgBuy,
+                purchaseDate: p.purchaseDate ? new Date(p.purchaseDate) : undefined,
+                currentPrice: 0, // Will be filled with live data
+              }));
+              console.log('[usePortfolioData] Raw positions count:', rawPositions.length);
+              portfolioHoldings = aggregatePositionsBySymbol(rawPositions);
+              console.log('[usePortfolioData] Aggregated portfolioHoldings count:', portfolioHoldings.length);
+              console.log('[usePortfolioData] Aggregated symbols:', portfolioHoldings.map(s => s.symbol));
+            } else {
+              console.warn('[usePortfolioData] Portfolio data is empty or invalid, using initial data');
+              portfolioHoldings = initialPortfolioData;
+            }
+          } else {
+            console.warn('[usePortfolioData] Portfolio API response not ok:', portfolioRes.status, portfolioRes.statusText);
           }
 
           if (shouldLoadWatchlist && watchlistRes?.ok) {
@@ -100,7 +117,9 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
         ])
       );
 
+      console.log('[usePortfolioData] Symbols to fetch prices for:', symbols.length, symbols);
       const priceData = await fetchAllStockPrices(symbols);
+      console.log('[usePortfolioData] Price data received for symbols:', Array.from(priceData.keys()));
 
       const updatedStocks = portfolioHoldings.map((stock) => {
         const apiData = priceData.get(stock.symbol.toUpperCase());
@@ -171,6 +190,8 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
         } as WatchlistStock;
       });
 
+      console.log('[usePortfolioData] Final updatedStocks count:', updatedStocks.length);
+      console.log('[usePortfolioData] Final updatedStocks symbols:', updatedStocks.map(s => s.symbol));
       setStocks(updatedStocks as Stock[]);
       setWatchlist(updatedWatchlist);
     } catch (err) {

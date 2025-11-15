@@ -140,16 +140,7 @@ export async function GET(
       queryLimit = Math.min(estimatedRecords, 10000);
     }
     
-    // Fetch closing prices for chart (will use date filtering)
-    const priceData = await getClosingPrices(
-      upperSymbol,
-      timeframe,
-      startDate,
-      endDate,
-      queryLimit
-    );
-    
-    // Also get full K-Line data for stats calculations (will use date filtering)
+    // Get full K-Line data (OHLCV) for technical indicators
     const fullData = await getKlines(
       upperSymbol,
       timeframe,
@@ -157,6 +148,23 @@ export async function GET(
       endDate,
       queryLimit
     );
+    
+    // Transform to include both simplified (for backward compatibility) and full OHLC data
+    const priceData = fullData.map((kline) => ({
+      date: kline.timestamp.toISOString(),
+      price: kline.close,
+      volume: kline.volume,
+    }));
+    
+    // Full OHLC data for technical indicators
+    const ohlcData = fullData.map((kline) => ({
+      date: kline.timestamp.toISOString(),
+      open: kline.open,
+      high: kline.high,
+      low: kline.low,
+      close: kline.close,
+      volume: kline.volume,
+    }));
     
     // Calculate stats for the selected range
     const prices = priceData.map(d => d.price);
@@ -174,6 +182,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: priceData,
+      ohlc: ohlcData, // Full OHLC data for technical indicators
       count: priceData.length,
       range: {
         oldest: dataRange.oldest,
