@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Stock } from '../lib/portfolioData';
+import { useAuth } from './AuthProvider';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,13 +21,16 @@ interface AIFinancialChatbotProps {
 }
 
 export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFinancialChatbotProps) {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const historyLoadedRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,29 +40,66 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
     scrollToBottom();
   }, [messages]);
 
-  // Initialize with welcome message and context if provided
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      let welcomeMessage = "Hello! I'm your AI financial assistant. I can help you with:\n\n";
-      welcomeMessage += "• Portfolio analysis and recommendations\n";
-      welcomeMessage += "• Stock symbol analysis\n";
-      welcomeMessage += "• Market trends and outlook\n";
-      welcomeMessage += "• Investment advice and risk assessment\n\n";
-      welcomeMessage += "What would you like to know?";
+  const showWelcomeMessage = useCallback(() => {
+    setMessages(prevMessages => {
+      if (prevMessages.length === 0) {
+        let welcomeMessage = "Hello! I'm your AI financial assistant. I can help you with:\n\n";
+        welcomeMessage += "• Portfolio analysis and recommendations\n";
+        welcomeMessage += "• Stock symbol analysis\n";
+        welcomeMessage += "• Market trends and outlook\n";
+        welcomeMessage += "• Investment advice and risk assessment\n\n";
+        welcomeMessage += "What would you like to know?";
 
-      if (initialContext?.symbol) {
-        welcomeMessage += `\n\n*I see you're viewing ${initialContext.symbol}. Feel free to ask me about it!*`;
-      } else if (initialContext?.mode === 'portfolio' && stocks.length > 0) {
-        welcomeMessage += `\n\n*I can see your portfolio with ${stocks.length} holdings. Ask me to analyze it!*`;
+        if (initialContext?.symbol) {
+          welcomeMessage += `\n\n*I see you're viewing ${initialContext.symbol}. Feel free to ask me about it!*`;
+        } else if (initialContext?.mode === 'portfolio' && stocks.length > 0) {
+          welcomeMessage += `\n\n*I can see your portfolio with ${stocks.length} holdings. Ask me to analyze it!*`;
+        }
+
+        return [{
+          role: 'assistant' as const,
+          content: welcomeMessage,
+          timestamp: new Date(),
+        }];
       }
+      return prevMessages;
+    });
+  }, [initialContext, stocks.length]);
 
-      setMessages([{
-        role: 'assistant',
-        content: welcomeMessage,
-        timestamp: new Date(),
-      }]);
+  // Fetch chat history when chatbot opens
+  useEffect(() => {
+    if (isOpen && !historyLoadedRef.current && user?.email) {
+      setLoadingHistory(true);
+      fetch('/api/ai/chat/history')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.messages && data.messages.length > 0) {
+            // Convert fetched messages to Message format
+            const fetchedMessages: Message[] = data.messages.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            }));
+            setMessages(fetchedMessages);
+            historyLoadedRef.current = true;
+          } else {
+            // No history found, show welcome message
+            showWelcomeMessage();
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching chat history:', err);
+          // On error, show welcome message
+          showWelcomeMessage();
+        })
+        .finally(() => {
+          setLoadingHistory(false);
+        });
+    } else if (isOpen && !user?.email) {
+      // User not authenticated, show welcome message
+      showWelcomeMessage();
     }
-  }, [isOpen, initialContext, stocks.length]);
+  }, [isOpen, user?.email, showWelcomeMessage]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -152,6 +193,9 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
   const clearConversation = () => {
     setMessages([]);
     setError(null);
+    historyLoadedRef.current = false;
+    // Show welcome message after clearing
+    showWelcomeMessage();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -186,7 +230,7 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
           />
           
           {/* Sidebar */}
-          <div className="w-full max-w-md h-full flex flex-col shadow-2xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700">
+          <div className="w-full max-w-3xl h-full flex flex-col shadow-2xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700">
             {/* Header */}
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-indigo-600 text-white">
               <div className="flex items-center gap-2">
@@ -218,33 +262,57 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950">
-              {messages.map((message, idx) => (
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50 dark:bg-slate-950">
+              {loadingHistory && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+                    <span className="ml-2 text-sm">Loading chat history...</span>
+                  </div>
+                </div>
+              )}
+              {!loadingHistory && messages.map((message, idx) => (
                 <div
                   key={idx}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    className={`max-w-[90%] rounded-lg px-5 py-3 ${
                       message.role === 'user'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     {message.role === 'assistant' ? (
-                      <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <div className="prose prose-slate dark:prose-invert prose-base max-w-none leading-relaxed">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                            ul: ({ children }) => <ul className="mb-3 space-y-1">{children}</ul>,
+                            ol: ({ children }) => <ol className="mb-3 space-y-1">{children}</ol>,
+                            li: ({ children }) => <li className="ml-4">{children}</li>,
+                            h1: ({ children }) => <h1 className="text-xl font-bold mb-2 mt-4 first:mt-0">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-4 first:mt-0">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h3>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            code: ({ children }) => <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>,
+                            pre: ({ children }) => <pre className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg overflow-x-auto mb-3">{children}</pre>,
+                          }}
+                        >
                           {message.content}
                         </ReactMarkdown>
                       </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-base whitespace-pre-wrap leading-relaxed">{message.content}</p>
                     )}
                   </div>
                 </div>
               ))}
 
-              {loading && (
+              {!loadingHistory && loading && (
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-slate-800 rounded-lg px-4 py-2 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2">
@@ -256,7 +324,7 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
                 </div>
               )}
 
-              {error && (
+              {!loadingHistory && error && (
                 <div className="flex justify-start">
                   <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-lg px-4 py-2">
                     <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
@@ -268,14 +336,14 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
             </div>
 
             {/* Input Area */}
-            <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+            <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
               <div className="flex gap-2">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask me anything about your portfolio, stocks, or market..."
-                  className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed"
                   rows={2}
                   disabled={loading}
                 />

@@ -21,6 +21,8 @@ export default function CompaniesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({ sectors: [], indices: [] });
+  const [sortField, setSortField] = useState<'price' | 'changePercent' | 'marketCap' | 'peRatio' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Debounce search query
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function CompaniesPage() {
     fetchFilters();
   }, []);
 
-  // Fetch companies when filters or page changes
+  // Fetch companies when filters, page, or sort changes
   const fetchCompanies = useCallback(async () => {
     setLoading(true);
     try {
@@ -62,6 +64,10 @@ export default function CompaniesPage() {
       if (shariahFilter !== 'all') params.set('shariah', shariahFilter);
       params.set('limit', ITEMS_PER_PAGE.toString());
       params.set('offset', ((currentPage - 1) * ITEMS_PER_PAGE).toString());
+      if (sortField) {
+        params.set('sortBy', sortField);
+        params.set('sortDir', sortDirection);
+      }
 
       const response = await fetch(`/api/companies?${params.toString()}`);
       if (response.ok) {
@@ -76,7 +82,7 @@ export default function CompaniesPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchQuery, selectedIndex, selectedSector, shariahFilter, currentPage]);
+  }, [debouncedSearchQuery, selectedIndex, selectedSector, shariahFilter, currentPage, sortField, sortDirection]);
 
   useEffect(() => {
     fetchCompanies();
@@ -105,6 +111,16 @@ export default function CompaniesPage() {
   const handleShariahChange = (value: 'all' | 'compliant' | 'non-compliant') => {
     setShariahFilter(value);
     setCurrentPage(1);
+  };
+
+  const handleSort = (field: 'price' | 'changePercent' | 'marketCap' | 'peRatio' | null) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting changes
   };
 
   return (
@@ -159,6 +175,9 @@ export default function CompaniesPage() {
           total={total}
           onPageChange={setCurrentPage}
           itemsPerPage={ITEMS_PER_PAGE}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
         />
       </main>
     </div>
