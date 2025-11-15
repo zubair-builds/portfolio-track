@@ -105,7 +105,12 @@ export function InvestmentPositionCard({
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Gain/Loss</p>
               {sparklineData.length > 0 && (
-                <MiniSparkline data={sparklineData} width={60} height={20} />
+                <MiniSparkline 
+                  data={sparklineData} 
+                  width={60} 
+                  height={20}
+                  color={isPositive ? '#10b981' : '#ef4444'}
+                />
               )}
             </div>
             <p

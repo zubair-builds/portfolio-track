@@ -50,8 +50,38 @@ async function getDb(): Promise<Db> {
 async function getPortfolioCollection(): Promise<Collection<PortfolioDocument>> {
   const db = await getDb();
   const collection = db.collection<PortfolioDocument>(PORTFOLIO_COLLECTION);
-  await collection.createIndex({ userId: 1, symbol: 1 }, { unique: true });
-  await collection.createIndex({ userId: 1 });
+  
+  // Removed unique constraint on {userId, symbol} to allow multiple positions per symbol
+  // First, try to drop the existing unique index if it exists
+  try {
+    await collection.dropIndex('userId_1_symbol_1');
+    console.log('Dropped existing unique index on {userId, symbol}');
+  } catch (error: any) {
+    // Index doesn't exist or already dropped, ignore
+    if (error.code !== 27 && error.codeName !== 'IndexNotFound') {
+      console.warn('Error dropping index (may not exist):', error.message);
+    }
+  }
+  
+  // Create non-unique indexes
+  try {
+    await collection.createIndex({ userId: 1 });
+  } catch (error: any) {
+    // Index may already exist, ignore
+    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
+      console.warn('Error creating userId index:', error.message);
+    }
+  }
+  
+  try {
+    await collection.createIndex({ userId: 1, symbol: 1 }, { unique: false }); // Explicitly non-unique
+  } catch (error: any) {
+    // Index may already exist, ignore
+    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
+      console.warn('Error creating userId+symbol index:', error.message);
+    }
+  }
+  
   return collection;
 }
 
@@ -73,36 +103,55 @@ export async function savePortfolioStock(userId: string, input: PortfolioInput):
   const collection = await getPortfolioCollection();
   const now = new Date();
 
-  const updateFields: any = {
+  const document: PortfolioDocument = {
     userId,
+    symbol: input.symbol.toUpperCase(),
+    shares: input.shares,
+    avgBuy: input.avgBuy,
+    purchaseDate: input.purchaseDate ? new Date(input.purchaseDate) : now,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // Always insert a new position (no upsert)
+  await collection.insertOne(document);
+}
+
+export async function deletePortfolioStock(userId: string, positionId: string): Promise<void> {
+  const collection = await getPortfolioCollection();
+  const { ObjectId } = await import('mongodb');
+  await collection.deleteOne({ 
+    userId, 
+    _id: new ObjectId(positionId) 
+  });
+}
+
+export async function deletePortfolioStockBySymbol(userId: string, symbol: string): Promise<number> {
+  const collection = await getPortfolioCollection();
+  const result = await collection.deleteMany({ userId, symbol: symbol.toUpperCase() });
+  return result.deletedCount;
+}
+
+export async function updatePortfolioStock(userId: string, positionId: string, input: PortfolioInput): Promise<void> {
+  const collection = await getPortfolioCollection();
+  const { ObjectId } = await import('mongodb');
+  const now = new Date();
+
+  const updateFields: any = {
     symbol: input.symbol.toUpperCase(),
     shares: input.shares,
     avgBuy: input.avgBuy,
     updatedAt: now,
   };
 
-  // Only set purchaseDate if provided
   if (input.purchaseDate) {
     updateFields.purchaseDate = new Date(input.purchaseDate);
   }
 
   await collection.updateOne(
-    { userId, symbol: input.symbol.toUpperCase() },
-    {
-      $set: updateFields,
-      $setOnInsert: {
-        createdAt: now,
-        // If purchaseDate not provided and this is a new document, use createdAt
-        ...(input.purchaseDate ? {} : { purchaseDate: now }),
-      },
-    },
-    { upsert: true }
+    { userId, _id: new ObjectId(positionId) },
+    { $set: updateFields }
   );
-}
-
-export async function deletePortfolioStock(userId: string, symbol: string): Promise<void> {
-  const collection = await getPortfolioCollection();
-  await collection.deleteOne({ userId, symbol: symbol.toUpperCase() });
 }
 
 export async function initializeUserPortfolio(userId: string, stocks: PortfolioInput[]): Promise<void> {

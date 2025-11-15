@@ -459,6 +459,14 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
                         >
                           {stock.symbol}
                         </Link>
+                        {stock.positionCount && stock.positionCount > 1 && (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                            title={`${stock.positionCount} positions aggregated`}
+                          >
+                            {stock.positionCount}
+                          </span>
+                        )}
                         {(() => {
                           const meta = metadata.get(stock.symbol.toUpperCase());
                           return meta?.isNonCompliant !== undefined && (

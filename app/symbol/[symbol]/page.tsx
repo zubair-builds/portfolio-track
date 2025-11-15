@@ -53,6 +53,7 @@ export default function SymbolDetailPage({
 
   const {
     data,
+    ohlcData,
     loading,
     fetching,
     checking,
@@ -589,6 +590,7 @@ export default function SymbolDetailPage({
                     {/* Chart */}
                     <PriceHistoryChart
                       data={data}
+                      ohlcData={ohlcData}
                       symbol={symbol}
                       range={selectedRange}
                       loading={loading}

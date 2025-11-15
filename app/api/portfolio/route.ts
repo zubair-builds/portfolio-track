@@ -3,6 +3,8 @@ import {
   getUserPortfolio,
   savePortfolioStock,
   deletePortfolioStock,
+  deletePortfolioStockBySymbol,
+  updatePortfolioStock,
   initializeUserPortfolio,
   PortfolioInput,
 } from '../../../lib/userPortfolio';
@@ -136,21 +138,86 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+    const positionId = searchParams.get('positionId');
     const symbol = searchParams.get('symbol');
 
-    if (!symbol) {
-      return NextResponse.json({ error: 'Symbol parameter is required.' }, { status: 400 });
+    // Support both positionId (for specific position) and symbol (for all positions of that symbol)
+    if (positionId) {
+      await deletePortfolioStock(userId, positionId);
+      return NextResponse.json(
+        { success: true, message: 'Position removed from portfolio.' },
+        { status: 200 }
+      );
+    } else if (symbol) {
+      const deletedCount = await deletePortfolioStockBySymbol(userId, symbol);
+      return NextResponse.json(
+        { success: true, message: `${symbol.toUpperCase()} removed from portfolio (${deletedCount} position${deletedCount !== 1 ? 's' : ''} deleted).` },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json({ error: 'Either positionId or symbol parameter is required.' }, { status: 400 });
     }
-
-    await deletePortfolioStock(userId, symbol);
-
-    return NextResponse.json(
-      { success: true, message: `${symbol.toUpperCase()} removed from portfolio.` },
-      { status: 200 }
-    );
   } catch (error) {
     console.error('Portfolio DELETE error:', error);
     return NextResponse.json({ error: 'Failed to delete stock from portfolio.' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const userId = getUserIdFromRequest(request);
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Authentication required. Please provide X-User-Id header.' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { positionId, symbol, shares, avgBuy, purchaseDate } = body;
+
+    if (!positionId || typeof positionId !== 'string') {
+      return NextResponse.json({ error: 'positionId is required.' }, { status: 400 });
+    }
+
+    if (!symbol || typeof symbol !== 'string') {
+      return NextResponse.json({ error: 'Invalid symbol.' }, { status: 400 });
+    }
+
+    if (typeof shares !== 'number' || shares <= 0) {
+      return NextResponse.json({ error: 'Shares must be a positive number.' }, { status: 400 });
+    }
+
+    if (typeof avgBuy !== 'number' || avgBuy <= 0) {
+      return NextResponse.json({ error: 'Average buy price must be a positive number.' }, { status: 400 });
+    }
+
+    // Validate purchaseDate if provided
+    let purchaseDateObj: Date | undefined;
+    if (purchaseDate) {
+      if (typeof purchaseDate === 'string') {
+        purchaseDateObj = new Date(purchaseDate);
+        if (isNaN(purchaseDateObj.getTime())) {
+          return NextResponse.json({ error: 'Invalid purchase date format.' }, { status: 400 });
+        }
+      } else if (purchaseDate instanceof Date) {
+        purchaseDateObj = purchaseDate;
+      } else {
+        return NextResponse.json({ error: 'Invalid purchase date format.' }, { status: 400 });
+      }
+    }
+
+    const input: PortfolioInput = { symbol, shares, avgBuy, purchaseDate: purchaseDateObj };
+    await updatePortfolioStock(userId, positionId, input);
+
+    return NextResponse.json(
+      { success: true, message: `${symbol.toUpperCase()} position updated.` },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Portfolio PUT error:', error);
+    return NextResponse.json({ error: 'Failed to update stock position.' }, { status: 500 });
   }
 }
 
