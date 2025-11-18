@@ -23,7 +23,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
   const [sortField, setSortField] = useState<keyof Stock | 'gainLoss' | 'gainLossPercent'>('symbol');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'details'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'details'>('overview');
   
   // Fetch metadata for all stocks to get isNonCompliant
   const symbols = useMemo(() => stocks.map(s => s.symbol), [stocks]);
@@ -233,16 +233,6 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
               Overview
             </button>
             <button
-              onClick={() => setActiveTab('performance')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'performance'
-                  ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              Performance
-            </button>
-            <button
               onClick={() => setActiveTab('details')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'details'
@@ -258,8 +248,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
         {/* Table */}
         <div className="overflow-x-auto -mx-6 px-6">
           <table className={`table-professional table-sticky-header w-full ${
-            activeTab === 'overview' ? 'min-w-[600px]' :
-            activeTab === 'performance' ? 'min-w-[700px]' :
+            activeTab === 'overview' ? 'min-w-[900px]' :
             'min-w-[750px]'
           }`}>
             <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/50">
@@ -275,7 +264,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
                   </button>
                 </th>
                 
-                {/* Overview Tab Columns */}
+                {/* Overview Tab Columns (merged with Performance) */}
                 {activeTab === 'overview' && (
                   <>
                     <th className="text-right py-3 px-4">
@@ -299,44 +288,11 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
                     </th>
                     <th className="text-right py-3 px-4">
                       <button
-                        onClick={() => handleSort('gainLoss')}
-                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      >
-                        Gain/Loss
-                        <SortIcon field="gainLoss" />
-                      </button>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <button
-                        onClick={() => handleSort('gainLossPercent')}
-                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      >
-                        Gain/Loss %
-                        <SortIcon field="gainLossPercent" />
-                      </button>
-                    </th>
-                  </>
-                )}
-
-                {/* Performance Tab Columns */}
-                {activeTab === 'performance' && (
-                  <>
-                    <th className="text-right py-3 px-4">
-                      <button
                         onClick={() => handleSort('avgBuy')}
                         className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
                       >
                         Avg Buy
                         <SortIcon field="avgBuy" />
-                      </button>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <button
-                        onClick={() => handleSort('currentPrice')}
-                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      >
-                        Current Price
-                        <SortIcon field="currentPrice" />
                       </button>
                     </th>
                     <th className="text-right py-3 px-4">
@@ -489,7 +445,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
                       </div>
                     </td>
 
-                    {/* Overview Tab Cells */}
+                    {/* Overview Tab Cells (merged with Performance) */}
                     {activeTab === 'overview' && (
                       <>
                         <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
@@ -501,23 +457,8 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
                         <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 tabular-nums text-sm">
                           {totalPortfolioValue > 0 ? ((currentValue / totalPortfolioValue) * 100).toFixed(2) : '0.00'}%
                         </td>
-                        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
-                          {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
-                          {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
-                        </td>
-                      </>
-                    )}
-
-                    {/* Performance Tab Cells */}
-                    {activeTab === 'performance' && (
-                      <>
                         <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
                           ₨{stock.avgBuy.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                          ₨{stock.currentPrice.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
                           ₨{investment.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
