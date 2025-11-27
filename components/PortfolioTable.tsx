@@ -11,23 +11,41 @@ import {
 } from '../lib/portfolioData';
 import { Card, CardContent } from './ui/Card';
 import { useSymbolMetadata } from '../hooks/useSymbolMetadata';
+import SellStockModal from './SellStockModal';
 
 interface PortfolioTableProps {
   stocks: Stock[];
   onEditStock?: (stock: Stock) => void;
   onDeleteStock?: (stock: Stock) => void;
+  onRefresh?: () => void;
 }
 
-export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: PortfolioTableProps) {
+export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onRefresh }: PortfolioTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<keyof Stock | 'gainLoss' | 'gainLossPercent'>('symbol');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'details'>('overview');
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   
   // Fetch metadata for all stocks to get isNonCompliant
   const symbols = useMemo(() => stocks.map(s => s.symbol), [stocks]);
   const { metadata } = useSymbolMetadata(symbols);
+
+  const handleSellStock = (stock: Stock) => {
+    setSelectedStock(stock);
+    setShowSellModal(true);
+  };
+
+  const handleSellComplete = () => {
+    setShowSellModal(false);
+    setSelectedStock(null);
+    // Refresh portfolio data
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
 
   const handleSort = (field: keyof Stock | 'gainLoss' | 'gainLossPercent') => {
     if (sortField === field) {
@@ -135,6 +153,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-6">
         {/* Search and Quick Filters */}
@@ -505,6 +524,18 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
                     {(onEditStock || onDeleteStock) && (
                       <td className="py-3 px-4 text-right">
                         <div className="flex justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSellStock(stock);
+                            }}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                            title="Sell Stock"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                            </svg>
+                          </button>
                           {onEditStock && (
                             <button
                               onClick={(e) => {
@@ -560,6 +591,18 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock }: P
         </div>
       </CardContent>
     </Card>
+    
+    {/* Sell Stock Modal */}
+    {showSellModal && selectedStock && (
+      <SellStockModal
+        isOpen={showSellModal}
+        onClose={() => setShowSellModal(false)}
+        symbol={selectedStock.symbol}
+        availableShares={selectedStock.shares}
+        onSellComplete={handleSellComplete}
+      />
+    )}
+    </>
   );
 }
 

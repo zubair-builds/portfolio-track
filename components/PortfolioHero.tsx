@@ -26,10 +26,38 @@ export default function PortfolioHero({
 }: PortfolioHeroProps) {
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-xl border border-slate-200 dark:border-slate-700 p-8">
-        <div className="space-y-4">
-          <div className="h-12 w-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-          <div className="h-6 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+      <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-50 dark:from-indigo-950/30 dark:via-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm">
+        <div className="space-y-6">
+          {/* Top Row Skeleton */}
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <div className="space-y-3 flex-1">
+              <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="flex items-center gap-3">
+                <div className="h-10 sm:h-12 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="hidden sm:block h-8 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              </div>
+              <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="pt-2 flex gap-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-6 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                ))}
+              </div>
+            </div>
+            <div className="lg:min-w-[280px] h-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+
+          {/* Grid Skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 h-[88px] border border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex justify-between mb-2">
+                  <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                  <div className="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                </div>
+                <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -137,16 +165,16 @@ export default function PortfolioHero({
 
           {/* ROI */}
           <div className={`bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border ${isPositive
-              ? 'border-emerald-200/50 dark:border-emerald-800/30'
-              : 'border-rose-200/50 dark:border-rose-800/30'
+            ? 'border-emerald-200/50 dark:border-emerald-800/30'
+            : 'border-rose-200/50 dark:border-rose-800/30'
             } hover:shadow-md transition-shadow`}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                 ROI
               </p>
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPositive
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                  : 'bg-rose-100 dark:bg-rose-900/30'
+                ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                : 'bg-rose-100 dark:bg-rose-900/30'
                 }`}>
                 {isPositive ? (
                   <svg className={`w-4 h-4 ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

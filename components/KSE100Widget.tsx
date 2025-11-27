@@ -23,22 +23,34 @@ interface KSE100WidgetProps {
   refreshing?: boolean;
 }
 
-export default function KSE100Widget({ 
-  index, 
-  isLoading = false, 
+export default function KSE100Widget({
+  index,
+  isLoading = false,
   onRefresh,
-  refreshing = false 
+  refreshing = false
 }: KSE100WidgetProps) {
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[100px]">
-        <div className="space-y-3">
-          <div className="h-12 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-          <div className="grid grid-cols-3 gap-2">
-            <div className="h-10 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-            <div className="h-10 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-            <div className="h-10 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="h-4 w-20 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="h-4 w-16 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <div className="h-7 w-24 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="h-4 w-16 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+            </div>
           </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i}>
+              <div className="h-3 w-8 bg-slate-100 dark:bg-slate-700 rounded animate-pulse mb-1" />
+              <div className="h-4 w-16 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -63,7 +75,7 @@ export default function KSE100Widget({
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               {index.name}
             </h3>
-            <Badge 
+            <Badge
               variant={stateInfo.variant}
               className="text-xs"
             >
@@ -94,23 +106,23 @@ export default function KSE100Widget({
             className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition disabled:opacity-50 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-700 flex-shrink-0"
             title="Refresh"
           >
-            <svg 
+            <svg
               className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`}
-              fill="none" 
-              stroke="currentColor" 
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
           </button>
         )}
       </div>
-      
+
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div>
           <p className="text-slate-500 dark:text-slate-400 mb-0.5">High</p>

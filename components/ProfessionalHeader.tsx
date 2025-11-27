@@ -82,6 +82,12 @@ export default function ProfessionalHeader({
             >
               Indices
             </Link>
+            <Link
+              href="/transactions"
+              className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
+            >
+              Transactions
+            </Link>
             <div className="flex-1 min-w-0">
               <HeaderSymbolSearch />
             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { SectionTitle } from '../ui/SectionTitle';
-import PortfolioSummary from '../PortfolioSummary';
+import EnhancedPortfolioSummary from '../EnhancedPortfolioSummary';
 import PortfolioTable from '../PortfolioTable';
 import PortfolioPerformanceChart from '../PortfolioPerformanceChart';
 import { calculatePortfolioStats, Stock } from '../../lib/portfolioData';
@@ -13,6 +13,7 @@ interface PortfolioTabProps {
   onEditStock: (stock: Stock) => void;
   onDeleteStock: (stock: Stock) => void;
   onAddStock: () => void;
+  onRefresh?: () => void;
 }
 
 export default function PortfolioTab({
@@ -21,6 +22,7 @@ export default function PortfolioTab({
   onEditStock,
   onDeleteStock,
   onAddStock,
+  onRefresh,
 }: PortfolioTabProps) {
   const portfolioStats = useMemo(() => calculatePortfolioStats(stocks), [stocks]);
 
@@ -54,7 +56,7 @@ export default function PortfolioTab({
             </svg>
           }
         />
-        <PortfolioSummary stats={portfolioStats} />
+        <EnhancedPortfolioSummary stats={portfolioStats} />
       </section>
 
 
@@ -84,6 +86,7 @@ export default function PortfolioTab({
           stocks={stocks} 
           onEditStock={onEditStock}
           onDeleteStock={onDeleteStock}
+          onRefresh={onRefresh}
         />
       </section>
     </div>

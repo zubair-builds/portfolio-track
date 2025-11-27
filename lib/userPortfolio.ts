@@ -50,7 +50,7 @@ async function getDb(): Promise<Db> {
 async function getPortfolioCollection(): Promise<Collection<PortfolioDocument>> {
   const db = await getDb();
   const collection = db.collection<PortfolioDocument>(PORTFOLIO_COLLECTION);
-  
+
   // Removed unique constraint on {userId, symbol} to allow multiple positions per symbol
   // First, try to drop the existing unique index if it exists
   try {
@@ -62,7 +62,7 @@ async function getPortfolioCollection(): Promise<Collection<PortfolioDocument>> 
       console.warn('Error dropping index (may not exist):', error.message);
     }
   }
-  
+
   // Create non-unique indexes
   try {
     await collection.createIndex({ userId: 1 });
@@ -72,7 +72,7 @@ async function getPortfolioCollection(): Promise<Collection<PortfolioDocument>> 
       console.warn('Error creating userId index:', error.message);
     }
   }
-  
+
   try {
     await collection.createIndex({ userId: 1, symbol: 1 }, { unique: false }); // Explicitly non-unique
   } catch (error: any) {
@@ -81,7 +81,7 @@ async function getPortfolioCollection(): Promise<Collection<PortfolioDocument>> 
       console.warn('Error creating userId+symbol index:', error.message);
     }
   }
-  
+
   return collection;
 }
 
@@ -120,9 +120,9 @@ export async function savePortfolioStock(userId: string, input: PortfolioInput):
 export async function deletePortfolioStock(userId: string, positionId: string): Promise<void> {
   const collection = await getPortfolioCollection();
   const { ObjectId } = await import('mongodb');
-  await collection.deleteOne({ 
-    userId, 
-    _id: new ObjectId(positionId) 
+  await collection.deleteOne({
+    userId,
+    _id: new ObjectId(positionId)
   });
 }
 
@@ -154,9 +154,19 @@ export async function updatePortfolioStock(userId: string, positionId: string, i
   );
 }
 
+export async function updatePortfolioStockBySymbol(userId: string, symbol: string, input: PortfolioInput): Promise<void> {
+  const collection = await getPortfolioCollection();
+
+  // Delete all existing positions for this symbol to avoid duplicates
+  await collection.deleteMany({ userId, symbol: symbol.toUpperCase() });
+
+  // Insert new consolidated position
+  await savePortfolioStock(userId, input);
+}
+
 export async function initializeUserPortfolio(userId: string, stocks: PortfolioInput[]): Promise<void> {
   const collection = await getPortfolioCollection();
-  
+
   // Check if user already has portfolio
   const existing = await collection.findOne({ userId });
   if (existing) {
@@ -215,7 +225,7 @@ export async function deleteWatchlistItem(userId: string, symbol: string): Promi
 
 export async function initializeUserWatchlist(userId: string, items: WatchlistInput[]): Promise<void> {
   const collection = await getWatchlistCollection();
-  
+
   // Check if user already has watchlist
   const existing = await collection.findOne({ userId });
   if (existing) {
