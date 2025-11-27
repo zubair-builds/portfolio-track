@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import HeaderSymbolSearch from '../../components/HeaderSymbolSearch';
+import ProfessionalHeader from '../../components/ProfessionalHeader';
 import CompaniesTable, { Company, FilterOptions } from '../../components/CompaniesTable';
+import { useAuth } from '../../components/AuthProvider';
 
 const ITEMS_PER_PAGE = 50;
 
 export default function CompaniesPage() {
   const router = useRouter();
+  const { user, initializing, signout } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtersLoading, setFiltersLoading] = useState(true);
@@ -123,37 +124,34 @@ export default function CompaniesPage() {
     setCurrentPage(1); // Reset to first page when sorting changes
   };
 
+  const handleSignOut = () => {
+    signout();
+    router.replace('/signin');
+  };
+
+  useEffect(() => {
+    if (!initializing && !user) {
+      router.replace('/signin');
+    }
+  }, [initializing, user, router]);
+
+  if (initializing) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-950/70">
-        <div className="container mx-auto max-w-7xl flex items-center justify-between py-6 px-4 gap-4">
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <Link
-              href="/"
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-              title="Go to main page"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-                Companies
-              </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Browse all listed companies
-              </p>
-            </div>
-          </div>
-          <div className="hidden md:block flex-1 max-w-md mx-4">
-            <HeaderSymbolSearch />
-          </div>
-        </div>
-      </header>
+      <ProfessionalHeader user={user} onSignOut={handleSignOut} />
 
       <main className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+            Companies
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Browse all listed companies on PSX
+          </p>
+        </div>
         <CompaniesTable
           companies={companies}
           loading={loading}

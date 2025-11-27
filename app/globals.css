@@ -19,9 +19,15 @@
     --radius: 0.75rem;
     /* Professional color palette */
     --color-primary: #1e40af;
+    --color-primary-600: #1e3a8a;
     --color-success: #059669;
     --color-danger: #dc2626;
     --color-accent: #6366f1;
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-muted: #64748b;
+    --color-card: #ffffff;
+    --color-card-contrast: #0f172a;
   }
   *, *::before, *::after {
     @apply border-slate-200 dark:border-slate-800;
@@ -54,6 +60,21 @@
 @layer utilities {
   .card {
     @apply rounded-xl border bg-white shadow-sm dark:bg-slate-900/60;
+  }
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 font-semibold text-white;
+    background-color: var(--color-primary);
+  }
+  .btn-primary:hover {
+    background-color: var(--color-primary-600);
+  }
+  .btn-primary:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-md px-3 py-2 font-medium text-slate-700 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800;
   }
   .skeleton {
     @apply animate-pulse rounded-md bg-slate-200/80 dark:bg-slate-700/50;

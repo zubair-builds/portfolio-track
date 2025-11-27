@@ -5,6 +5,7 @@ import { Badge } from './ui/Badge';
 import { Card, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
 import { MiniSparkline } from './MiniSparkline';
+import { getSortedIndices } from '@/lib/constants';
 
 export interface Company {
   symbol: string;
@@ -53,31 +54,6 @@ interface CompaniesTableProps {
   sortDirection?: 'asc' | 'desc';
   onSort?: (field: 'price' | 'changePercent' | 'marketCap' | 'peRatio' | null) => void;
 }
-
-// Priority order for indices
-const priorityOrder = [
-  'mznpi', 'kmi30', 'mii30', 'kmiallshr', 'kse30', 'psxdiv20',
-  'kse100', 'kse100pr', 'bkti30', 'jsmfi', 'ogti', 'upp9',
-  'nitpgi', 'hbltti', 'jsgbkti', 'aci'
-];
-
-const getSortedIndices = (listedIn?: string) => {
-  if (!listedIn) return [];
-  const rawIndices = listedIn.split(',').map(idx => idx.trim()).filter(Boolean);
-  return rawIndices.sort((a, b) => {
-    const aLower = a.toLowerCase();
-    const bLower = b.toLowerCase();
-    const aIndex = priorityOrder.findIndex(p => p.toLowerCase() === aLower);
-    const bIndex = priorityOrder.findIndex(p => p.toLowerCase() === bLower);
-
-    if (aIndex !== -1 && bIndex !== -1) {
-      return aIndex - bIndex;
-    }
-    if (aIndex !== -1) return -1;
-    if (bIndex !== -1) return 1;
-    return aLower.localeCompare(bLower);
-  });
-};
 
 const formatNumber = (num: number | null | undefined) => {
   if (num === undefined || num === null) return 'N/A';

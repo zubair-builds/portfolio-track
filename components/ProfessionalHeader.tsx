@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from './ui/Badge';
-import { Button } from './ui/Button';
 import HeaderSymbolSearch from './HeaderSymbolSearch';
+import { getMarketStateInfo } from '@/lib/constants';
 
 interface ProfessionalHeaderProps {
   user: { name: string; email: string } | null;
@@ -44,20 +44,18 @@ export default function ProfessionalHeader({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const stateMap: Record<string, { label: string; variant: 'success' | 'danger' | 'neutral' | 'live'; showPulse: boolean }> = {
-    'OPN': { label: 'Live', variant: 'live', showPulse: true },
-    'CLS': { label: 'Closed', variant: 'neutral', showPulse: false },
-    'SUS': { label: 'Suspended', variant: 'danger', showPulse: false },
-    'PRE': { label: 'Pre-market', variant: 'neutral', showPulse: false },
-  };
-  const stateInfo = marketState ? (stateMap[marketState] || { label: 'Live', variant: 'live' as const, showPulse: true }) : null;
+  const stateInfo = marketState ? getMarketStateInfo(marketState) : null;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-sm">
       <div className="container mx-auto max-w-7xl">
         <div className="flex items-center justify-between h-12 px-4">
           {/* Left: Logo and Title */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <Link 
+            href="/" 
+            className="flex items-center gap-3 flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+            aria-label="Go to homepage"
+          >
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -68,7 +66,7 @@ export default function ProfessionalHeader({
                 Portfolio Tracker
               </h1>
             </div>
-          </div>
+          </Link>
 
           {/* Center: Search and Navigation */}
           <div className="hidden md:flex items-center gap-4 flex-1 max-w-2xl mx-6">
@@ -77,6 +75,12 @@ export default function ProfessionalHeader({
               className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
             >
               Companies
+            </Link>
+            <Link
+              href="/indices"
+              className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
+            >
+              Indices
             </Link>
             <div className="flex-1 min-w-0">
               <HeaderSymbolSearch />
