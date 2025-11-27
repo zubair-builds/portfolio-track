@@ -521,6 +521,7 @@ export default function Page() {
                 onEditStock={setEditingStock}
                 onDeleteStock={handleDeleteStock}
                 onAddStock={() => setShowAddStock(true)}
+                onRefresh={refreshPortfolioData}
               />
             )}
 

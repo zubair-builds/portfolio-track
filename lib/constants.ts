@@ -520,3 +520,84 @@ export function calculatePercentChange(
   }
   return ((current - previous) / previous) * 100;
 }
+
+// ============================================================================
+// CAPITAL GAINS TAX (CGT) CONFIGURATION
+// ============================================================================
+
+/**
+ * Capital Gains Tax rate for Pakistan Stock Exchange
+ * Applied to realized gains from stock sales
+ * As of 2024: 15% flat rate on capital gains
+ */
+export const CGT_RATE = 0.15; // 15%
+
+/**
+ * CGT exemption threshold (if any)
+ * Set to 0 if no exemption applies
+ * Update this if tax laws change
+ */
+export const CGT_EXEMPT_AMOUNT = 0;
+
+/**
+ * Calculate CGT amount on realized gains
+ * @param gain Realized gain amount
+ * @returns CGT amount (15% of gain, or 0 if gain is negative/exempt)
+ * 
+ * @example
+ * calculateCGT(10000) // 1500 (15% of 10000)
+ * calculateCGT(-5000) // 0 (no tax on losses)
+ * calculateCGT(100) // 15 (15% of 100)
+ */
+export function calculateCGT(gain: number | null | undefined): number {
+  if (!isValidNumber(gain) || gain <= CGT_EXEMPT_AMOUNT) {
+    return 0;
+  }
+  return gain * CGT_RATE;
+}
+
+/**
+ * Format CGT amount for display
+ * @param cgt CGT amount
+ * @returns Formatted string with CGT label
+ * 
+ * @example
+ * formatCGT(1500) // "CGT (15%): Rs. 1,500"
+ * formatCGT(0) // "CGT (15%): Rs. 0"
+ */
+export function formatCGT(cgt: number | null | undefined): string {
+  if (!isValidNumber(cgt)) {
+    return 'CGT (15%): N/A';
+  }
+  return `CGT (15%): Rs. ${formatNumber(cgt)}`;
+}
+
+/**
+ * Calculate net profit after CGT
+ * @param gain Realized gain
+ * @returns Net profit after 15% CGT deduction
+ * 
+ * @example
+ * calculateNetProfit(10000) // 8500 (10000 - 1500 CGT)
+ * calculateNetProfit(-5000) // -5000 (no tax on losses)
+ */
+export function calculateNetProfit(gain: number | null | undefined): number {
+  if (!isValidNumber(gain)) {
+    return 0;
+  }
+  const cgt = calculateCGT(gain);
+  return gain - cgt;
+}
+
+/**
+ * Get holding period label for display
+ * @param days Number of days held
+ * @returns Label indicating short-term (<365 days) or long-term (≥365 days)
+ * 
+ * @example
+ * getHoldingPeriodLabel(200) // "Short-term"
+ * getHoldingPeriodLabel(400) // "Long-term"
+ */
+export function getHoldingPeriodLabel(days: number): string {
+  return days < 365 ? 'Short-term' : 'Long-term';
+}

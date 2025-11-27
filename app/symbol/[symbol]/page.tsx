@@ -11,14 +11,13 @@ import TimeRangeSelector from '../../../components/TimeRangeSelector';
 import { CompanyInfo } from '../../../components/CompanyInfo';
 import { DividendHistory } from '../../../components/DividendHistory';
 import AIFinancialChatbot from '../../../components/AIFinancialChatbot';
-import HeaderSymbolSearch from '../../../components/HeaderSymbolSearch';
 import CompaniesTable, { Company, FilterOptions } from '../../../components/CompaniesTable';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { Badge } from '../../../components/ui/Badge';
 import { SymbolHero } from '../../../components/SymbolHero';
 import { InvestmentPositionCard } from '../../../components/InvestmentPositionCard';
-import { KeyStatsBar } from '../../../components/KeyStatsBar';
+import ProfessionalHeader from '../../../components/ProfessionalHeader';
+import { useIndexPrices } from '../../../hooks/useIndexPrices';
 
 interface SymbolMetadata {
   symbol: string;
@@ -48,8 +47,12 @@ export default function SymbolDetailPage({
   const resolvedParams = use(params);
   const symbol = resolvedParams.symbol.toUpperCase();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, signout } = useAuth();
   const { stocks: portfolioStocks, watchlist, refresh: refreshPortfolioData } = usePortfolioData(user?.email);
+
+  // Fetch KSE100 for market state
+  const kse100Symbols = useMemo(() => ['KSE100'], []);
+  const { indices: [kse100] } = useIndexPrices(kse100Symbols, { autoRefresh: false });
 
   const {
     data,
@@ -386,37 +389,20 @@ export default function SymbolDetailPage({
       console.error('Error toggling watchlist:', error);
     }
   };
-  console.log('metadata', metadata);
+
+  const handleSignOut = () => {
+    signout();
+    router.replace('/signin');
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Compact Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-950/70">
-        <div className="container mx-auto max-w-7xl flex items-center justify-between py-4 px-4 gap-4">
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <Link
-              href="/"
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-              title="Go to main page"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </Link>
-            <div className="hidden md:flex items-center gap-4 flex-1 max-w-md">
-              <Link
-                href="/companies"
-                className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
-              >
-                Companies
-              </Link>
-              <div className="flex-1">
-                <HeaderSymbolSearch />
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <ProfessionalHeader
+        user={user}
+        onSignOut={handleSignOut}
+        marketState={kse100?.marketState}
+        onRefresh={handleRefreshSymbol}
+      />
 
       <main className="space-y-6">
         {/* Hero Section */}
@@ -688,4 +674,3 @@ export default function SymbolDetailPage({
     </div>
   );
 }
-
