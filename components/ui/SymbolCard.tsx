@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { formatVolume, formatPrice, formatChange, formatPercent, getPerformanceColorClass, formatNumber } from '../../lib/formatUtils';
 import { Badge } from './Badge';
+import { getSortedIndices } from '@/lib/constants';
 
 export interface SymbolCardAction {
   label: string;
@@ -86,40 +87,8 @@ export default function SymbolCard({
   const performanceColor = getPerformanceColorClass(priceChange || priceChangePercent);
   const hasChange = priceChange !== undefined || priceChangePercent !== undefined;
 
-  // Parse listedIn comma-separated string into array
-  const rawIndices = listedIn
-    ? listedIn.split(',').map(idx => idx.trim()).filter(Boolean)
-    : [];
-
-  // Priority order for index badges
-  const priorityOrder = [
-    'mznpi', 'mii30', 'kmi30', 'kmiallshr', 'kse30', 'psxdiv20',
-    'kse100', 'kse100pr', 'bkti30', 'jsmfi', 'ogti', 'upp9',
-    'nitpgi', 'hbltti', 'jsgbkti', 'aci'
-  ];
-
-  // Sort indices: priority indices first (in order), then rest
-  const indices = rawIndices.sort((a, b) => {
-    const aLower = a.toLowerCase();
-    const bLower = b.toLowerCase();
-    const aIndex = priorityOrder.findIndex(p => p.toLowerCase() === aLower);
-    const bIndex = priorityOrder.findIndex(p => p.toLowerCase() === bLower);
-
-    // Both are priority indices - sort by priority order
-    if (aIndex !== -1 && bIndex !== -1) {
-      return aIndex - bIndex;
-    }
-    // Only a is priority - a comes first
-    if (aIndex !== -1) {
-      return -1;
-    }
-    // Only b is priority - b comes first
-    if (bIndex !== -1) {
-      return 1;
-    }
-    // Neither is priority - maintain original order
-    return 0;
-  });
+  // Parse listedIn and sort by priority
+  const indices = getSortedIndices(listedIn);
 
   if (loading) {
     return (

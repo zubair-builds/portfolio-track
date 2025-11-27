@@ -34,7 +34,7 @@ export async function GET(
         name: index.name,
         description: index.description,
         symbolCount: index.symbolCount,
-        symbols: index.symbols,
+        constituents: index.symbols,
         updateFrequency: index.updateFrequency,
         latestPrice: index.latestPrice,
         lastUpdated: index.lastUpdated,

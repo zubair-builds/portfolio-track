@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
+import { sortIndicesByPriority } from '@/lib/constants';
 
 /**
  * API endpoint to get available filter options for companies
@@ -38,35 +39,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Priority order for indices
-    const priorityOrder = [
-      'mznpi', 'kmi30', 'mii30', 'kmiallshr', 'kse30', 'psxdiv20',
-      'kse100', 'kse100pr', 'bkti30', 'jsmfi', 'ogti', 'upp9',
-      'nitpgi', 'hbltti', 'jsgbkti', 'aci'
-    ];
-
-    // Sort indices: priority indices first (in order), then rest alphabetically
-    const indices = Array.from(indexSet).sort((a, b) => {
-      const aLower = a.toLowerCase();
-      const bLower = b.toLowerCase();
-      const aIndex = priorityOrder.findIndex(p => p.toLowerCase() === aLower);
-      const bIndex = priorityOrder.findIndex(p => p.toLowerCase() === bLower);
-
-      // Both are priority indices - sort by priority order
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-      // Only a is priority - a comes first
-      if (aIndex !== -1) {
-        return -1;
-      }
-      // Only b is priority - b comes first
-      if (bIndex !== -1) {
-        return 1;
-      }
-      // Neither is priority - sort alphabetically
-      return aLower.localeCompare(bLower);
-    });
+    // Sort indices using centralized utility
+    const indices = sortIndicesByPriority(Array.from(indexSet));
 
     // Sort sectors alphabetically, filter out empty/null values
     const sortedSectors = sectors

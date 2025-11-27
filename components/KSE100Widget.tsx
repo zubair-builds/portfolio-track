@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from './ui/Badge';
+import { getMarketStateInfo } from '@/lib/constants';
 
 interface IndexData {
   name: string;
@@ -51,13 +52,7 @@ export default function KSE100Widget({
     );
   }
 
-  const stateMap: Record<string, { label: string; variant: 'success' | 'danger' | 'neutral' | 'live'; showPulse: boolean }> = {
-    'OPN': { label: 'Live', variant: 'live', showPulse: true },
-    'CLS': { label: 'Closed', variant: 'neutral', showPulse: false },
-    'SUS': { label: 'Suspended', variant: 'danger', showPulse: false },
-    'PRE': { label: 'Pre-market', variant: 'neutral', showPulse: false },
-  };
-  const stateInfo = stateMap[index.marketState || 'OPN'] || { label: 'Live', variant: 'live' as const, showPulse: true };
+  const stateInfo = getMarketStateInfo(index.marketState);
   const isPositive = index.change >= 0;
 
   return (
