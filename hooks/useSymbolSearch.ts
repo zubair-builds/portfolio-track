@@ -76,10 +76,10 @@ export function useSymbolSearch(
       }
 
       const data: SymbolSearchResult = await response.json();
-      
+
       // Cache the result
       cacheRef.current.set(cacheKey, data);
-      
+
       // Limit cache size to 50 entries
       if (cacheRef.current.size > 50) {
         const firstKey = cacheRef.current.keys().next().value;
@@ -89,8 +89,9 @@ export function useSymbolSearch(
       setResults(data.symbols);
       setHasMore(data.hasMore);
       setTotal(data.total);
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
+    } catch (err) {
+      const error = err as Error;
+      if (error.name !== 'AbortError') {
         setError(err instanceof Error ? err : new Error('Unknown error'));
         console.error('Error searching symbols:', err);
       }

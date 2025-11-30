@@ -5,11 +5,12 @@
 
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useCallback } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { formatNumber, formatCurrency, formatCGT } from '@/lib/constants';
+
 
 interface FIFOLotPreview {
   buyDate: Date;
@@ -31,21 +32,19 @@ interface FIFOPreview {
 }
 
 interface SellStockModalProps {
-  isOpen?: boolean;
   onClose: () => void;
   symbol: string;
   availableShares: number;
   onSellComplete: () => void;
 }
 
-export default function SellStockModal({ 
-  isOpen = true, 
-  onClose, 
-  symbol: initialSymbol, 
+export default function SellStockModal({
+  onClose,
+  symbol: initialSymbol,
   availableShares,
-  onSellComplete 
+  onSellComplete,
 }: SellStockModalProps) {
-  const [symbol, setSymbol] = useState(initialSymbol);
+  const [symbol] = useState(initialSymbol);
   const [shares, setShares] = useState('');
   const [pricePerShare, setPricePerShare] = useState('');
   const [transactionDate, setTransactionDate] = useState(() => {
@@ -69,17 +68,53 @@ export default function SellStockModal({
     }
   }, [symbol]);
 
+  const fetchFIFOPreview = useCallback(async () => {
+    setFetchingPreview(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/transactions/fifo-preview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          symbol,
+          shares: parseFloat(shares),
+          pricePerShare: parseFloat(pricePerShare),
+          transactionDate: new Date(transactionDate),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setFifoPreview(result.data);
+      } else {
+        setError(result.error || 'Failed to calculate FIFO preview');
+        setFifoPreview(null);
+      }
+    } catch (error) {
+      console.error('Error fetching FIFO preview:', error);
+      setError('Failed to fetch FIFO preview');
+      setFifoPreview(null);
+    } finally {
+      setFetchingPreview(false);
+    }
+  }, [symbol, shares, pricePerShare, transactionDate]);
+
   // Auto-fetch FIFO preview when shares or price changes
   useEffect(() => {
     const sharesNum = parseFloat(shares);
     const priceNum = parseFloat(pricePerShare);
-    
+
     if (symbol && sharesNum > 0 && priceNum > 0) {
       fetchFIFOPreview();
     } else {
       setFifoPreview(null);
     }
-  }, [symbol, shares, pricePerShare, transactionDate]);
+  }, [symbol, shares, pricePerShare, transactionDate, fetchFIFOPreview]);
 
   const fetchCurrentPrice = async (sym: string) => {
     setFetchingPrice(true);
@@ -103,46 +138,10 @@ export default function SellStockModal({
     }
   };
 
-  const fetchFIFOPreview = async () => {
-    setFetchingPreview(true);
-    setError(null);
-    
-    try {
-      const response = await fetch('/api/transactions/fifo-preview', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          symbol,
-          shares: parseFloat(shares),
-          pricePerShare: parseFloat(pricePerShare),
-          transactionDate: new Date(transactionDate),
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
-        setFifoPreview(result.data);
-      } else {
-        setError(result.error || 'Failed to calculate FIFO preview');
-        setFifoPreview(null);
-      }
-    } catch (error: any) {
-      console.error('Error fetching FIFO preview:', error);
-      setError('Failed to fetch FIFO preview');
-      setFifoPreview(null);
-    } finally {
-      setFetchingPreview(false);
-    }
-  };
-
   const handleSharesChange = (value: string) => {
     setShares(value);
     const sharesNum = parseFloat(value);
-    
+
     if (sharesNum > maxShares) {
       setError(`Cannot sell more than ${maxShares} shares`);
     } else {
@@ -194,7 +193,7 @@ export default function SellStockModal({
       const token = localStorage.getItem('token');
       const response = await fetch('/api/transactions', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
@@ -217,8 +216,8 @@ export default function SellStockModal({
       // Call the completion callback to refresh portfolio
       onSellComplete();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to record sale');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to record sale');
     } finally {
       setSaving(false);
     }
@@ -278,7 +277,7 @@ export default function SellStockModal({
             {/* Shares */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Number of Shares * 
+                Number of Shares *
                 {maxShares > 0 && (
                   <span className="text-indigo-600 dark:text-indigo-400 ml-2">
                     (Max: {maxShares})
@@ -393,9 +392,8 @@ export default function SellStockModal({
                               {lot.holdingDays} days
                             </Badge>
                           </td>
-                          <td className={`px-3 py-2 text-right font-medium ${
-                            lot.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                          }`}>
+                          <td className={`px-3 py-2 text-right font-medium ${lot.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
                             {lot.gain >= 0 ? '+' : ''}{formatCurrency(lot.gain)}
                           </td>
                         </tr>
@@ -420,11 +418,10 @@ export default function SellStockModal({
                   </div>
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400">Realized Gain/Loss</p>
-                    <p className={`text-lg font-semibold ${
-                      fifoPreview.realizedGain >= 0 
-                        ? 'text-emerald-600 dark:text-emerald-400' 
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
+                    <p className={`text-lg font-semibold ${fifoPreview.realizedGain >= 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-red-600 dark:text-red-400'
+                      }`}>
                       {fifoPreview.realizedGain >= 0 ? '+' : ''}{formatCurrency(fifoPreview.realizedGain)}
                     </p>
                   </div>
@@ -436,11 +433,10 @@ export default function SellStockModal({
                   </div>
                   <div className="col-span-2 pt-2 border-t border-indigo-300 dark:border-indigo-700">
                     <p className="text-xs text-slate-600 dark:text-slate-400">Net Profit (After CGT)</p>
-                    <p className={`text-xl font-bold ${
-                      fifoPreview.netProfit >= 0 
-                        ? 'text-emerald-600 dark:text-emerald-400' 
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
+                    <p className={`text-xl font-bold ${fifoPreview.netProfit >= 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-red-600 dark:text-red-400'
+                      }`}>
                       {fifoPreview.netProfit >= 0 ? '+' : ''}{formatCurrency(fifoPreview.netProfit)}
                     </p>
                   </div>

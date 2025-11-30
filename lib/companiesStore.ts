@@ -47,7 +47,7 @@ export async function getCompanyData(symbol: string): Promise<CompanyData | null
     const companies = db.collection<CompanyData>('companies');
 
     const company = await companies.findOne({ symbol: symbol.toUpperCase() });
-    
+
     return company;
   } catch (error) {
     console.error(`Error getting company data for ${symbol}:`, error);
@@ -68,7 +68,7 @@ export async function getAllCompanies(): Promise<CompanyData[]> {
       .find({})
       .sort({ symbol: 1 })
       .toArray();
-    
+
     return allCompanies;
   } catch (error) {
     console.error('Error getting all companies:', error);
@@ -86,11 +86,11 @@ export async function getCompaniesBySymbols(symbols: string[]): Promise<CompanyD
     const companies = db.collection<CompanyData>('companies');
 
     const upperSymbols = symbols.map(s => s.toUpperCase());
-    
+
     const result = await companies
       .find({ symbol: { $in: upperSymbols } })
       .toArray();
-    
+
     return result;
   } catch (error) {
     console.error('Error getting companies by symbols:', error);
@@ -109,10 +109,10 @@ export async function saveCompanyData(data: CompanyData): Promise<void> {
     const companies = db.collection<CompanyData>('companies');
 
     const upperSymbol = data.symbol.toUpperCase();
-    
+
     // Get existing company data to check for free float changes
     const existing = await companies.findOne({ symbol: upperSymbol });
-    
+
     // Prepare the updated data
     const updatedData: CompanyData = {
       ...data,
@@ -163,8 +163,8 @@ export async function trackFreeFloatChange(
       changedAt: new Date(),
     };
 
-    await history.insertOne(entry as any);
-    
+    await history.insertOne(entry);
+
     console.log(`📊 Tracked free float change for ${symbol}: ${freeFloatPercent}%`);
   } catch (error) {
     console.error(`Error tracking free float change for ${symbol}:`, error);
@@ -189,7 +189,7 @@ export async function getFreeFloatHistory(
       .sort({ changedAt: -1 })
       .limit(limit)
       .toArray();
-    
+
     return entries;
   } catch (error) {
     console.error(`Error getting free float history for ${symbol}:`, error);
@@ -207,7 +207,7 @@ export async function deleteCompanyData(symbol: string): Promise<void> {
     const companies = db.collection<CompanyData>('companies');
 
     await companies.deleteOne({ symbol: symbol.toUpperCase() });
-    
+
     console.log(`Deleted company data for ${symbol}`);
   } catch (error) {
     console.error(`Error deleting company data for ${symbol}:`, error);
@@ -227,17 +227,17 @@ export async function ensureCompanyIndexes(): Promise<void> {
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    
+
     // Companies collection indexes
     const companies = db.collection('companies');
     await companies.createIndex({ symbol: 1 }, { unique: true });
     await companies.createIndex({ lastUpdated: 1 });
-    
+
     // Free float history collection indexes
     const history = db.collection('company_freefloat_history');
     await history.createIndex({ symbol: 1, changedAt: -1 });
     await history.createIndex({ changedAt: -1 });
-    
+
     console.log('✓ Company indexes ensured');
   } catch (error) {
     console.error('Error ensuring company indexes:', error);
@@ -298,7 +298,7 @@ export async function getHighestFreeFloat(limit: number = 10): Promise<CompanyDa
       .sort({ freeFloatPercent: -1 })
       .limit(limit)
       .toArray();
-    
+
     return results;
   } catch (error) {
     console.error('Error getting highest free float:', error);
@@ -320,7 +320,7 @@ export async function getLowestFreeFloat(limit: number = 10): Promise<CompanyDat
       .sort({ freeFloatPercent: 1 })
       .limit(limit)
       .toArray();
-    
+
     return results;
   } catch (error) {
     console.error('Error getting lowest free float:', error);

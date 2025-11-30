@@ -11,7 +11,7 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import DateRangeFilter, { type DateRangeValue } from './DateRangeFilter';
-import { formatNumber, formatCurrency, formatCGT, getHoldingPeriodLabel } from '@/lib/constants';
+import { formatNumber, formatCurrency } from '@/lib/constants';
 
 interface Transaction {
   _id: string;
@@ -34,34 +34,29 @@ interface TransactionsTableProps {
   className?: string;
 }
 
-export default function TransactionsTable({ userId, className = '' }: TransactionsTableProps) {
+export default function TransactionsTable({ className = '' }: TransactionsTableProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Filters
   const [dateRange, setDateRange] = useState<DateRangeValue | null>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | 'BUY' | 'SELL'>('all');
   const [symbolSearch, setSymbolSearch] = useState('');
-  
+
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [total, setTotal] = useState(0);
-  
+
   // Sorting
-  const [sortBy, setSortBy] = useState<'date' | 'symbol'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  
+
+
   // Expanded notes
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [dateRange, typeFilter, symbolSearch, page, pageSize, sortBy, sortOrder]);
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = React.useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -91,13 +86,17 @@ export default function TransactionsTable({ userId, className = '' }: Transactio
       } else {
         setError(result.error || 'Failed to fetch transactions');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching transactions:', err);
       setError('Failed to load transactions');
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, typeFilter, symbolSearch, page, pageSize]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   const handleDelete = async (transactionId: string) => {
     if (!confirm('Are you sure you want to delete this transaction? This cannot be undone.')) {
@@ -119,7 +118,7 @@ export default function TransactionsTable({ userId, className = '' }: Transactio
       } else {
         alert(result.error || 'Failed to delete transaction');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error deleting transaction:', err);
       alert('Failed to delete transaction');
     }
@@ -178,7 +177,7 @@ export default function TransactionsTable({ userId, className = '' }: Transactio
               </label>
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as any)}
+                onChange={(e) => setTypeFilter(e.target.value as 'all' | 'BUY' | 'SELL')}
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">All Transactions</option>
@@ -306,7 +305,7 @@ export default function TransactionsTable({ userId, className = '' }: Transactio
                         {new Date(tx.transactionDate).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
-                        <Link 
+                        <Link
                           href={`/companies/${tx.symbol.toLowerCase()}`}
                           className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                         >
@@ -337,11 +336,10 @@ export default function TransactionsTable({ userId, className = '' }: Transactio
                       <td className="px-4 py-3 text-right">
                         {tx.realizedGain !== undefined && (
                           <div className="space-y-1">
-                            <p className={`text-sm font-medium ${
-                              tx.realizedGain >= 0 
-                                ? 'text-emerald-600 dark:text-emerald-400' 
-                                : 'text-red-600 dark:text-red-400'
-                            }`}>
+                            <p className={`text-sm font-medium ${tx.realizedGain >= 0
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-red-600 dark:text-red-400'
+                              }`}>
                               {tx.realizedGain >= 0 ? '+' : ''}{formatCurrency(tx.realizedGain)}
                             </p>
                             {tx.cgtAmount !== undefined && tx.cgtAmount > 0 && (
@@ -413,7 +411,7 @@ export default function TransactionsTable({ userId, className = '' }: Transactio
                       } else {
                         pageNum = page - 2 + i;
                       }
-                      
+
                       return (
                         <Button
                           key={pageNum}

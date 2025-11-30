@@ -83,9 +83,9 @@ export function useCompanyData(
       } else {
         throw new Error(data.error || 'Failed to refresh company data');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error refreshing company data:', err);
-      setError(err.message || 'Failed to refresh company data');
+      setError(err instanceof Error ? err.message : 'Failed to refresh company data');
     } finally {
       setRefreshing(false);
     }

@@ -66,10 +66,10 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
     abortControllerRef.current = new AbortController();
 
     try {
-      const requestBody: { 
-        stocks: Stock[]; 
-        mode: string; 
-        symbol?: string; 
+      const requestBody: {
+        stocks: Stock[];
+        mode: string;
+        symbol?: string;
         forceRefresh?: boolean;
         investmentData?: { shares: number; avgBuy: number; currentPrice: number };
       } = {
@@ -80,7 +80,7 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
 
       if (insightMode === 'stock' && stockSymbol) {
         requestBody.symbol = stockSymbol;
-        
+
         // If analyzing a specific stock and user owns it, pass investment data
         if (initialStock && initialStock.symbol === stockSymbol) {
           requestBody.investmentData = {
@@ -157,9 +157,9 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
       const data = await response.json();
 
       if (data.success) {
-        setHistory(data.history.map((item: any) => ({
+        setHistory(data.history.map((item: Record<string, unknown>) => ({
           ...item,
-          createdAt: new Date(item.createdAt),
+          createdAt: new Date(item.createdAt as string),
         })));
       }
     } catch (err) {
@@ -303,38 +303,38 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
             {/* Mode Selection */}
             {!mode && !loading && (
               <div className="space-y-4 flex flex-col items-center justify-center min-h-full">
-              <p className="text-center text-slate-600 dark:text-slate-400 mb-6">
-                Choose what insights you'd like to generate:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
-                <button
-                  onClick={() => fetchInsights('portfolio')}
-                  className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/30"
-                >
-                  <svg className="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <div>
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">Portfolio Review</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Comprehensive analysis by AI consultant
-                    </p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => fetchInsights('market')}
-                  className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 transition dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30"
-                >
-                  <svg className="w-12 h-12 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div>
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">Market Trends</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      PSX overview & sentiment
-                    </p>
-                  </div>
-                </button>
+                <p className="text-center text-slate-600 dark:text-slate-400 mb-6">
+                  Choose what insights you&apos;d like to generate:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
+                  <button
+                    onClick={() => fetchInsights('portfolio')}
+                    className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/30"
+                  >
+                    <svg className="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">Portfolio Review</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Comprehensive analysis by AI consultant
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => fetchInsights('market')}
+                    className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 transition dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30"
+                  >
+                    <svg className="w-12 h-12 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">Market Trends</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        PSX overview & sentiment
+                      </p>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
@@ -371,7 +371,8 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
                         blockquote: ({ node, ...props }) => (
                           <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-4 text-slate-600 dark:text-slate-400" {...props} />
                         ),
-                        code: ({ node, inline, ...props }: any) => 
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        code: ({ node, inline, ...props }: { node?: any; inline?: boolean;[key: string]: any }) =>
                           inline ? (
                             <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
                           ) : (

@@ -13,15 +13,15 @@ type WatchlistEntry = WatchlistItem & {
 interface WatchlistProps {
   items: WatchlistEntry[];
   isLoading: boolean;
-  onEditItem?: (item: WatchlistEntry) => void;
+
   onDeleteItem?: (item: WatchlistEntry) => void;
 }
 
-export default function Watchlist({ items, isLoading, onEditItem, onDeleteItem }: WatchlistProps) {
+export default function Watchlist({ items, isLoading, onDeleteItem }: WatchlistProps) {
   const symbols = items.map(item => item.symbol);
   const { metadata, loading: metadataLoading } = useSymbolMetadata(symbols);
 
-  const hasLiveData = items.some((item) => item.currentPrice !== null || item.details);
+
 
   return (
     <Card>
@@ -48,7 +48,7 @@ export default function Watchlist({ items, isLoading, onEditItem, onDeleteItem }
             </svg>
             <div>
               <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your watchlist is empty</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Track symbols you're interested in</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Track symbols you&apos;re interested in</p>
             </div>
           </div>
         ) : (

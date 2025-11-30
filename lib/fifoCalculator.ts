@@ -33,38 +33,38 @@ export function calculateFIFO(
 ): FIFOCalculationResult {
   const lotsUsed: FIFOLot[] = [];
   const breakdown: string[] = [];
-  
+
   let remainingToSell = sellShares;
   let totalCost = 0;
-  let totalProceeds = sellShares * sellPrice;
+  const totalProceeds = sellShares * sellPrice;
   let totalWeightedHoldingDays = 0;
-  
+
   // Process buy transactions in FIFO order (oldest first)
   for (const buyTx of buyTransactions) {
     if (remainingToSell <= 0) break;
-    
+
     // Determine how many shares to use from this lot
     const sharesToUse = Math.min(remainingToSell, buyTx.shares);
-    
+
     // Calculate holding period
     const holdingDays = Math.floor(
       (sellDate.getTime() - buyTx.transactionDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    
+
     // Calculate gain for this lot
     const costForThisLot = sharesToUse * buyTx.pricePerShare;
     const proceedsForThisLot = sharesToUse * sellPrice;
     const gainForThisLot = proceedsForThisLot - costForThisLot;
-    
+
     // Calculate CGT for this lot (only on positive gains)
     const cgtForThisLot = gainForThisLot > 0 ? gainForThisLot * CGT_RATE : 0;
-    
+
     // Add to total cost
     totalCost += costForThisLot;
-    
+
     // Add to weighted holding days (weight by shares used)
     totalWeightedHoldingDays += holdingDays * sharesToUse;
-    
+
     // Create FIFO lot record
     const lot: FIFOLot = {
       buyTransactionId: buyTx._id!.toString(),
@@ -75,9 +75,9 @@ export function calculateFIFO(
       gain: gainForThisLot,
       cgtAmount: cgtForThisLot,
     };
-    
+
     lotsUsed.push(lot);
-    
+
     // Add to breakdown
     const holdingLabel = holdingDays >= 365 ? 'Long-term' : 'Short-term';
     breakdown.push(
@@ -87,15 +87,15 @@ export function calculateFIFO(
         2
       )}, CGT: ${cgtForThisLot.toFixed(2)}`
     );
-    
+
     remainingToSell -= sharesToUse;
   }
-  
+
   // Calculate totals
   const realizedGain = totalProceeds - totalCost;
   const totalCGT = realizedGain > 0 ? realizedGain * CGT_RATE : 0;
   const avgHoldingDays = sellShares > 0 ? Math.floor(totalWeightedHoldingDays / sellShares) : 0;
-  
+
   return {
     lotsUsed,
     totalCost,
@@ -119,7 +119,7 @@ export function validateSellShares(
   sellShares: number
 ): { isValid: boolean; availableShares: number; message?: string } {
   const totalBuyShares = buyTransactions.reduce((sum, tx) => sum + tx.shares, 0);
-  
+
   if (sellShares > totalBuyShares) {
     return {
       isValid: false,
@@ -127,7 +127,7 @@ export function validateSellShares(
       message: `Cannot sell ${sellShares} shares. Only ${totalBuyShares} shares available.`,
     };
   }
-  
+
   return {
     isValid: true,
     availableShares: totalBuyShares,
@@ -150,12 +150,12 @@ export function calculateHoldingsFromTransactions(transactions: TransactionDocum
   let totalCost = 0;
   let totalRealizedGains = 0;
   let totalCGTPaid = 0;
-  
+
   // Sort by date to ensure proper order
   const sortedTx = [...transactions].sort(
     (a, b) => a.transactionDate.getTime() - b.transactionDate.getTime()
   );
-  
+
   for (const tx of sortedTx) {
     if (tx.transactionType === 'BUY') {
       currentShares += tx.shares;
@@ -170,9 +170,9 @@ export function calculateHoldingsFromTransactions(transactions: TransactionDocum
       }
     }
   }
-  
+
   const averageCost = currentShares > 0 ? totalCost / currentShares : 0;
-  
+
   return {
     currentShares,
     averageCost,
@@ -199,11 +199,11 @@ export function formatFIFOBreakdown(result: FIFOCalculationResult): string {
     `Net Profit: ${(result.realizedGain - result.totalCGT).toFixed(2)}`,
     `Avg Holding Period: ${result.holdingPeriodDays} days`,
   ];
-  
+
   if (result.remainingShares > 0) {
     lines.push(`⚠️ Warning: ${result.remainingShares} shares could not be matched to buy lots`);
   }
-  
+
   return lines.join('\n');
 }
 

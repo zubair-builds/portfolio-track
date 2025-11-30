@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { SectionTitle } from '../ui/SectionTitle';
 import EnhancedPortfolioSummary from '../EnhancedPortfolioSummary';
 import PortfolioTable from '../PortfolioTable';
-import PortfolioPerformanceChart from '../PortfolioPerformanceChart';
+
 import { calculatePortfolioStats, Stock } from '../../lib/portfolioData';
 
 interface PortfolioTabProps {
@@ -82,8 +82,8 @@ export default function PortfolioTab({
             Add Stock
           </button>
         </div>
-        <PortfolioTable 
-          stocks={stocks} 
+        <PortfolioTable
+          stocks={stocks}
           onEditStock={onEditStock}
           onDeleteStock={onDeleteStock}
           onRefresh={onRefresh}

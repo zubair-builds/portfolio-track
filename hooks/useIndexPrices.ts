@@ -55,23 +55,23 @@ export function useIndexPrices(
   const fetchIndices = useCallback(async () => {
     try {
       setError(null);
-      
+
       // Fetch from API
       const response = await fetch('/api/indices');
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
-      
+
       // Filter by symbols if specified
       let filteredIndices = data.indices;
-      
+
       if (symbols && symbols.length > 0) {
         const upperSymbols = symbols.map(s => s.toUpperCase());
-        filteredIndices = data.indices.filter((idx: any) =>
-          upperSymbols.includes(idx.symbol.toUpperCase())
+        filteredIndices = data.indices.filter((idx: Record<string, unknown>) =>
+          upperSymbols.includes((idx.symbol as string).toUpperCase())
         );
       }
 
@@ -105,7 +105,7 @@ export function useIndexPrices(
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    
+
     try {
       // Refresh prices from PSX API
       const queryParams = new URLSearchParams();
@@ -116,7 +116,7 @@ export function useIndexPrices(
       }
 
       const response = await fetch(`/api/indices/refresh?${queryParams}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }

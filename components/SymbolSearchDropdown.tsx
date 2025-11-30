@@ -28,7 +28,7 @@ export default function SymbolSearchDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [selectedSymbol, setSelectedSymbol] = useState<SearchSymbol | null>(null);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,7 +59,7 @@ export default function SymbolSearchDropdown({
     setInputValue(newValue);
     setIsOpen(true);
     setSelectedIndex(-1);
-    
+
     // If user clears the input, clear the selection
     if (!newValue.trim()) {
       setSelectedSymbol(null);
@@ -88,19 +88,19 @@ export default function SymbolSearchDropdown({
         e.preventDefault();
         setSelectedIndex(prev => (prev < results.length - 1 ? prev + 1 : prev));
         break;
-      
+
       case 'ArrowUp':
         e.preventDefault();
         setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
         break;
-      
+
       case 'Enter':
         e.preventDefault();
         if (selectedIndex >= 0 && results[selectedIndex]) {
           handleSelectSymbol(results[selectedIndex]);
         }
         break;
-      
+
       case 'Escape':
         e.preventDefault();
         setIsOpen(false);
@@ -112,7 +112,7 @@ export default function SymbolSearchDropdown({
   // Highlight matching text in results
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return text;
-    
+
     const parts = text.split(new RegExp(`(${query})`, 'gi'));
     return parts.map((part, index) =>
       part.toLowerCase() === query.toLowerCase() ? (
@@ -130,7 +130,7 @@ export default function SymbolSearchDropdown({
       <label htmlFor="symbol-search" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
-      
+
       <div className="relative">
         <input
           ref={inputRef}
@@ -150,7 +150,7 @@ export default function SymbolSearchDropdown({
           className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           autoComplete="off"
         />
-        
+
         {/* Search Icon or Loading Spinner */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
           {loading ? (
@@ -185,7 +185,7 @@ export default function SymbolSearchDropdown({
             </div>
           ) : results.length === 0 && !loading ? (
             <div className="p-4 text-sm text-slate-500 dark:text-slate-400 text-center">
-              No symbols found matching "{inputValue}"
+              No symbols found matching &quot;{inputValue}&quot;
             </div>
           ) : (
             <div className="overflow-y-auto max-h-80">
@@ -194,11 +194,10 @@ export default function SymbolSearchDropdown({
                   key={symbol.symbol}
                   type="button"
                   onClick={() => handleSelectSymbol(symbol)}
-                  className={`w-full text-left px-4 py-3 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-b-0 ${
-                    index === selectedIndex
+                  className={`w-full text-left px-4 py-3 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-b-0 ${index === selectedIndex
                       ? 'bg-indigo-50 dark:bg-indigo-900/30'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -246,7 +245,7 @@ export default function SymbolSearchDropdown({
                   </div>
                 </button>
               ))}
-              
+
               {loading && (
                 <div className="p-4 text-center">
                   <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />

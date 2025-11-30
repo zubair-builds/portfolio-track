@@ -56,29 +56,32 @@ async function getPortfolioCollection(): Promise<Collection<PortfolioDocument>> 
   try {
     await collection.dropIndex('userId_1_symbol_1');
     console.log('Dropped existing unique index on {userId, symbol}');
-  } catch (error: any) {
+  } catch (error) {
     // Index doesn't exist or already dropped, ignore
-    if (error.code !== 27 && error.codeName !== 'IndexNotFound') {
-      console.warn('Error dropping index (may not exist):', error.message);
+    const err = error as { code?: number; codeName?: string; message: string };
+    if (err.code !== 27 && err.codeName !== 'IndexNotFound') {
+      console.warn('Error dropping index (may not exist):', err.message);
     }
   }
 
   // Create non-unique indexes
   try {
     await collection.createIndex({ userId: 1 });
-  } catch (error: any) {
+  } catch (error) {
     // Index may already exist, ignore
-    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
-      console.warn('Error creating userId index:', error.message);
+    const err = error as { code?: number; codeName?: string; message: string };
+    if (err.code !== 85 && err.codeName !== 'IndexOptionsConflict') {
+      console.warn('Error creating userId index:', err.message);
     }
   }
 
   try {
     await collection.createIndex({ userId: 1, symbol: 1 }, { unique: false }); // Explicitly non-unique
-  } catch (error: any) {
+  } catch (error) {
     // Index may already exist, ignore
-    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
-      console.warn('Error creating userId+symbol index:', error.message);
+    const err = error as { code?: number; codeName?: string; message: string };
+    if (err.code !== 85 && err.codeName !== 'IndexOptionsConflict') {
+      console.warn('Error creating userId+symbol index:', err.message);
     }
   }
 
@@ -137,7 +140,7 @@ export async function updatePortfolioStock(userId: string, positionId: string, i
   const { ObjectId } = await import('mongodb');
   const now = new Date();
 
-  const updateFields: any = {
+  const updateFields: Partial<PortfolioDocument> = {
     symbol: input.symbol.toUpperCase(),
     shares: input.shares,
     avgBuy: input.avgBuy,

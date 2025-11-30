@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongodb';
+import type { Filter } from 'mongodb';
+import type { SymbolPriceDocument } from '../../../../lib/symbolsStore';
 
 /**
  * API endpoint to search symbols with pagination
@@ -16,11 +18,11 @@ export async function GET(request: NextRequest) {
 
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const collection = db.collection('symbol_prices');
+    const collection = db.collection<SymbolPriceDocument>('symbol_prices');
 
     // Build search filter
-    const filter: any = {};
-    
+    const filter: Filter<SymbolPriceDocument> = {};
+
     if (query) {
       // Search across symbol, name, and sectorName
       filter.$or = [

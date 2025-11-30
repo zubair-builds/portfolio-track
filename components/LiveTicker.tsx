@@ -98,7 +98,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
   const [updates, setUpdates] = useState<MarketUpdate[]>([]);
   const [connectionState, setConnectionState] = useState<ConnectionState>(autoConnect ? 'connecting' : 'disconnected');
   const [error, setError] = useState<string | null>(null);
-  const [clientId, setClientId] = useState<string | null>(null);
+
   const isMountedRef = useRef(true);
   // Use ref to store latest filteredSymbols so WebSocket handler always has current value
   const filteredSymbolsRef = useRef<string[]>(filteredSymbols);
@@ -343,7 +343,6 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
           switch (message.type) {
             case 'welcome':
               const welcomeMsg = message as WelcomeMessage;
-              setClientId(welcomeMsg.clientId);
               console.log('Welcome message received:', welcomeMsg.message, 'Client ID:', welcomeMsg.clientId);
               break;
 
@@ -607,13 +606,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
     }
   };
 
-  const formatNumber = (num: number): string => {
-    if (num === undefined || num === null || isNaN(num)) return 'N/A';
-    if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
-    if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
-    if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
-    return num.toFixed(2);
-  };
+
 
   const formatPrice = (price: number): string => {
     if (price === undefined || price === null || isNaN(price)) return 'N/A';

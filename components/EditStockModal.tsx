@@ -46,15 +46,15 @@ export default function EditStockModal({ stock, onClose, onSave }: EditStockModa
     setSaving(true);
     try {
       const purchaseDateObj = purchaseDate ? new Date(purchaseDate) : undefined;
-      await onSave({ 
-        symbol: stock.symbol, 
-        shares: sharesNum, 
+      await onSave({
+        symbol: stock.symbol,
+        shares: sharesNum,
         avgBuy: avgBuyNum,
         purchaseDate: purchaseDateObj
       });
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update stock');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update stock');
     } finally {
       setSaving(false);
     }

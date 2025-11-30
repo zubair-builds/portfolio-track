@@ -48,7 +48,7 @@ export function sortIndicesByPriority<T extends { symbol: string } | string>(
     const bSymbol = typeof b === 'string' ? b : b.symbol;
     const aLower = aSymbol.toLowerCase();
     const bLower = bSymbol.toLowerCase();
-    
+
     const aIndex = INDEX_PRIORITY_ORDER.findIndex(p => p === aLower);
     const bIndex = INDEX_PRIORITY_ORDER.findIndex(p => p === bLower);
 
@@ -217,7 +217,7 @@ export function formatVolume(
   decimals: number = 2
 ): string {
   if (num === undefined || num === null || isNaN(num)) return 'N/A';
-  
+
   if (num >= FORMAT_THRESHOLDS.BILLION) {
     return `${(num / FORMAT_THRESHOLDS.BILLION).toFixed(decimals)}B`;
   }
@@ -432,20 +432,20 @@ export function formatDate(
   const date = typeof timestamp === 'number' || typeof timestamp === 'string'
     ? new Date(timestamp)
     : timestamp;
-  
+
   if (isNaN(date.getTime())) return 'Invalid Date';
-  
+
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   };
-  
+
   if (includeTime) {
     options.hour = 'numeric';
     options.minute = '2-digit';
   }
-  
+
   return date.toLocaleDateString('en-US', options);
 }
 
@@ -461,9 +461,9 @@ export function formatTime(timestamp: number | Date | string): string {
   const date = typeof timestamp === 'number' || typeof timestamp === 'string'
     ? new Date(timestamp)
     : timestamp;
-  
+
   if (isNaN(date.getTime())) return 'Invalid Time';
-  
+
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -479,7 +479,7 @@ export function formatTime(timestamp: number | Date | string): string {
  * @param value Value to check
  * @returns true if valid number, false otherwise
  */
-export function isValidNumber(value: any): value is number {
+export function isValidNumber(value: unknown): value is number {
   return typeof value === 'number' && !isNaN(value) && isFinite(value);
 }
 

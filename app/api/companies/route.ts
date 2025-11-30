@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
+import type { Filter, Sort } from 'mongodb';
+import type { SymbolPriceDocument } from '@/lib/symbolsStore';
 
 /**
  * API endpoint to list companies with filtering, pagination, and sorting
@@ -19,11 +21,11 @@ export async function GET(request: NextRequest) {
 
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const collection = db.collection('symbol_prices');
+    const collection = db.collection<SymbolPriceDocument>('symbol_prices');
 
     // Build search filter
-    const filter: any = {};
-    const andConditions: any[] = [];
+    const filter: Filter<SymbolPriceDocument> = {};
+    const andConditions: Filter<SymbolPriceDocument>[] = [];
 
     // Text search across symbol, name, and sectorName
     if (query) {
@@ -68,7 +70,7 @@ export async function GET(request: NextRequest) {
     filter.name = { $exists: true, $ne: '' };
 
     // Build sort object
-    let sortObj: any = {};
+    let sortObj: Sort = {};
     switch (sortBy) {
       case 'price':
         sortObj = { currentPrice: sortDir, symbol: 1 }; // Secondary sort by symbol for consistency

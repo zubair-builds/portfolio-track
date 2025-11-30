@@ -88,15 +88,15 @@ export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
     setSaving(true);
     try {
       const purchaseDateObj = purchaseDate ? new Date(purchaseDate) : undefined;
-      await onSave({ 
-        symbol: symbol.trim().toUpperCase(), 
-        shares: sharesNum, 
+      await onSave({
+        symbol: symbol.trim().toUpperCase(),
+        shares: sharesNum,
         avgBuy: avgBuyNum,
         purchaseDate: purchaseDateObj
       });
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to add stock');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add stock');
     } finally {
       setSaving(false);
     }

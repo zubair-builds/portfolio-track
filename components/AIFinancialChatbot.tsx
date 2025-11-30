@@ -75,7 +75,7 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
         .then(data => {
           if (data.success && data.messages && data.messages.length > 0) {
             // Convert fetched messages to Message format
-            const fetchedMessages: Message[] = data.messages.map((msg: any) => ({
+            const fetchedMessages: Message[] = data.messages.map((msg: { role: 'user' | 'assistant'; content: string; timestamp?: string }) => ({
               role: msg.role,
               content: msg.content,
               timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
@@ -224,11 +224,11 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
       {isOpen && (
         <div className="fixed inset-0 z-50 flex">
           {/* Backdrop */}
-          <div 
+          <div
             className="flex-1 bg-black/20 dark:bg-black/40 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
-          
+
           {/* Sidebar */}
           <div className="w-full max-w-3xl h-full flex flex-col shadow-2xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700">
             {/* Header */}
@@ -279,15 +279,14 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[90%] rounded-lg px-5 py-3 ${
-                      message.role === 'user'
+                    className={`max-w-[90%] rounded-lg px-5 py-3 ${message.role === 'user'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700'
-                    }`}
+                      }`}
                   >
                     {message.role === 'assistant' ? (
                       <div className="prose prose-slate dark:prose-invert prose-base max-w-none leading-relaxed">
-                        <ReactMarkdown 
+                        <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
                             p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
@@ -361,7 +360,7 @@ export default function AIFinancialChatbot({ stocks = [], initialContext }: AIFi
                   )}
                 </button>
               </div>
-          </div>
+            </div>
           </div>
         </div>
       )}

@@ -15,7 +15,7 @@ if (!process.env.GEMINI_API_KEY) {
 export const runtime = 'nodejs';
 
 // Helper function to fetch enriched portfolio data
-async function fetchEnrichedPortfolioData(stocks: any[]) {
+async function fetchEnrichedPortfolioData(stocks: { symbol: string; shares: number; avgBuy: number; currentPrice: number }[]) {
   const { getSymbolPriceData } = await import('../../../../lib/symbolsStore');
   const { getCompaniesBySymbols } = await import('../../../../lib/companiesStore');
   const { getDividendSummary } = await import('../../../../lib/dividendsStore');
@@ -48,8 +48,8 @@ async function fetchEnrichedPortfolioData(stocks: any[]) {
       dividendData,
     };
   });
-console.log('enrichedData', enrichedData);
-console.log('kse100Data', kse100Data);
+  console.log('enrichedData', enrichedData);
+  console.log('kse100Data', kse100Data);
   return { enrichedData, kse100Data };
 }
 
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     // Skip cache check for symbols and chat modes (they have their own logic)
     if (!forceRefresh && mode !== 'symbols' && mode !== 'chat') {
       const portfolioSymbols = mode === 'portfolio' && Array.isArray(stocks)
-        ? stocks.map((s: any) => s.symbol)
+        ? stocks.map((s: { symbol: string }) => s.symbol)
         : undefined;
       console.log('portfolioSymbols', portfolioSymbols);
       const cached = await getCachedAnalysis(mode, symbol, portfolioSymbols);
@@ -184,12 +184,12 @@ ${kse100Data ? `- KSE-100 Index: ${kse100Data.price.toFixed(2)} (${kse100Data.ch
 **52-Week Performance:**
 - High: PKR ${symbolData?.weekRange52High?.toFixed(2) || 'N/A'}
 - Low: PKR ${symbolData?.weekRange52Low?.toFixed(2) || 'N/A'}
-- Current vs 52W High: ${symbolData?.weekRange52High && symbolData?.currentPrice 
-    ? ((symbolData.currentPrice - symbolData.weekRange52High) / symbolData.weekRange52High * 100).toFixed(2) + '%'
-    : 'N/A'}
-- Current vs 52W Low: ${symbolData?.weekRange52Low && symbolData?.currentPrice 
-    ? ((symbolData.currentPrice - symbolData.weekRange52Low) / symbolData.weekRange52Low * 100).toFixed(2) + '%'
-    : 'N/A'}
+- Current vs 52W High: ${symbolData?.weekRange52High && symbolData?.currentPrice
+          ? ((symbolData.currentPrice - symbolData.weekRange52High) / symbolData.weekRange52High * 100).toFixed(2) + '%'
+          : 'N/A'}
+- Current vs 52W Low: ${symbolData?.weekRange52Low && symbolData?.currentPrice
+          ? ((symbolData.currentPrice - symbolData.weekRange52Low) / symbolData.weekRange52Low * 100).toFixed(2) + '%'
+          : 'N/A'}
 `;
 
       // Dividend information
@@ -336,7 +336,7 @@ Begin your stock analysis report now:`;
         );
       }
 
-      portfolioSymbols = stocks.map((s: any) => s.symbol);
+      portfolioSymbols = stocks.map((s: { symbol: string }) => s.symbol);
 
       // Fetch enriched data
       const { enrichedData, kse100Data } = await fetchEnrichedPortfolioData(stocks);
@@ -608,11 +608,11 @@ Begin your portfolio review now:`;
       // Portfolio context
       if (messageLower.includes('portfolio') || messageLower.includes('holdings') || messageLower.includes('my stocks') || (Array.isArray(stocks) && stocks.length > 0)) {
         if (Array.isArray(stocks) && stocks.length > 0) {
-          portfolioSymbols = stocks.map((s: any) => s.symbol);
+          portfolioSymbols = stocks.map((s: { symbol: string }) => s.symbol);
           const { enrichedData, kse100Data } = await fetchEnrichedPortfolioData(stocks);
-          
-          const totalInvestment = stocks.reduce((sum: number, s: any) => sum + (s.shares * s.avgBuy), 0);
-          const currentValue = stocks.reduce((sum: number, s: any) => sum + (s.shares * s.currentPrice), 0);
+
+          const totalInvestment = stocks.reduce((sum: number, s: { shares: number; avgBuy: number }) => sum + (s.shares * s.avgBuy), 0);
+          const currentValue = stocks.reduce((sum: number, s: { shares: number; currentPrice: number }) => sum + (s.shares * s.currentPrice), 0);
           const totalReturn = ((currentValue - totalInvestment) / totalInvestment * 100);
 
           contextData += `\n\n**PORTFOLIO CONTEXT:**\n`;
@@ -620,7 +620,7 @@ Begin your portfolio review now:`;
           contextData += `- Total Investment: PKR ${totalInvestment.toLocaleString('en-PK', { minimumFractionDigits: 2 })}\n`;
           contextData += `- Current Value: PKR ${currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2 })}\n`;
           contextData += `- Total Return: ${totalReturn.toFixed(2)}%\n`;
-          contextData += `- Holdings: ${stocks.map((s: any) => `${s.symbol} (${s.shares} shares @ PKR ${s.avgBuy.toFixed(2)})`).join(', ')}\n`;
+          contextData += `- Holdings: ${stocks.map((s: { symbol: string; shares: number; avgBuy: number }) => `${s.symbol} (${s.shares} shares @ PKR ${s.avgBuy.toFixed(2)})`).join(', ')}\n`;
           if (kse100Data) {
             contextData += `- KSE-100 Index: ${kse100Data.price.toFixed(2)} (${kse100Data.changePercent >= 0 ? '+' : ''}${kse100Data.changePercent.toFixed(2)}%)\n`;
           }
@@ -632,7 +632,7 @@ Begin your portfolio review now:`;
         const symbolToAnalyze = context?.symbol || message.match(/\b([A-Z]{2,5})\b/)?.[1];
         if (symbolToAnalyze) {
           const { symbolData, companyData, dividendData, kse100Data } = await fetchEnrichedStockData(symbolToAnalyze);
-          
+
           contextData += `\n\n**SYMBOL CONTEXT - ${symbolToAnalyze.toUpperCase()}:**\n`;
           if (symbolData) {
             contextData += `- Current Price: PKR ${symbolData.currentPrice?.toFixed(2) || 'N/A'}\n`;
@@ -659,7 +659,7 @@ Begin your portfolio review now:`;
 
       // Build conversation history for context
       const conversationContext = conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0
-        ? '\n\n**CONVERSATION HISTORY:**\n' + conversationHistory.slice(-5).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')
+        ? '\n\n**CONVERSATION HISTORY:**\n' + conversationHistory.slice(-5).map((msg: { role: string; content: string }) => `${msg.role}: ${msg.content}`).join('\n')
         : '';
 
       prompt = `You are a knowledgeable and friendly AI financial advisor specializing in the Pakistan Stock Exchange (PSX). You help users with portfolio analysis, stock recommendations, market insights, and investment advice.

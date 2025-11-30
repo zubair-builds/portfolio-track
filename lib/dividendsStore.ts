@@ -5,6 +5,7 @@
  * Supports dividend calendar, yield calculations, and income tracking.
  */
 
+import type { Filter } from 'mongodb';
 import clientPromise from './mongodb';
 import { getSymbolPriceData } from './symbolsStore';
 
@@ -56,7 +57,7 @@ export async function getDividendHistory(
     }
 
     const history = await query.toArray();
-    
+
     return history;
   } catch (error) {
     console.error(`Error getting dividend history for ${symbol}:`, error);
@@ -74,7 +75,7 @@ export async function saveDividend(data: DividendRecord): Promise<void> {
     const dividends = db.collection<DividendRecord>('dividends');
 
     const upperSymbol = data.symbol.toUpperCase();
-    
+
     const dividendData: DividendRecord = {
       ...data,
       symbol: upperSymbol,
@@ -83,7 +84,7 @@ export async function saveDividend(data: DividendRecord): Promise<void> {
 
     // Upsert based on symbol and exDate (unique combination)
     await dividends.updateOne(
-      { 
+      {
         symbol: upperSymbol,
         exDate: data.exDate,
       },
@@ -121,7 +122,7 @@ export async function saveDividendBatch(data: DividendRecord[]): Promise<number>
       };
 
       const result = await dividends.updateOne(
-        { 
+        {
           symbol: symbol,
           exDate: dividend.exDate,
         },
@@ -135,7 +136,7 @@ export async function saveDividendBatch(data: DividendRecord[]): Promise<number>
     }
 
     console.log(`✓ Saved ${savedCount}/${data.length} dividend records for ${symbol}`);
-    
+
     return savedCount;
   } catch (error) {
     console.error('Error saving dividend batch:', error);
@@ -152,11 +153,11 @@ export async function deleteDividend(symbol: string, exDate: Date): Promise<void
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
     const dividends = db.collection<DividendRecord>('dividends');
 
-    await dividends.deleteOne({ 
+    await dividends.deleteOne({
       symbol: symbol.toUpperCase(),
       exDate,
     });
-    
+
     console.log(`Deleted dividend for ${symbol} (ex: ${exDate.toISOString().split('T')[0]})`);
   } catch (error) {
     console.error(`Error deleting dividend for ${symbol}:`, error);
@@ -174,9 +175,9 @@ export async function deleteDividendsBySymbol(symbol: string): Promise<number> {
     const dividends = db.collection<DividendRecord>('dividends');
 
     const result = await dividends.deleteMany({ symbol: symbol.toUpperCase() });
-    
+
     console.log(`Deleted ${result.deletedCount} dividend records for ${symbol}`);
-    
+
     return result.deletedCount || 0;
   } catch (error) {
     console.error(`Error deleting dividends for ${symbol}:`, error);
@@ -201,13 +202,13 @@ export async function getDividendsByYear(
     const dividends = db.collection<DividendRecord>('dividends');
 
     const results = await dividends
-      .find({ 
+      .find({
         symbol: symbol.toUpperCase(),
         year,
       })
       .sort({ exDate: -1 })
       .toArray();
-    
+
     return results;
   } catch (error) {
     console.error(`Error getting dividends for ${symbol} in ${year}:`, error);
@@ -231,7 +232,7 @@ export async function getUpcomingDividends(
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + daysAhead);
 
-    const query: any = {
+    const query: Filter<DividendRecord> = {
       exDate: {
         $gte: today,
         $lte: futureDate,
@@ -246,7 +247,7 @@ export async function getUpcomingDividends(
       .find(query)
       .sort({ exDate: 1 })
       .toArray();
-    
+
     return upcoming;
   } catch (error) {
     console.error('Error getting upcoming dividends:', error);
@@ -282,8 +283,8 @@ export async function getDividendSummary(symbol: string): Promise<DividendSummar
 
     // Find next dividend (nearest ex-date in the future)
     const futureDividends = history.filter(d => d.exDate >= today);
-    const nextDividend = futureDividends.length > 0 
-      ? futureDividends[futureDividends.length - 1] 
+    const nextDividend = futureDividends.length > 0
+      ? futureDividends[futureDividends.length - 1]
       : null;
 
     return {
@@ -358,7 +359,7 @@ export async function calculateAnnualDividend(
   try {
     const yearDividends = await getDividendsByYear(symbol, year);
     const total = yearDividends.reduce((sum, d) => sum + d.amount, 0);
-    
+
     return total;
   } catch (error) {
     console.error(`Error calculating annual dividend for ${symbol}:`, error);
