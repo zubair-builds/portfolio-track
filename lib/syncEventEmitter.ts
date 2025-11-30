@@ -8,7 +8,7 @@ import { EventEmitter } from 'events';
 export interface SyncEvent {
   type: 'companies' | 'dividends' | 'fundamentals';
   event: 'progress' | 'status' | 'error';
-  data: any;
+  data: unknown;
   timestamp: string;
 }
 
@@ -31,7 +31,7 @@ class SyncEventEmitter extends EventEmitter {
     this.emit('sync-update', event);
   }
 
-  emitProgress(type: 'companies' | 'dividends' | 'fundamentals', data: any) {
+  emitProgress(type: 'companies' | 'dividends' | 'fundamentals', data: unknown) {
     this.emitSyncEvent({
       type,
       event: 'progress',
@@ -40,7 +40,7 @@ class SyncEventEmitter extends EventEmitter {
     });
   }
 
-  emitStatus(type: 'companies' | 'dividends' | 'fundamentals', data: any) {
+  emitStatus(type: 'companies' | 'dividends' | 'fundamentals', data: unknown) {
     this.emitSyncEvent({
       type,
       event: 'status',

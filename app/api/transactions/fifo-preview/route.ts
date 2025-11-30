@@ -65,10 +65,10 @@ export async function POST(req: NextRequest) {
         breakdown: fifoResult.breakdown,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error calculating FIFO preview:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to calculate preview' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to calculate preview' },
       { status: 500 }
     );
   }

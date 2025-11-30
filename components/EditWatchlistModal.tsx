@@ -37,8 +37,8 @@ export default function EditWatchlistModal({ item, onClose, onSave }: EditWatchl
         note: note.trim() || undefined,
       });
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update watchlist item');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update watchlist item');
     } finally {
       setSaving(false);
     }

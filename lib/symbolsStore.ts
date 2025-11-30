@@ -66,7 +66,7 @@ export interface SymbolPriceData {
 }
 
 
-interface SymbolPriceDocument extends SymbolPriceData {
+export interface SymbolPriceDocument extends SymbolPriceData {
   _id?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -91,7 +91,7 @@ export async function saveSymbolPriceData(data: SymbolPriceData): Promise<void> 
   const collection = await getSymbolPricesCollection();
   const now = new Date();
 
-  const updateFields: any = {
+  const updateFields: Partial<SymbolPriceDocument> = {
     symbol: data.symbol.toUpperCase(),
     updatedAt: now,
   };
@@ -191,7 +191,7 @@ export async function batchSaveSymbolPriceData(updates: SymbolPriceData[]): Prom
     }
 
     const symbol = data.symbol.toUpperCase();
-    const updateFields: any = {
+    const updateFields: Partial<SymbolPriceDocument> = {
       symbol,
       updatedAt: now,
     };
@@ -275,15 +275,16 @@ export async function batchSaveSymbolPriceData(updates: SymbolPriceData[]): Prom
       total: updates.length,
       errors,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in batchSaveSymbolPriceData:', error);
     // Even with errors, some operations may succeed
     let updated = 0;
-    if (error.result) {
-      updated = (error.result.nModified || 0) + (error.result.nUpserted || 0);
+    const err = error as { result?: { nModified?: number; nUpserted?: number }; writeErrors?: { index: number; errmsg: string }[] };
+    if (err.result) {
+      updated = (err.result.nModified || 0) + (err.result.nUpserted || 0);
       // Extract individual write errors if available
-      if (error.writeErrors && Array.isArray(error.writeErrors)) {
-        for (const writeError of error.writeErrors) {
+      if (err.writeErrors && Array.isArray(err.writeErrors)) {
+        for (const writeError of err.writeErrors) {
           errors.push(`Operation ${writeError.index}: ${writeError.errmsg || 'Unknown error'}`);
         }
       }
@@ -310,14 +311,14 @@ export async function batchGetSymbolMetadata(symbols: string[]): Promise<Map<str
 
   const collection = await getSymbolPricesCollection();
   const upperSymbols = symbols.map(s => s.toUpperCase());
-  
+
   const docs = await collection
     .find({ symbol: { $in: upperSymbols } })
-    .project({ 
-      symbol: 1, 
-      name: 1, 
-      sectorName: 1, 
-      isETF: 1, 
+    .project({
+      symbol: 1,
+      name: 1,
+      sectorName: 1,
+      isETF: 1,
       isDebt: 1,
       isGEM: 1,
       currentPrice: 1,
@@ -329,8 +330,8 @@ export async function batchGetSymbolMetadata(symbols: string[]): Promise<Map<str
     .toArray();
 
   const metadataMap = new Map<string, SymbolPriceDocument>();
-  docs.forEach((doc: any) => {
-    metadataMap.set(doc.symbol, doc);
+  docs.forEach((doc) => {
+    metadataMap.set(doc.symbol, doc as unknown as SymbolPriceDocument);
   });
 
   return metadataMap;
@@ -348,7 +349,7 @@ export async function syncSymbolsFromStaticData(): Promise<{
 }> {
   const { symbols } = await import('./symbols');
   const collection = await getSymbolPricesCollection();
-  
+
   const operations: AnyBulkWriteOperation<SymbolPriceDocument>[] = [];
   const now = new Date();
 
@@ -356,7 +357,7 @@ export async function syncSymbolsFromStaticData(): Promise<{
     if (!symbolData.symbol) continue;
 
     const symbol = symbolData.symbol.toUpperCase();
-    
+
     operations.push({
       updateOne: {
         filter: { symbol },
@@ -420,14 +421,15 @@ export async function syncSymbolsFromStaticData(): Promise<{
       const result = await collection.bulkWrite(operations, { ordered: false });
       created = result.upsertedCount;
       updated = result.modifiedCount;
-    } catch (error: any) {
+    } catch (error) {
       // Even with errors, some operations may succeed
-      if (error.result) {
-        created = error.result.nUpserted || 0;
-        updated = error.result.nModified || 0;
+      const err = error as { result?: { nUpserted?: number; nModified?: number }; writeErrors?: { length: number }; message: string };
+      if (err.result) {
+        created = err.result.nUpserted || 0;
+        updated = err.result.nModified || 0;
       }
-      errors = error.writeErrors?.length || 0;
-      console.error('Bulk write errors:', error.message);
+      errors = err.writeErrors?.length || 0;
+      console.error('Bulk write errors:', err.message);
     }
   }
 
@@ -448,9 +450,9 @@ export async function getSymbolPriceStats(): Promise<{
   latestCache: Date | null;
 }> {
   const collection = await getSymbolPricesCollection();
-  
+
   const totalSymbols = await collection.countDocuments();
-  
+
   if (totalSymbols === 0) {
     return {
       totalSymbols: 0,
@@ -458,20 +460,20 @@ export async function getSymbolPriceStats(): Promise<{
       latestCache: null,
     };
   }
-  
+
   // Find oldest and latest cache timestamps
   const [oldestDoc] = await collection
     .find({ lastFetchedAt: { $exists: true, $ne: null } })
     .sort({ lastFetchedAt: 1 })
     .limit(1)
     .toArray();
-    
+
   const [latestDoc] = await collection
     .find({ lastFetchedAt: { $exists: true, $ne: null } })
     .sort({ lastFetchedAt: -1 })
     .limit(1)
     .toArray();
-  
+
   return {
     totalSymbols,
     oldestCache: oldestDoc?.lastFetchedAt || null,
@@ -489,13 +491,13 @@ export async function refreshSymbolPrices(symbols: string[]): Promise<number> {
   if (symbols.length === 0) {
     return 0;
   }
-  
+
   let successCount = 0;
-  
+
   // Fetch prices from API with delay to avoid rate limiting
   for (let i = 0; i < symbols.length; i++) {
     const symbol = symbols[i].toUpperCase();
-    
+
     try {
       // Fetch from PSX Terminal API
       const response = await fetch(
@@ -508,12 +510,12 @@ export async function refreshSymbolPrices(symbols: string[]): Promise<number> {
           },
         }
       );
-      
+
       if (!response.ok) {
         console.error(`Failed to fetch price for ${symbol}: ${response.status}`);
         continue;
       }
-      
+
       const result = await response.json();
       console.log('result', result);
       if (result.success && result.data) {
@@ -535,25 +537,25 @@ export async function refreshSymbolPrices(symbols: string[]): Promise<number> {
           bidVolume: apiData.bidVol || null,
           askVolume: apiData.askVol || null,
           lastFetchedAt: new Date(
-            apiData.timestamp > 1_000_000_000_000 
-              ? apiData.timestamp 
+            apiData.timestamp > 1_000_000_000_000
+              ? apiData.timestamp
               : apiData.timestamp * 1000
           ),
         };
-        
+
         await saveSymbolPriceData(symbolPriceData);
         successCount++;
       }
     } catch (error) {
       console.error(`Error refreshing price for ${symbol}:`, error);
     }
-    
+
     // Add delay between requests to avoid rate limiting
     if (i < symbols.length - 1) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
-  
+
   return successCount;
 }
 
@@ -563,17 +565,17 @@ export async function refreshSymbolPrices(symbols: string[]): Promise<number> {
  */
 function parseNumericValue(value: string | undefined): number | undefined {
   if (!value || typeof value !== 'string') return undefined;
-  
+
   const cleaned = value.trim().toUpperCase();
   const match = cleaned.match(/^([\d.]+)([KMB]?)$/);
-  
+
   if (!match) return undefined;
-  
+
   const number = parseFloat(match[1]);
   const unit = match[2];
-  
+
   if (isNaN(number)) return undefined;
-  
+
   switch (unit) {
     case 'K':
       return number * 1_000;
@@ -593,7 +595,7 @@ function parseNumericValue(value: string | undefined): number | undefined {
  */
 export async function getSymbolsByIndex(indexName: string): Promise<string[]> {
   const collection = await getSymbolPricesCollection();
-  
+
   // Query for symbols where listedIn contains the index name
   // This works with comma-separated strings like "ALLSHR,KSE100,KMI30"
   const docs = await collection
@@ -602,7 +604,7 @@ export async function getSymbolsByIndex(indexName: string): Promise<string[]> {
     })
     .project({ symbol: 1 })
     .toArray();
-  
+
   return docs.map(doc => doc.symbol);
 }
 
@@ -613,9 +615,9 @@ export async function getSymbolsByIndex(indexName: string): Promise<string[]> {
  */
 export async function getSymbolIndices(symbol: string): Promise<string[]> {
   const doc = await getSymbolPriceData(symbol);
-  
+
   if (!doc?.listedIn) return [];
-  
+
   // Parse comma-separated string
   return doc.listedIn.split(',').map(idx => idx.trim()).filter(idx => idx.length > 0);
 }
@@ -626,14 +628,14 @@ export async function getSymbolIndices(symbol: string): Promise<string[]> {
  */
 export async function getIndexComposition(): Promise<Map<string, number>> {
   const collection = await getSymbolPricesCollection();
-  
+
   const docs = await collection
     .find({ listedIn: { $exists: true, $ne: '' } })
     .project({ listedIn: 1 })
     .toArray();
-  
+
   const indexCounts = new Map<string, number>();
-  
+
   docs.forEach(doc => {
     if (doc.listedIn) {
       const indices = doc.listedIn.split(',').map(idx => idx.trim());
@@ -644,7 +646,7 @@ export async function getIndexComposition(): Promise<Map<string, number>> {
       });
     }
   });
-  
+
   return indexCounts;
 }
 
@@ -669,7 +671,7 @@ export async function updateSymbolFundamentals(
   const collection = await getSymbolPricesCollection();
   const now = new Date();
 
-  const updateFields: any = {
+  const updateFields: Partial<SymbolPriceDocument> = {
     symbol: symbol.toUpperCase(),
     updatedAt: now,
   };
@@ -691,7 +693,7 @@ export async function updateSymbolFundamentals(
   if (fundamentals.volume30Avg !== undefined) updateFields.volume30Avg = fundamentals.volume30Avg;
   if (fundamentals.yearChange !== undefined) updateFields.yearChange = fundamentals.yearChange;
   if (fundamentals.isNonCompliant !== undefined) updateFields.isNonCompliant = fundamentals.isNonCompliant;
-  
+
   // Also update price data if provided
   if (fundamentals.price !== undefined) updateFields.currentPrice = fundamentals.price;
   if (fundamentals.changePercent !== undefined) updateFields.priceChangePercent = fundamentals.changePercent;

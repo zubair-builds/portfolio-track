@@ -71,8 +71,8 @@ export default function AddWatchlistModal({ onClose, onSave }: AddWatchlistModal
         symbol: symbol.trim().toUpperCase(),
       });
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to add to watchlist');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add to watchlist');
     } finally {
       setSaving(false);
     }

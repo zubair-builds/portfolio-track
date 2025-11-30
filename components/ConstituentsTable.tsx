@@ -49,7 +49,7 @@ export default function ConstituentsTable({ constituents, indexSymbol }: Constit
             const response = await fetch(`/api/companies?q=${symbol}&limit=1`);
             if (!response.ok) throw new Error('Failed to fetch');
             const data = await response.json();
-            
+
             if (data.companies && data.companies.length > 0) {
               const company = data.companies[0];
               // Only return if the symbol matches exactly (case-insensitive)
@@ -57,7 +57,7 @@ export default function ConstituentsTable({ constituents, indexSymbol }: Constit
                 return company;
               }
             }
-            
+
             // Fallback to basic data if company not found
             return {
               symbol,
@@ -107,8 +107,8 @@ export default function ConstituentsTable({ constituents, indexSymbol }: Constit
   };
 
   const sortedData = [...constituentsData].sort((a, b) => {
-    let aVal: any = a[sortField];
-    let bVal: any = b[sortField];
+    let aVal: string | number | null | undefined = a[sortField];
+    let bVal: string | number | null | undefined = b[sortField];
 
     // Handle null/undefined values
     if (aVal === null || aVal === undefined) aVal = sortDirection === 'asc' ? Infinity : -Infinity;
@@ -120,7 +120,7 @@ export default function ConstituentsTable({ constituents, indexSymbol }: Constit
     }
 
     // Number comparison
-    return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    return sortDirection === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
   });
 
   const SortIcon = ({ field }: { field: typeof sortField }) => {

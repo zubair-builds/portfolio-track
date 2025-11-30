@@ -82,7 +82,6 @@ export default function SymbolCard({
   actions,
   onClick,
   loading = false,
-  variant = 'default',
 }: SymbolCardProps) {
   const performanceColor = getPerformanceColorClass(priceChange || priceChangePercent);
   const hasChange = priceChange !== undefined || priceChangePercent !== undefined;

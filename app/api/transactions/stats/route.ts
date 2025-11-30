@@ -28,10 +28,10 @@ export async function GET(req: NextRequest) {
       success: true,
       data: stats,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching transaction stats:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch stats' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch stats' },
       { status: 500 }
     );
   }

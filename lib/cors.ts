@@ -20,7 +20,7 @@ export function addCorsHeaders(response: NextResponse): NextResponse {
 /**
  * Creates a NextResponse with CORS headers
  */
-export function jsonWithCors(data: any, init?: ResponseInit): NextResponse {
+export function jsonWithCors(data: unknown, init?: ResponseInit): NextResponse {
   const response = NextResponse.json(data, init);
   return addCorsHeaders(response);
 }

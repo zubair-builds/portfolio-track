@@ -171,10 +171,11 @@ export async function syncPortfolioWithTransactions(
       }
     }
 
-  } catch (error: any) {
-    console.error('Error syncing portfolio with transactions:', error);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Error syncing portfolio with transactions:', err);
     result.success = false;
-    result.discrepancies.push(`Sync error: ${error.message}`);
+    result.discrepancies.push(`Sync error: ${err.message}`);
   }
 
   return result;
@@ -220,9 +221,10 @@ export async function reconcileDiscrepancies(
       }
     }
 
-  } catch (error: any) {
-    console.error('Error reconciling discrepancies:', error);
-    errors.push(error.message);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Error reconciling discrepancies:', err);
+    errors.push(err.message);
   }
 
   return { resolved, errors };

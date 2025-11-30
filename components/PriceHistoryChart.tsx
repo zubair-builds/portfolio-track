@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { createChart, ColorType, LineStyle, Time } from 'lightweight-charts';
+import { createChart, ColorType, LineStyle, Time, Range, IChartApi, ISeriesApi, LineWidth, IPriceLine } from 'lightweight-charts';
 import { TimeRange, OHLCData } from '../hooks/usePriceHistory';
 import { Button } from './ui/Button';
 import {
@@ -11,9 +11,6 @@ import {
   calculateMACD,
   calculateBollingerBands,
   calculateSupportResistance,
-  type MACDResult,
-  type BollingerBandsResult,
-  type SupportResistanceLevel,
 } from '../lib/technicalIndicators';
 
 interface PriceHistoryChartProps {
@@ -27,31 +24,29 @@ interface PriceHistoryChartProps {
 export default function PriceHistoryChart({
   data,
   ohlcData = [],
-  symbol,
-  range,
   loading = false,
 }: PriceHistoryChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const rsiContainerRef = useRef<HTMLDivElement>(null);
   const macdContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const rsiChartRef = useRef<any>(null);
-  const macdChartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
-  const volumeSeriesRef = useRef<any>(null);
-  
+  const chartRef = useRef<IChartApi | null>(null);
+  const rsiChartRef = useRef<IChartApi | null>(null);
+  const macdChartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+
   // Indicator series refs
-  const smaSeriesRefs = useRef<Map<number, any>>(new Map());
-  const emaSeriesRefs = useRef<Map<number, any>>(new Map());
-  const bbSeriesRef = useRef<any>(null);
-  const rsiSeriesRef = useRef<any>(null);
-  const macdSeriesRef = useRef<any>(null);
-  const macdSignalSeriesRef = useRef<any>(null);
-  const macdHistogramSeriesRef = useRef<any>(null);
-  const srLinesRef = useRef<Map<string, any>>(new Map());
+  const smaSeriesRefs = useRef<Map<number, ISeriesApi<'Line'>>>(new Map());
+  const emaSeriesRefs = useRef<Map<number, ISeriesApi<'Line'>>>(new Map());
+  const bbSeriesRef = useRef<{ upper: ISeriesApi<'Line'>; middle: ISeriesApi<'Line'>; lower: ISeriesApi<'Line'> } | null>(null);
+  const rsiSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const macdSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const macdSignalSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const macdHistogramSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const srLinesRef = useRef<Map<string, IPriceLine>>(new Map());
 
   const [showVolume, setShowVolume] = useState(false);
-  
+
   // Indicator toggles
   const [showSMA20, setShowSMA20] = useState(false);
   const [showSMA50, setShowSMA50] = useState(false);
@@ -84,16 +79,16 @@ export default function PriceHistoryChart({
   const ema12 = useMemo(() => showEMA12 ? calculateEMA(prices, 12) : null, [prices, showEMA12]);
   const ema26 = useMemo(() => showEMA26 ? calculateEMA(prices, 26) : null, [prices, showEMA26]);
   const ema50 = useMemo(() => showEMA50 ? calculateEMA(prices, 50) : null, [prices, showEMA50]);
-  const bollingerBands = useMemo(() => 
-    showBollingerBands ? calculateBollingerBands(prices, 20, 2) : null, 
+  const bollingerBands = useMemo(() =>
+    showBollingerBands ? calculateBollingerBands(prices, 20, 2) : null,
     [prices, showBollingerBands]
   );
   const rsi = useMemo(() => showRSI ? calculateRSI(prices, 14) : null, [prices, showRSI]);
   const macd = useMemo(() => showMACD ? calculateMACD(prices, 12, 26, 9) : null, [prices, showMACD]);
-  const supportResistance = useMemo(() => 
-    showSupportResistance && ohlcData.length > 0 
-      ? calculateSupportResistance(ohlcData, 5, 2, 1.0) 
-      : [], 
+  const supportResistance = useMemo(() =>
+    showSupportResistance && ohlcData.length > 0
+      ? calculateSupportResistance(ohlcData, 5, 2, 1.0)
+      : [],
     [ohlcData, showSupportResistance]
   );
 
@@ -134,11 +129,11 @@ export default function PriceHistoryChart({
   useEffect(() => {
     if (!chartContainerRef.current || data.length === 0) return;
 
-    const lineColor = priceDirection === 'up' 
+    const lineColor = priceDirection === 'up'
       ? '#10b981' // emerald-500
       : priceDirection === 'down'
-      ? '#ef4444' // rose-500
-      : '#6366f1'; // indigo-500
+        ? '#ef4444' // rose-500
+        : '#6366f1'; // indigo-500
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -147,11 +142,11 @@ export default function PriceHistoryChart({
         fontSize: 12,
       },
       grid: {
-        vertLines: { 
-          color: isDarkMode ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.3)', 
+        vertLines: {
+          color: isDarkMode ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.3)',
           style: LineStyle.Solid,
         },
-        horzLines: { 
+        horzLines: {
           color: isDarkMode ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.3)',
           style: LineStyle.Solid,
         },
@@ -163,8 +158,8 @@ export default function PriceHistoryChart({
         borderColor: isDarkMode ? '#334155' : '#e2e8f0',
         tickMarkFormatter: (time) => {
           const date = new Date(time * 1000);
-          return date.toLocaleDateString('en-US', { 
-            month: 'short', 
+          return date.toLocaleDateString('en-US', {
+            month: 'short',
             day: 'numeric',
             year: data.length > 365 ? 'numeric' : undefined,
           });
@@ -218,7 +213,7 @@ export default function PriceHistoryChart({
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [chartData, priceDirection, isDarkMode, data.length]);
+  }, [chartData, priceDirection, isDarkMode, data.length, showVolume, volumeData]);
 
   // Update volume visibility
   useEffect(() => {
@@ -361,11 +356,11 @@ export default function PriceHistoryChart({
       supportResistance.forEach((level, idx) => {
         const color = level.type === 'support' ? '#10b981' : '#ef4444';
         const lineWidth = Math.min(Math.max(level.strength / 2, 1), 3); // Thicker for stronger levels
-        
+
         const priceLine = {
           price: level.price,
           color: color,
-          lineWidth: lineWidth,
+          lineWidth: lineWidth as LineWidth,
           lineStyle: LineStyle.Solid,
           axisLabelVisible: true,
           title: `${level.type === 'support' ? 'Support' : 'Resistance'} ${level.price.toFixed(2)}`,
@@ -407,7 +402,7 @@ export default function PriceHistoryChart({
 
     // Sync time scale with main chart
     if (chartRef.current) {
-      chart.timeScale().subscribeVisibleTimeRangeChange((timeRange: any) => {
+      chart.timeScale().subscribeVisibleTimeRangeChange((timeRange: Range<Time> | null) => {
         if (timeRange) {
           chartRef.current?.timeScale().setVisibleRange(timeRange);
         }
@@ -486,7 +481,7 @@ export default function PriceHistoryChart({
 
     // Sync time scale
     if (chartRef.current) {
-      chart.timeScale().subscribeVisibleTimeRangeChange((timeRange: any) => {
+      chart.timeScale().subscribeVisibleTimeRangeChange((timeRange: Range<Time> | null) => {
         if (timeRange) {
           chartRef.current?.timeScale().setVisibleRange(timeRange);
         }
@@ -553,11 +548,11 @@ export default function PriceHistoryChart({
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const syncTimeScales = (timeRange: any) => {
-      if (rsiChartRef.current && showRSI) {
+    const syncTimeScales = (timeRange: Range<Time> | null) => {
+      if (rsiChartRef.current && showRSI && timeRange) {
         rsiChartRef.current.timeScale().setVisibleRange(timeRange);
       }
-      if (macdChartRef.current && showMACD) {
+      if (macdChartRef.current && showMACD && timeRange) {
         macdChartRef.current.timeScale().setVisibleRange(timeRange);
       }
     };
@@ -598,7 +593,7 @@ export default function PriceHistoryChart({
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Indicators:</span>
-            
+
             {/* Moving Averages */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-slate-500 dark:text-slate-400">SMA:</span>

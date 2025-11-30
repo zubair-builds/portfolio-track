@@ -27,7 +27,7 @@ export function calculateSMA(prices: number[], period: number): (number | null)[
   }
 
   const sma: (number | null)[] = new Array(period - 1).fill(null);
-  
+
   for (let i = period - 1; i < prices.length; i++) {
     const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
     sma.push(sum / period);
@@ -209,13 +209,13 @@ export function calculateBollingerBands(
       const startIdx = Math.max(0, i - period + 1);
       const periodPrices = prices.slice(startIdx, i + 1);
       const mean = middle[i]!;
-      
+
       const variance = periodPrices.reduce((sum, price) => {
         return sum + Math.pow(price - mean, 2);
       }, 0) / periodPrices.length;
-      
+
       const standardDev = Math.sqrt(variance);
-      
+
       upper.push(mean + (stdDev * standardDev));
       lower.push(mean - (stdDev * standardDev));
     }
@@ -244,7 +244,7 @@ export function calculateSupportResistance(
     return [];
   }
 
-  const levels: SupportResistanceLevel[] = [];
+
   const highs: Array<{ price: number; index: number }> = [];
   const lows: Array<{ price: number; index: number }> = [];
 

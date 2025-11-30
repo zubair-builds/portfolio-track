@@ -129,9 +129,9 @@ export function useDividendHistory(
       } else {
         throw new Error(data.error || 'Failed to refresh dividend history');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error refreshing dividend history:', err);
-      setError(err.message || 'Failed to refresh dividend history');
+      setError(err instanceof Error ? err.message : 'Failed to refresh dividend history');
     } finally {
       setRefreshing(false);
     }

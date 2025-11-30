@@ -1,4 +1,4 @@
-import type { Collection, Db } from 'mongodb';
+import type { Collection, Db, Filter } from 'mongodb';
 import clientPromise from './mongodb';
 
 // ============================================================================
@@ -82,13 +82,13 @@ async function getIndexPricesCollection(): Promise<Collection<IndexPriceDocument
   await collection.createIndex({ indexSymbol: 1 });
   await collection.createIndex({ timestamp: -1 });
   await collection.createIndex({ indexSymbol: 1, timestamp: -1 });
-  
+
   // TTL index: auto-delete documents older than 30 days
   await collection.createIndex(
     { timestamp: 1 },
     { expireAfterSeconds: 30 * 24 * 60 * 60 }
   );
-  
+
   return collection;
 }
 
@@ -103,7 +103,7 @@ export async function saveIndexMetadata(metadata: IndexMetadata): Promise<void> 
   const collection = await getIndicesCollection();
   const now = new Date();
 
-  const updateFields: any = {
+  const updateFields: Partial<IndexMetadataDocument> = {
     symbol: metadata.symbol.toUpperCase(),
     name: metadata.name,
     lastUpdated: now,
@@ -227,15 +227,15 @@ export async function getIndexPriceHistory(
   limit?: number
 ): Promise<IndexPriceDocument[]> {
   const collection = await getIndexPricesCollection();
-  
-  const query: any = { indexSymbol: symbol.toUpperCase() };
-  
+
+  const query: Filter<IndexPriceDocument> = { indexSymbol: symbol.toUpperCase() };
+
   if (from || to) {
     query.timestamp = {};
     if (from) query.timestamp.$gte = from;
     if (to) query.timestamp.$lte = to;
   }
-  
+
   return collection
     .find(query)
     .sort({ timestamp: -1 })
@@ -294,7 +294,7 @@ export async function populateAllIndicesComposition(): Promise<{
   [indexSymbol: string]: { symbolCount: number; symbols: string[] };
 }> {
   const indices = await getAllIndices();
-  const results: any = {};
+  const results: Record<string, { symbolCount: number; symbols: string[]; error?: string }> = {};
 
   for (const index of indices) {
     try {

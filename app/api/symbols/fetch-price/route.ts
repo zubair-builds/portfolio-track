@@ -4,7 +4,12 @@ import { getSymbolPriceData, saveSymbolPriceData, batchGetSymbolMetadata } from 
 /**
  * Transform PSX API data to StockApiResponse format
  */
-function transformToStockApiFormat(dbData: any) {
+import { SymbolPriceDocument } from '../../../../lib/symbolsStore';
+
+/**
+ * Transform PSX API data to StockApiResponse format
+ */
+function transformToStockApiFormat(dbData: SymbolPriceDocument) {
   return {
     market: 'REG',
     st: 'OPEN',
@@ -88,15 +93,15 @@ async function fetchAndSaveSymbol(symbol: string) {
     bidVolume: apiData.bidVol || null,
     askVolume: apiData.askVol || null,
     lastFetchedAt: new Date(
-      apiData.timestamp > 1_000_000_000_000 
-        ? apiData.timestamp 
+      apiData.timestamp > 1_000_000_000_000
+        ? apiData.timestamp
         : apiData.timestamp * 1000
     ),
   };
 
   await saveSymbolPriceData(symbolPriceData);
 
-  return transformToStockApiFormat(symbolPriceData);
+  return transformToStockApiFormat(symbolPriceData as unknown as SymbolPriceDocument);
 }
 
 /**
@@ -122,9 +127,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching symbol price:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch price data',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
@@ -151,34 +156,34 @@ export async function POST(request: NextRequest) {
     }
 
     // First, get all symbols from database
-    
+
     const dbDataMap = await batchGetSymbolMetadata(symbols);
-    
-    const results: Record<string, any> = {};
+
+    const results: Record<string, unknown> = {};
     const symbolsNeedingFetch: string[] = [];
-    
+
     // Check which symbols need fetching
     for (const symbol of symbols) {
       const upperSymbol = symbol.toUpperCase();
       const dbData = dbDataMap.get(upperSymbol);
-      
+
       // If we have current price in database, use it
       if (dbData?.currentPrice !== null && dbData?.currentPrice !== undefined) {
         results[upperSymbol] = transformToStockApiFormat(dbData);
         continue;
       }
-      
+
       symbolsNeedingFetch.push(upperSymbol);
     }
-    
+
     // Fetch missing symbols from API
     if (symbolsNeedingFetch.length > 0) {
-      
+
       // Fetch with delays to avoid rate limiting
 
       for (let i = 0; i < symbolsNeedingFetch.length; i++) {
         const symbol = symbolsNeedingFetch[i];
-        
+
         try {
           const data = await fetchAndSaveSymbol(symbol);
           results[symbol] = data;
@@ -190,7 +195,7 @@ export async function POST(request: NextRequest) {
             results[symbol] = transformToStockApiFormat(dbData);
           }
         }
-        
+
         // Add delay between requests to avoid rate limiting (except for last one)
         if (i < symbolsNeedingFetch.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -206,9 +211,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching batch symbol prices:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch price data',
         details: error instanceof Error ? error.message : 'Unknown error',
       },

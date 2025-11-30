@@ -26,7 +26,7 @@ import { batchSaveSymbolPriceData, SymbolPriceData } from '../../../../lib/symbo
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     if (!body.updates || !Array.isArray(body.updates)) {
       return NextResponse.json(
         { error: 'Invalid request: updates array is required' },
@@ -43,24 +43,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert updates to SymbolPriceData format
-    const priceDataUpdates: SymbolPriceData[] = body.updates.map((update: any) => ({
-      symbol: update.symbol,
+    const priceDataUpdates: SymbolPriceData[] = body.updates.map((update: Record<string, unknown>) => ({
+      symbol: update.symbol as string,
       // Map WebSocket tickUpdate fields to database schema
-      currentPrice: update.currentPrice,
-      priceChange: update.priceChange,
-      priceChangePercent: update.priceChangePercent,
-      volume: update.volume,
-      trades: update.trades,
-      value: update.value,
-      priceHigh: update.priceHigh,
-      priceLow: update.priceLow,
-      bidPrice: update.bidPrice,
-      askPrice: update.askPrice,
-      bidVolume: update.bidVolume,
-      askVolume: update.askVolume,
+      currentPrice: update.currentPrice as number | undefined,
+      priceChange: update.priceChange as number | undefined,
+      priceChangePercent: update.priceChangePercent as number | undefined,
+      volume: update.volume as number | undefined,
+      trades: update.trades as number | undefined,
+      value: update.value as number | undefined,
+      priceHigh: update.priceHigh as number | undefined,
+      priceLow: update.priceLow as number | undefined,
+      bidPrice: update.bidPrice as number | undefined,
+      askPrice: update.askPrice as number | undefined,
+      bidVolume: update.bidVolume as number | undefined,
+      askVolume: update.askVolume as number | undefined,
       // Convert timestamp to Date if provided
-      lastFetchedAt: update.lastFetchedAt 
-        ? new Date(update.lastFetchedAt) 
+      lastFetchedAt: update.lastFetchedAt
+        ? new Date(update.lastFetchedAt as string | number)
         : new Date(),
     }));
 
@@ -80,9 +80,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error in batch update endpoint:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to process batch update',
         details: error instanceof Error ? error.message : 'Unknown error',
       },

@@ -21,7 +21,7 @@ export function generateToken(payload: object): string {
 export function verifyToken(token: string): CustomJwtPayload | null {
   try {
     return jwt.verify(token, JWT_SECRET) as CustomJwtPayload;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -29,7 +29,7 @@ export function verifyToken(token: string): CustomJwtPayload | null {
 export async function setAuthCookie(payload: object): Promise<void> {
   const token = generateToken({ user: payload });
   const cookieStore = await cookies();
-  
+
   cookieStore.set(TOKEN_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -47,18 +47,18 @@ export async function clearAuthCookie(): Promise<void> {
 export async function getUserFromCookies(): Promise<CustomJwtPayload['user'] | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(TOKEN_NAME);
-  
+
   if (!token) return null;
-  
+
   const decoded = verifyToken(token.value);
   return decoded ? decoded.user : null;
 }
 
 export function getUserFromRequest(request: NextRequest): CustomJwtPayload['user'] | null {
   const token = request.cookies.get(TOKEN_NAME);
-  
+
   if (!token) return null;
-  
+
   const decoded = verifyToken(token.value);
   return decoded ? decoded.user : null;
 }

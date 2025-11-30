@@ -1,4 +1,4 @@
-import type { Collection, Db, ObjectId } from 'mongodb';
+import type { Collection, Db, ObjectId, Filter } from 'mongodb';
 import clientPromise from './mongodb';
 
 interface AIAnalysisDocument {
@@ -22,20 +22,21 @@ async function getDb(): Promise<Db> {
 async function getCollection(): Promise<Collection<AIAnalysisDocument>> {
   const db = await getDb();
   const collection = db.collection<AIAnalysisDocument>(ANALYSIS_COLLECTION);
-  
+
   try {
     // Create compound index for querying
     await collection.createIndex({ symbol: 1, mode: 1 });
-  } catch (error) {
+  } catch {
     // Index already exists, ignore
   }
 
   try {
     // Create TTL index for auto-expiration
     await collection.createIndex({ createdAt: 1 }, { expireAfterSeconds: CACHE_TTL_HOURS * 60 * 60 });
-  } catch (error: any) {
+  } catch (error) {
     // If index exists with different options, drop and recreate
-    if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
+    const err = error as { code?: number; codeName?: string };
+    if (err.code === 85 || err.codeName === 'IndexOptionsConflict') {
       console.log('Dropping existing createdAt index to recreate with new TTL...');
       try {
         await collection.dropIndex('createdAt_1');
@@ -46,7 +47,7 @@ async function getCollection(): Promise<Collection<AIAnalysisDocument>> {
       }
     }
   }
-  
+
   return collection;
 }
 
@@ -58,7 +59,7 @@ export async function getCachedAnalysis(
   try {
     const collection = await getCollection();
 
-    let query: any = { mode };
+    const query: Filter<AIAnalysisDocument> = { mode };
 
     if (mode === 'stock' && symbol) {
       query.symbol = symbol.toUpperCase();
@@ -132,7 +133,7 @@ export async function clearAnalysisCache(
       return;
     }
 
-    let query: any = { mode };
+    const query: Filter<AIAnalysisDocument> = { mode };
 
     if (mode === 'stock' && symbol) {
       query.symbol = symbol.toUpperCase();
@@ -154,11 +155,11 @@ export async function getAnalysisHistory(
   try {
     const collection = await getCollection();
 
-    let query: any = {};
+    const query: Filter<AIAnalysisDocument> = {};
 
     if (mode) {
       query.mode = mode;
-      
+
       if (mode === 'stock' && symbol) {
         query.symbol = symbol.toUpperCase();
       } else if (mode === 'market') {
@@ -192,9 +193,9 @@ export async function getAnalysisById(
   try {
     const collection = await getCollection();
     const { ObjectId } = await import('mongodb');
-    
+
     const analysis = await collection.findOne({ _id: new ObjectId(id) });
-    
+
     if (!analysis) return null;
 
     return {
@@ -236,16 +237,17 @@ const CHAT_HISTORY_TTL_DAYS = 30;
 async function getChatHistoryCollection() {
   const db = await getDb();
   const collection = db.collection<ChatHistoryDocument>(CHAT_HISTORY_COLLECTION);
-  
+
   try {
     await collection.createIndex({ userId: 1, createdAt: -1 });
     await collection.createIndex({ createdAt: 1 }, { expireAfterSeconds: CHAT_HISTORY_TTL_DAYS * 24 * 60 * 60 });
-  } catch (error: any) {
-    if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
+  } catch (error) {
+    const err = error as { code?: number; codeName?: string };
+    if (err.code === 85 || err.codeName === 'IndexOptionsConflict') {
       console.log('Chat history index already exists with different options');
     }
   }
-  
+
   return collection;
 }
 
@@ -275,10 +277,10 @@ export async function saveChatHistory(
 export async function getChatHistory(
   userId: string,
   limit: number = 10
-): Promise<Array<{ _id: string; messages: ChatMessage[]; createdAt: Date; context?: any }>> {
+): Promise<Array<{ _id: string; messages: ChatMessage[]; createdAt: Date; context?: ChatHistoryDocument['context'] }>> {
   try {
     const collection = await getChatHistoryCollection();
-    
+
     const history = await collection
       .find({ userId })
       .sort({ createdAt: -1 })

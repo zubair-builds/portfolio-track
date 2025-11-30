@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
@@ -55,11 +55,7 @@ export default function IndexDetailsModal({ symbol, onClose }: IndexDetailsModal
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'chart' | 'constituents'>('overview');
 
-  useEffect(() => {
-    fetchIndexDetails();
-  }, [symbol]);
-
-  const fetchIndexDetails = async () => {
+  const fetchIndexDetails = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/indices/${symbol}`);
@@ -74,7 +70,13 @@ export default function IndexDetailsModal({ symbol, onClose }: IndexDetailsModal
     } finally {
       setLoading(false);
     }
-  };
+  }, [symbol]);
+
+  useEffect(() => {
+    fetchIndexDetails();
+  }, [fetchIndexDetails]);
+
+
 
   const isPositive = (indexData?.latestPrice?.change ?? 0) >= 0;
 
@@ -114,31 +116,28 @@ export default function IndexDetailsModal({ symbol, onClose }: IndexDetailsModal
             <div className="flex gap-6">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'overview'
-                    ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'overview'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('chart')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'chart'
-                    ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'chart'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
               >
                 Chart
               </button>
               <button
                 onClick={() => setActiveTab('constituents')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'constituents'
-                    ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'constituents'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
               >
                 Constituents ({indexData?.symbolCount || 0})
               </button>

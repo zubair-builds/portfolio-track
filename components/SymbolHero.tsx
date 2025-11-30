@@ -37,7 +37,6 @@ export function SymbolHero({
   volume,
   marketCapString,
   peRatio,
-  freeFloatString,
   dividendYield,
   sectorName,
   isETF,
@@ -208,22 +207,22 @@ export function SymbolHero({
               )}
             </div>
             <div className="flex items-baseline gap-3 flex-wrap">
-            
+
               <p className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 font-mono">
                 ₨{formatNumber(currentPrice)}
               </p>
               <p
                 className={`text-sm font-semibold font-mono ${isPositive
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-rose-600 dark:text-rose-400'
                   }`}
               >
                 {priceChange !== undefined ? (isPositive ? '+' : '') + formatNumber(priceChange) : 'N/A'}
               </p>
               <p
                 className={`text-sm font-semibold font-mono ${isPositivePercent
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-rose-600 dark:text-rose-400'
                   }`}
               >
                 {priceChangePercent !== undefined ? formatPercent(priceChangePercent) : 'N/A'}

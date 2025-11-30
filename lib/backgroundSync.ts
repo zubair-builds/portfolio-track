@@ -17,15 +17,12 @@ import {
   calculateETA,
   updateProgressByType,
   updateSyncStatus,
-  getProgress,
   getSyncStatus,
-  type SyncProgress,
 } from './syncProgressStore';
 import { syncEventEmitter } from './syncEventEmitter';
 
 const PSX_API_BASE = 'https://psxterminal.com/api';
 const RATE_LIMIT_DELAY = 650; // 650ms between requests
-const BATCH_SIZE = 50; // Default batch size
 const UPDATE_FREQUENCY = 2; // Emit progress update every N items
 
 // Track active syncs
@@ -88,7 +85,7 @@ export async function runCompaniesSync(
     const symbolsPath = path.join(process.cwd(), 'scripts', 'symbols.json');
     const symbolsData = fs.readFileSync(symbolsPath, 'utf-8');
     const allSymbols: string[] = JSON.parse(symbolsData);
-    
+
     const symbolsToFetch = allSymbols.slice(0, batchSize);
 
     // Update total
@@ -166,9 +163,10 @@ export async function runCompaniesSync(
       failedItems: failedItems.length > 0 ? failedItems : undefined,
     });
 
-  } catch (error: any) {
-    console.error('Companies sync error:', error);
-    await completeSession(sessionId, 'failed', undefined, error.message);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Companies sync error:', err);
+    await completeSession(sessionId, 'failed', undefined, err.message);
   }
 }
 
@@ -219,7 +217,6 @@ export async function runDividendsSync(
   const startTime = Date.now();
   let successCount = 0;
   let failedCount = 0;
-  let totalDividends = 0;
   const failedItems: string[] = [];
 
   try {
@@ -227,7 +224,7 @@ export async function runDividendsSync(
     const symbolsPath = path.join(process.cwd(), 'scripts', 'symbols.json');
     const symbolsData = fs.readFileSync(symbolsPath, 'utf-8');
     const allSymbols: string[] = JSON.parse(symbolsData);
-    
+
     const symbolsToFetch = allSymbols.slice(0, batchSize);
 
     // Update total
@@ -264,7 +261,6 @@ export async function runDividendsSync(
             }));
 
             await saveDividendBatch(dividendRecords);
-            totalDividends += dividendRecords.length;
           }
           successCount++;
         } catch (error) {
@@ -306,9 +302,10 @@ export async function runDividendsSync(
       failedItems: failedItems.length > 0 ? failedItems : undefined,
     });
 
-  } catch (error: any) {
-    console.error('Dividends sync error:', error);
-    await completeSession(sessionId, 'failed', undefined, error.message);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Dividends sync error:', err);
+    await completeSession(sessionId, 'failed', undefined, err.message);
   }
 }
 
@@ -372,7 +369,7 @@ export async function runFundamentalsSync(
     const symbolsPath = path.join(process.cwd(), 'scripts', 'symbols.json');
     const symbolsData = fs.readFileSync(symbolsPath, 'utf-8');
     const allSymbols: string[] = JSON.parse(symbolsData);
-    
+
     const symbolsToFetch = allSymbols.slice(0, batchSize);
 
     // Update total
@@ -438,9 +435,10 @@ export async function runFundamentalsSync(
       failedItems: failedItems.length > 0 ? failedItems : undefined,
     });
 
-  } catch (error: any) {
-    console.error('Fundamentals sync error:', error);
-    await completeSession(sessionId, 'failed', undefined, error.message);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Fundamentals sync error:', err);
+    await completeSession(sessionId, 'failed', undefined, err.message);
   }
 }
 
@@ -498,7 +496,7 @@ export async function runIndicesSync(
   try {
     // Determine which indices to fetch
     let indicesToFetch;
-    
+
     if (options.symbols && options.symbols.length > 0) {
       const allIndices = await getAllIndices();
       indicesToFetch = allIndices.filter(idx =>
@@ -590,9 +588,10 @@ export async function runIndicesSync(
       failedItems: failedItems.length > 0 ? failedItems : undefined,
     });
 
-  } catch (error: any) {
-    console.error('Indices sync error:', error);
-    await completeSession(sessionId, 'failed', undefined, error.message);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Indices sync error:', err);
+    await completeSession(sessionId, 'failed', undefined, err.message);
   }
 }
 
@@ -639,7 +638,7 @@ export async function startBackgroundSync(types: Array<'companies' | 'dividends'
 export async function stopBackgroundSync(types: Array<'companies' | 'dividends' | 'fundamentals'>): Promise<void> {
   for (const type of types) {
     activeSyncs.set(type, false);
-    
+
     await updateSyncStatus(type, {
       isRunning: false,
       error: null
@@ -648,7 +647,7 @@ export async function stopBackgroundSync(types: Array<'companies' | 'dividends' 
     // Emit status change event
     const statusData = await getSyncStatus(type);
     syncEventEmitter.emitStatus(type, statusData);
-    
+
     console.log(`Stopped sync for ${type}`);
   }
 }
@@ -666,10 +665,10 @@ async function runSyncWithTracking(type: 'companies' | 'dividends' | 'fundamenta
     // Check for existing progress
     const { getProgress } = await import('./syncProgressStore');
     const existingProgress = await getProgress(type);
-    
+
     let symbolsToProcess: string[];
     let currentCompleted = existingProgress.completed;
-    
+
     if (existingProgress.pending && existingProgress.pending.length > 0) {
       // Resume from where we left off
       symbolsToProcess = existingProgress.pending;
@@ -680,7 +679,7 @@ async function runSyncWithTracking(type: 'companies' | 'dividends' | 'fundamenta
       const symbolsData = fs.readFileSync(symbolsPath, 'utf-8');
       symbolsToProcess = JSON.parse(symbolsData);
       currentCompleted = 0;
-      
+
       // Initialize progress
       await updateProgressByType(type, {
         total: symbolsToProcess.length,
@@ -794,12 +793,13 @@ async function runSyncWithTracking(type: 'companies' | 'dividends' | 'fundamenta
 
     console.log(`✓ Completed ${type} sync: ${successCount} success, ${failedCount} failed`);
 
-  } catch (error: any) {
-    console.error(`${type} sync error:`, error);
-    
+  } catch (error) {
+    const err = error as Error;
+    console.error(`${type} sync error:`, err);
+
     await updateSyncStatus(type, {
       isRunning: false,
-      error: error.message
+      error: err.message
     });
 
     // Emit error event

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // Extract and deduplicate indices
     const indexSet = new Set<string>();
-    docsWithIndices.forEach((doc: any) => {
+    docsWithIndices.forEach((doc) => {
       if (doc.listedIn) {
         const indices = doc.listedIn.split(',').map((idx: string) => idx.trim()).filter(Boolean);
         indices.forEach((idx: string) => indexSet.add(idx));
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Sort sectors alphabetically, filter out empty/null values
     const sortedSectors = sectors
-      .filter((s: any) => s && s.trim())
+      .filter((s) => s && typeof s === 'string' && s.trim())
       .sort((a: string, b: string) => a.localeCompare(b));
 
     return NextResponse.json({

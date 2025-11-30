@@ -1,4 +1,4 @@
-import type { Collection, Db } from 'mongodb';
+import type { Collection, Db, Filter } from 'mongodb';
 import clientPromise from './mongodb';
 
 export interface KlineData {
@@ -28,7 +28,7 @@ const KLINES_COLLECTION = 'klines';
 async function getKlinesCollection(): Promise<Collection<KlineDocument>> {
   const db = await getDb();
   const collection = db.collection<KlineDocument>(KLINES_COLLECTION);
-  
+
   // Create compound unique index on symbol + timeframe + timestamp
   // This index is optimized for queries filtering by symbol, timeframe, and timestamp range
   // The order: symbol (exact match) -> timeframe (exact match) -> timestamp (range/sort)
@@ -38,24 +38,26 @@ async function getKlinesCollection(): Promise<Collection<KlineDocument>> {
       { symbol: 1, timeframe: 1, timestamp: 1 },
       { unique: true, name: 'symbol_timeframe_timestamp_unique' }
     );
-  } catch (error: any) {
+  } catch (error) {
     // Index may already exist, ignore
-    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
-      console.error('Error creating compound index:', error);
+    const err = error as { code?: number; codeName?: string };
+    if (err.code !== 85 && err.codeName !== 'IndexOptionsConflict') {
+      console.error('Error creating compound index:', err);
     }
   }
-  
+
   // Additional index on timestamp for queries that only filter by timestamp
   // (though the compound index above is more commonly used)
   try {
     await collection.createIndex({ timestamp: -1 }, { name: 'timestamp_desc' });
-  } catch (error: any) {
+  } catch (error) {
     // Index may already exist, ignore
-    if (error.code !== 85 && error.codeName !== 'IndexOptionsConflict') {
-      console.error('Error creating timestamp index:', error);
+    const err = error as { code?: number; codeName?: string };
+    if (err.code !== 85 && err.codeName !== 'IndexOptionsConflict') {
+      console.error('Error creating timestamp index:', err);
     }
   }
-  
+
   return collection;
 }
 
@@ -64,10 +66,10 @@ async function getKlinesCollection(): Promise<Collection<KlineDocument>> {
  */
 export async function saveKlinesBatch(data: KlineData[]): Promise<number> {
   if (data.length === 0) return 0;
-  
+
   const collection = await getKlinesCollection();
   const now = new Date();
-  
+
   const operations = data.map((kline) => ({
     updateOne: {
       filter: {
@@ -94,15 +96,16 @@ export async function saveKlinesBatch(data: KlineData[]): Promise<number> {
       upsert: true,
     },
   }));
-  
+
   try {
     const result = await collection.bulkWrite(operations, { ordered: false });
     return result.upsertedCount + result.modifiedCount;
-  } catch (error: any) {
+  } catch (error) {
     // Handle duplicate key errors gracefully
-    if (error.code === 11000) {
+    const err = error as { code?: number; result?: { nUpserted?: number } };
+    if (err.code === 11000) {
       console.log('Some K-Lines already exist, skipping duplicates');
-      return error.result?.nUpserted || 0;
+      return err.result?.nUpserted || 0;
     }
     throw error;
   }
@@ -120,14 +123,14 @@ export async function getKlines(
   limit?: number
 ): Promise<KlineDocument[]> {
   const collection = await getKlinesCollection();
-  
+
   // Build query that efficiently uses the compound index
   // Index: { symbol: 1, timeframe: 1, timestamp: 1 }
-  const query: any = {
+  const query: Filter<KlineDocument> = {
     symbol: symbol.toUpperCase(),
     timeframe,
   };
-  
+
   // Add date filtering to use the timestamp part of the compound index
   // MongoDB can efficiently use the compound index when filtering by prefix fields + range on last field
   if (startDate || endDate) {
@@ -145,18 +148,18 @@ export async function getKlines(
       query.timestamp.$lte = normalizedEnd;
     }
   }
-  
+
   // Use compound index efficiently: symbol + timeframe are exact matches, timestamp is range
   // Sort order matches the compound index structure for optimal performance
   let cursor = collection
     .find(query)
     .sort({ timestamp: 1 }); // Ascending for chart display - uses index efficiently
-  
+
   // Apply limit to prevent fetching too much data
   if (limit && limit > 0) {
     cursor = cursor.limit(limit);
   }
-  
+
   return cursor.toArray();
 }
 
@@ -168,7 +171,7 @@ export async function getLatestKline(
   timeframe: string
 ): Promise<KlineDocument | null> {
   const collection = await getKlinesCollection();
-  
+
   return collection.findOne(
     {
       symbol: symbol.toUpperCase(),
@@ -188,12 +191,12 @@ export async function hasKlineData(
   timeframe: string
 ): Promise<boolean> {
   const collection = await getKlinesCollection();
-  
+
   const count = await collection.countDocuments({
     symbol: symbol.toUpperCase(),
     timeframe,
   });
-  
+
   return count > 0;
 }
 
@@ -209,23 +212,23 @@ export async function getKlineRange(
   count: number;
 }> {
   const collection = await getKlinesCollection();
-  
+
   const query = {
     symbol: symbol.toUpperCase(),
     timeframe,
   };
-  
+
   const count = await collection.countDocuments(query);
-  
+
   if (count === 0) {
     return { oldest: null, newest: null, count: 0 };
   }
-  
+
   const [oldestDoc, newestDoc] = await Promise.all([
     collection.findOne(query, { sort: { timestamp: 1 } }),
     collection.findOne(query, { sort: { timestamp: -1 } }),
   ]);
-  
+
   return {
     oldest: oldestDoc?.timestamp || null,
     newest: newestDoc?.timestamp || null,
@@ -244,7 +247,7 @@ export async function getClosingPrices(
   limit?: number
 ): Promise<Array<{ date: string; price: number; volume?: number }>> {
   const klines = await getKlines(symbol, timeframe, startDate, endDate, limit);
-  
+
   return klines.map((kline) => ({
     date: kline.timestamp.toISOString(),
     price: kline.close,

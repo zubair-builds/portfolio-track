@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   // Create a TransformStream for SSE
   const encoder = new TextEncoder();
-  
+
   const customReadable = new ReadableStream({
     start(controller) {
       // Send initial connection message
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       controller.enqueue(encoder.encode(data));
 
       // Listen for sync events
-      const listener = (event: any) => {
+      const listener = (event: unknown) => {
         const data = `data: ${JSON.stringify(event)}\n\n`;
         try {
           controller.enqueue(encoder.encode(data));

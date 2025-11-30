@@ -74,15 +74,15 @@ export function AIStockAnalysis({ symbol, investmentData }: AIStockAnalysisProps
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           const chunk = decoder.decode(value);
           fullText += chunk;
           setAnalysis(fullText);
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching AI analysis:', err);
-      setError(err.message || 'Failed to generate analysis');
+      setError(err instanceof Error ? err.message : 'Failed to generate analysis');
     } finally {
       setLoading(false);
     }
@@ -100,9 +100,9 @@ export function AIStockAnalysis({ symbol, investmentData }: AIStockAnalysisProps
       const data = await response.json();
 
       if (data.success) {
-        setHistory(data.history.map((item: any) => ({
+        setHistory(data.history.map((item: Record<string, unknown>) => ({
           ...item,
-          createdAt: new Date(item.createdAt),
+          createdAt: new Date(item.createdAt as string),
         })));
       }
     } catch (err) {
@@ -149,7 +149,7 @@ export function AIStockAnalysis({ symbol, investmentData }: AIStockAnalysisProps
             AI-Powered Analysis
           </h3>
         </div>
-        
+
         <div className="text-center py-8">
           <div className="mb-4">
             <svg className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,7 +312,8 @@ export function AIStockAnalysis({ symbol, investmentData }: AIStockAnalysisProps
                 blockquote: ({ node, ...props }) => (
                   <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-4 text-slate-600 dark:text-slate-400" {...props} />
                 ),
-                code: ({ node, inline, ...props }: any) => 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                code: ({ node, inline, ...props }: { node?: any; inline?: boolean;[key: string]: any }) =>
                   inline ? (
                     <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
                   ) : (

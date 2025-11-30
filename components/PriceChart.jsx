@@ -22,7 +22,7 @@ export default function PriceChart({ stockIndexData, symbol, isIndex }) {
     return <div className="text-center text-slate-500 py-8">No chart data available</div>;
   }
 
-  const formattedData = stockIndexData.map(([timestamp, price, volume]) => ({
+  const formattedData = stockIndexData.map(([timestamp, price]) => ({
     time: timestamp,
     value: price,
   }));
@@ -46,15 +46,15 @@ function ChartWithFetch({ symbol, isIndex }) {
       setLoading(true);
       setError(null);
       try {
-        const endpoint = isIndex 
+        const endpoint = isIndex
           ? `/api/indices/${symbol}/history?limit=365`
           : `/api/klines/${symbol}?timeframe=1d&range=1y`;
-        
+
         const response = await fetch(endpoint);
         if (!response.ok) throw new Error('Failed to fetch chart data');
-        
+
         const result = await response.json();
-        
+
         let chartData = [];
         if (isIndex && result.history) {
           chartData = result.history.map(item => ({
@@ -67,19 +67,19 @@ function ChartWithFetch({ symbol, isIndex }) {
             value: item.price,
           }));
         }
-        
+
         // Sort by time
         const sortedData = chartData.sort((a, b) => a.time - b.time);
-        
+
         // Deduplicate by keeping only the last entry for each unique timestamp
         const timeMap = new Map();
         sortedData.forEach(item => {
           timeMap.set(item.time, item);
         });
-        
+
         // Convert map back to array (maintains insertion order, which is sorted)
         const deduplicatedData = Array.from(timeMap.values());
-        
+
         setData(deduplicatedData);
       } catch (err) {
         console.error('Error fetching chart data:', err);

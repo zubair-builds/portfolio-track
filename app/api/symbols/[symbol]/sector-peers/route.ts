@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSymbolPriceData } from '../../../../../lib/symbolsStore';
 import clientPromise from '../../../../../lib/mongodb';
+import type { Filter } from 'mongodb';
+import type { SymbolPriceDocument } from '../../../../../lib/symbolsStore';
 
 /**
  * API endpoint to get sector peers for a symbol
@@ -46,9 +48,9 @@ export async function GET(
     // Query for all symbols in the same sector, excluding the input symbol
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB ?? 'portfolioTrack');
-    const collection = db.collection('symbol_prices');
+    const collection = db.collection<SymbolPriceDocument>('symbol_prices');
 
-    const filter: any = {
+    const filter: Filter<SymbolPriceDocument> = {
       sectorName: { $regex: `^${sectorName}$`, $options: 'i' }, // Exact match, case-insensitive
       symbol: { $ne: symbol }, // Exclude the input symbol
       isDebt: { $ne: true }, // Exclude debt instruments

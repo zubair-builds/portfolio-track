@@ -27,7 +27,7 @@ export interface StockApiResponse {
 export async function fetchStockPrice(symbol: string): Promise<StockApiResponse['data'] | null> {
   try {
     const response = await fetch(`/api/symbols/fetch-price?symbol=${symbol.toUpperCase()}`);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -51,7 +51,7 @@ export async function fetchStockPrice(symbol: string): Promise<StockApiResponse[
  */
 export async function fetchAllStockPrices(symbols: string[]): Promise<Map<string, StockApiResponse['data']>> {
   const results = new Map<string, StockApiResponse['data']>();
-  
+
   if (symbols.length === 0) {
     return results;
   }
@@ -74,13 +74,13 @@ export async function fetchAllStockPrices(symbols: string[]): Promise<Map<string
 
     if (result.success && result.data) {
       // Convert array to Map
-      Object.entries(result.data).forEach(([symbol, data]: [string, any]) => {
-        results.set(symbol.toUpperCase(), data);
+      Object.entries(result.data).forEach(([symbol, data]) => {
+        results.set(symbol.toUpperCase(), data as StockApiResponse['data']);
       });
     }
   } catch (error) {
     console.error('Error fetching batch stock prices:', error);
   }
-  
+
   return results;
 }

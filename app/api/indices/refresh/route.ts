@@ -36,7 +36,7 @@ async function fetchIndexPrice(symbol: string): Promise<IndexApiResponse | null>
     }
 
     const data: IndexApiResponse = await response.json();
-    
+
     if (!data.success || !data.data) {
       return null;
     }
@@ -62,12 +62,12 @@ export async function GET(request: NextRequest) {
       indicesToUpdate = await getAllIndices();
     } else if (frequencyParam) {
       // Update by frequency (e.g., 'realtime')
-      indicesToUpdate = await getIndicesByFrequency(frequencyParam as any);
+      indicesToUpdate = await getIndicesByFrequency(frequencyParam as 'realtime' | 'hourly' | 'daily' | 'manual');
     } else if (symbolsParam) {
       // Update specific symbols
       const symbols = symbolsParam.split(',').map(s => s.trim());
       const allIndices = await getAllIndices();
-      indicesToUpdate = allIndices.filter(idx => 
+      indicesToUpdate = allIndices.filter(idx =>
         symbols.includes(idx.symbol.toUpperCase())
       );
     } else {
@@ -82,14 +82,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const results: Record<string, any> = {};
+    const results: Record<string, unknown> = {};
     let successCount = 0;
     let failedCount = 0;
 
     // Fetch prices with small delay between requests
     for (let i = 0; i < indicesToUpdate.length; i++) {
       const index = indicesToUpdate[i];
-      
+
       const apiData = await fetchIndexPrice(index.symbol);
 
       if (apiData && apiData.data) {
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
           };
 
           await saveIndexPrice(priceData);
-          
+
           results[index.symbol] = {
             success: true,
             price: apiData.data.price,
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
             changePercent: apiData.data.changePercent,
             timestamp: priceData.timestamp,
           };
-          
+
           successCount++;
         } catch (error) {
           results[index.symbol] = {

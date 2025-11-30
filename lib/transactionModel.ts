@@ -1,4 +1,4 @@
-import { MongoClient, ObjectId, Db, Collection } from 'mongodb';
+import { ObjectId, Db, Collection, Filter } from 'mongodb';
 import clientPromise from './mongodb';
 
 /**
@@ -19,12 +19,12 @@ export interface TransactionDocument {
   totalAmount: number; // shares * pricePerShare
   transactionDate: Date;
   notes?: string;
-  
+
   // Metadata
   createdAt: Date;
   lastModified: Date;
   status: TransactionStatus;
-  
+
   // For SELL transactions - FIFO calculation results
   realizedGain?: number;
   cgtAmount?: number; // Capital Gains Tax (15%)
@@ -72,13 +72,13 @@ async function getDb(): Promise<Db> {
 async function getTransactionsCollection(): Promise<Collection<TransactionDocument>> {
   const db = await getDb();
   const collection = db.collection<TransactionDocument>(TRANSACTIONS_COLLECTION);
-  
+
   // Create indexes for efficient querying
   await collection.createIndex({ userId: 1, transactionDate: -1 });
   await collection.createIndex({ userId: 1, symbol: 1, transactionDate: 1 });
   await collection.createIndex({ userId: 1, transactionType: 1 });
   await collection.createIndex({ status: 1 });
-  
+
   return collection;
 }
 
@@ -90,10 +90,10 @@ export async function createTransaction(
   input: TransactionInput
 ): Promise<TransactionDocument> {
   const collection = await getTransactionsCollection();
-  
+
   const now = new Date();
   const totalAmount = input.shares * input.pricePerShare;
-  
+
   const transaction: TransactionDocument = {
     userId,
     symbol: input.symbol.toUpperCase(),
@@ -107,7 +107,7 @@ export async function createTransaction(
     lastModified: now,
     status: 'active',
   };
-  
+
   const result = await collection.insertOne(transaction);
   return { ...transaction, _id: result.insertedId };
 }
@@ -119,26 +119,26 @@ export async function getTransactions(
   filter: TransactionFilter
 ): Promise<{ transactions: TransactionDocument[]; total: number }> {
   const collection = await getTransactionsCollection();
-  
-  const query: any = {};
-  
+
+  const query: Filter<TransactionDocument> = {};
+
   if (filter.userId) query.userId = filter.userId;
   if (filter.symbol) query.symbol = filter.symbol.toUpperCase();
   if (filter.transactionType) query.transactionType = filter.transactionType;
   if (filter.status) query.status = filter.status;
   else query.status = 'active'; // Default to active only
-  
+
   // Date range filter
   if (filter.startDate || filter.endDate) {
     query.transactionDate = {};
     if (filter.startDate) query.transactionDate.$gte = filter.startDate;
     if (filter.endDate) query.transactionDate.$lte = filter.endDate;
   }
-  
+
   const page = filter.page || 1;
   const limit = filter.limit || 50;
   const skip = (page - 1) * limit;
-  
+
   const [transactions, total] = await Promise.all([
     collection
       .find(query)
@@ -148,7 +148,7 @@ export async function getTransactions(
       .toArray(),
     collection.countDocuments(query),
   ]);
-  
+
   return { transactions, total };
 }
 
@@ -160,7 +160,7 @@ export async function getTransactionById(
   transactionId: string
 ): Promise<TransactionDocument | null> {
   const collection = await getTransactionsCollection();
-  
+
   return await collection.findOne({
     _id: new ObjectId(transactionId),
     userId,
@@ -177,11 +177,11 @@ export async function updateTransaction(
   updates: Partial<TransactionInput>
 ): Promise<TransactionDocument | null> {
   const collection = await getTransactionsCollection();
-  
-  const updateDoc: any = {
+
+  const updateDoc: Partial<TransactionDocument> = {
     lastModified: new Date(),
   };
-  
+
   if (updates.shares !== undefined) {
     updateDoc.shares = updates.shares;
     // Recalculate total if shares or price changes
@@ -191,7 +191,7 @@ export async function updateTransaction(
       updateDoc.totalAmount = updates.shares * newPrice;
     }
   }
-  
+
   if (updates.pricePerShare !== undefined) {
     updateDoc.pricePerShare = updates.pricePerShare;
     const current = await getTransactionById(userId, transactionId);
@@ -200,16 +200,16 @@ export async function updateTransaction(
       updateDoc.totalAmount = newShares * updates.pricePerShare;
     }
   }
-  
+
   if (updates.transactionDate !== undefined) updateDoc.transactionDate = updates.transactionDate;
   if (updates.notes !== undefined) updateDoc.notes = updates.notes;
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(transactionId), userId, status: 'active' },
     { $set: updateDoc },
     { returnDocument: 'after' }
   );
-  
+
   return result;
 }
 
@@ -221,7 +221,7 @@ export async function deleteTransaction(
   transactionId: string
 ): Promise<boolean> {
   const collection = await getTransactionsCollection();
-  
+
   const result = await collection.updateOne(
     { _id: new ObjectId(transactionId), userId, status: 'active' },
     {
@@ -231,7 +231,7 @@ export async function deleteTransaction(
       },
     }
   );
-  
+
   return result.modifiedCount > 0;
 }
 
@@ -243,7 +243,7 @@ export async function getBuyTransactionsForSymbol(
   symbol: string
 ): Promise<TransactionDocument[]> {
   const collection = await getTransactionsCollection();
-  
+
   return await collection
     .find({
       userId,
@@ -268,7 +268,7 @@ export async function updateSellTransactionWithFIFO(
   }
 ): Promise<void> {
   const collection = await getTransactionsCollection();
-  
+
   await collection.updateOne(
     { _id: new ObjectId(transactionId) },
     {
@@ -294,21 +294,21 @@ export async function getTransactionStats(userId: string): Promise<{
   totalCGTPaid: number;
 }> {
   const collection = await getTransactionsCollection();
-  
+
   const [allTransactions, buyCount, sellCount] = await Promise.all([
     collection.find({ userId, status: 'active' }).toArray(),
     collection.countDocuments({ userId, transactionType: 'BUY', status: 'active' }),
     collection.countDocuments({ userId, transactionType: 'SELL', status: 'active' }),
   ]);
-  
+
   const totalRealizedGains = allTransactions
     .filter(t => t.transactionType === 'SELL' && t.realizedGain !== undefined)
     .reduce((sum, t) => sum + (t.realizedGain || 0), 0);
-  
+
   const totalCGTPaid = allTransactions
     .filter(t => t.transactionType === 'SELL' && t.cgtAmount !== undefined)
     .reduce((sum, t) => sum + (t.cgtAmount || 0), 0);
-  
+
   return {
     totalTransactions: allTransactions.length,
     totalBuys: buyCount,

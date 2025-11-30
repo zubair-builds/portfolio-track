@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await getSymbolPriceData(symbol);
-    
+
     if (!data) {
       return NextResponse.json(
         { error: 'Symbol not found' },
@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
     }
 
     const metadataMap = await batchGetSymbolMetadata(symbols);
-    
+
     // Convert Map to object for JSON response
-    const metadata: Record<string, any> = {};
+    const metadata: Record<string, unknown> = {};
     metadataMap.forEach((value, key) => {
       metadata[key] = {
         symbol: value.symbol,

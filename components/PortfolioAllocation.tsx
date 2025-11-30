@@ -10,7 +10,6 @@ import {
   calculateSectorAllocations,
   calculateDiversificationMetrics,
   getPerformanceColor,
-  StockWithMetadata,
   SectorAllocation as SectorAlloc,
 } from '../lib/allocationUtils';
 import SectorAllocation from './SectorAllocation';
@@ -24,6 +23,11 @@ interface PortfolioAllocationProps {
 type ViewMode = 'stock' | 'sector' | 'diversification';
 type ChartType = 'pie' | 'performance';
 
+const COLOR_PALETTE = [
+  '#6366f1', '#3b82f6', '#06b6d4', '#14b8a6', '#10b981',
+  '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#94a3b8',
+];
+
 export default function PortfolioAllocation({ stocks, isLoading = false }: PortfolioAllocationProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('stock');
   const [chartType, setChartType] = useState<ChartType>('pie');
@@ -31,7 +35,7 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
   const chartRef = useRef<SVGSVGElement>(null);
 
   const symbols = stocks.map(s => s.symbol);
-  const { metadata, loading: metadataLoading } = useSymbolMetadata(symbols);
+  const { metadata } = useSymbolMetadata(symbols);
 
   const stocksWithMetadata = useMemo(() => {
     return enrichStocksWithMetadata(stocks, metadata);
@@ -41,10 +45,7 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
     return stocksWithMetadata.reduce((sum, stock) => sum + stock.currentValue, 0);
   }, [stocksWithMetadata]);
 
-  const colorPalette = [
-    '#6366f1', '#3b82f6', '#06b6d4', '#14b8a6', '#10b981',
-    '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#94a3b8',
-  ];
+
 
   const allocations = useMemo(() => {
     return stocksWithMetadata
@@ -57,7 +58,7 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
   }, [stocksWithMetadata]);
 
   const sectorAllocations = useMemo(() => {
-    return calculateSectorAllocations(stocksWithMetadata, colorPalette);
+    return calculateSectorAllocations(stocksWithMetadata, COLOR_PALETTE);
   }, [stocksWithMetadata]);
 
   const diversificationMetrics = useMemo(() => {
@@ -136,9 +137,9 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
 
   const allocationsWithColor = displayAllocations.map((allocation, index) => ({
     ...allocation,
-    color: chartType === 'performance' 
+    color: chartType === 'performance'
       ? getPerformanceColor(allocation.gainLossPercent)
-      : colorPalette[index % colorPalette.length],
+      : COLOR_PALETTE[index % COLOR_PALETTE.length],
   }));
 
   // SVG chart generation
@@ -169,7 +170,7 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
   allocationsWithColor.forEach((allocation, index) => {
     if (allocation.percentage <= 0) return;
     const sliceAngle = (allocation.percentage / 100) * 360;
-    let startAngle = cumulativeAngle;
+    const startAngle = cumulativeAngle;
     let endAngle = cumulativeAngle + sliceAngle;
     if (index === allocationsWithColor.length - 1) {
       endAngle = 360;
@@ -214,7 +215,7 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-        
+
         canvas.toBlob((blob) => {
           if (blob) {
             const url = URL.createObjectURL(blob);
@@ -298,8 +299,8 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
           </CardContent>
         </Card>
 
-        <SectorAllocation 
-          sectors={sectorAllocations} 
+        <SectorAllocation
+          sectors={sectorAllocations}
           totalValue={totalValue}
           onSectorClick={setSelectedSector}
         />
@@ -523,10 +524,10 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
                         >
                           <title>
                             {`${slice.allocation.symbol} - ${slice.allocation.name}\n` +
-                             `Sector: ${slice.allocation.sectorName}\n` +
-                             `Allocation: ${slice.allocation.percentage.toFixed(2)}%\n` +
-                             `Value: ₨${slice.allocation.currentValue.toLocaleString('en-PK')}\n` +
-                             `Performance: ${slice.allocation.gainLossPercent >= 0 ? '+' : ''}${slice.allocation.gainLossPercent.toFixed(2)}%`}
+                              `Sector: ${slice.allocation.sectorName}\n` +
+                              `Allocation: ${slice.allocation.percentage.toFixed(2)}%\n` +
+                              `Value: ₨${slice.allocation.currentValue.toLocaleString('en-PK')}\n` +
+                              `Performance: ${slice.allocation.gainLossPercent >= 0 ? '+' : ''}${slice.allocation.gainLossPercent.toFixed(2)}%`}
                           </title>
                         </path>
                       </g>
@@ -632,9 +633,9 @@ export default function PortfolioAllocation({ stocks, isLoading = false }: Portf
                             {allocation.percentage.toFixed(2)}%
                           </p>
                           <p className="text-xs text-slate-600 dark:text-slate-400">
-                            ₨{allocation.currentValue.toLocaleString('en-PK', { 
+                            ₨{allocation.currentValue.toLocaleString('en-PK', {
                               minimumFractionDigits: 0,
-                              maximumFractionDigits: 0 
+                              maximumFractionDigits: 0
                             })}
                           </p>
                         </div>

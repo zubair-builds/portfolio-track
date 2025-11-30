@@ -50,7 +50,7 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
 
       if (userEmail) {
         try {
-          const fetchPromises: Promise<any>[] = [
+          const fetchPromises: Promise<Response>[] = [
             fetch('/api/portfolio', {
               headers: { 'X-User-Id': userEmail },
             }),
@@ -73,10 +73,10 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
             const portfolioData = await portfolioRes.json();
             console.log('[usePortfolioData] Raw portfolio data:', portfolioData);
             console.log('[usePortfolioData] Raw portfolio data count:', portfolioData.portfolio?.length || 0);
-            
+
             if (portfolioData.portfolio && Array.isArray(portfolioData.portfolio) && portfolioData.portfolio.length > 0) {
               // Aggregate multiple positions by symbol (weighted average buy price, sum shares)
-              const rawPositions = portfolioData.portfolio.map((p: any) => ({
+              const rawPositions = portfolioData.portfolio.map((p: Record<string, any>) => ({
                 _id: p._id?.toString(),
                 symbol: p.symbol,
                 shares: p.shares,
@@ -98,7 +98,7 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
 
           if (shouldLoadWatchlist && watchlistRes?.ok) {
             const watchlistData = await watchlistRes.json();
-            watchlistItems = watchlistData.watchlist.map((w: any) => ({
+            watchlistItems = watchlistData.watchlist.map((w: Record<string, any>) => ({
               symbol: w.symbol,
               thesis: w.thesis,
               targetPrice: w.targetPrice,
@@ -225,7 +225,7 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
       if (watchlistRes.ok) {
         const watchlistData = await watchlistRes.json();
         console.log('Watchlist API response:', watchlistData);
-        const watchlistItems = watchlistData.watchlist.map((w: any) => ({
+        const watchlistItems = watchlistData.watchlist.map((w: Record<string, any>) => ({
           symbol: w.symbol,
           thesis: w.thesis,
           targetPrice: w.targetPrice,
@@ -234,10 +234,10 @@ export function usePortfolioData(userEmail?: string, options?: { loadWatchlist?:
         console.log('Processed watchlist items:', watchlistItems.length, watchlistItems);
 
         // Fetch prices for watchlist symbols
-        const symbols = watchlistItems.map((item: any) => item.symbol);
+        const symbols = watchlistItems.map((item) => item.symbol);
         const priceData = await fetchAllStockPrices(symbols);
 
-        const updatedWatchlist = watchlistItems.map((item: any) => {
+        const updatedWatchlist = watchlistItems.map((item) => {
           const apiData = priceData.get(item.symbol.toUpperCase());
 
           if (apiData) {

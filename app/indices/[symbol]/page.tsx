@@ -78,7 +78,7 @@ export default function IndexDetailPage() {
       try {
         const response = await fetch(`/api/indices/${symbol}`);
         const data = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(data.error || 'Failed to fetch index data');
         }
@@ -90,9 +90,9 @@ export default function IndexDetailPage() {
         } else {
           throw new Error('Index data not found');
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching index data:', err);
-        setError(err.message || 'Failed to load index data');
+        setError(err instanceof Error ? err.message : 'Failed to load index data');
       } finally {
         setLoading(false);
       }
@@ -151,7 +151,7 @@ export default function IndexDetailPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <ProfessionalHeader user={user} onSignOut={handleSignOut} />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
         <IndicesHero
@@ -175,31 +175,28 @@ export default function IndexDetailPage() {
             <nav className="-mb-px flex gap-6">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'overview'
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'overview'
                     ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
-                }`}
+                  }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('chart')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'chart'
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'chart'
                     ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
-                }`}
+                  }`}
               >
                 Chart
               </button>
               <button
                 onClick={() => setActiveTab('constituents')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'constituents'
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'constituents'
                     ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
-                }`}
+                  }`}
               >
                 Constituents ({indexData.constituents?.length || 0})
               </button>
@@ -390,11 +387,10 @@ export default function IndexDetailPage() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Change</p>
-                        <p className={`text-lg font-semibold ${
-                          (chartStats.change || 0) >= 0
+                        <p className={`text-lg font-semibold ${(chartStats.change || 0) >= 0
                             ? 'text-emerald-600 dark:text-emerald-400'
                             : 'text-red-600 dark:text-red-400'
-                        }`}>
+                          }`}>
                           {chartStats.change !== undefined
                             ? `${chartStats.change >= 0 ? '+' : ''}${chartStats.change.toFixed(2)}%`
                             : 'N/A'
