@@ -33,6 +33,7 @@ interface Dividend {
   grossDividend?: number;
   netDividend?: number;
   taxDeducted?: number;
+  shares?: number;
   warrantNo?: string;
 }
 
@@ -128,10 +129,10 @@ export default function DividendTable({
 
   const formatDate = (date?: string) => {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
+    return new Date(date).toLocaleDateString('en-GB', {
+      day: 'numeric',
       month: 'short',
-      day: 'numeric'
+      year: '2-digit'
     });
   };
 
@@ -244,7 +245,7 @@ export default function DividendTable({
               <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Gross</th>
               <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Tax</th>
               <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Net</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Warrant</th>
+              <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Shares</th>
               {showActions && (
                 <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">
                   Actions
@@ -279,7 +280,7 @@ export default function DividendTable({
                 <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">{dividend.grossDividend?.toLocaleString() || '-'}</td>
                 <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">{dividend.taxDeducted?.toLocaleString() || '-'}</td>
                 <td className="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{dividend.netDividend?.toLocaleString() || '-'}</td>
-                <td className="px-4 py-3 text-slate-700 dark:text-slate-300 text-xs font-mono">{dividend.warrantNo || '-'}</td>
+                <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300 text-xs font-mono">{dividend.shares?.toLocaleString() || '-'}</td>
                 {showActions && (
                   <td className="px-4 py-3 text-right">
                     <div className="flex gap-1 justify-end">

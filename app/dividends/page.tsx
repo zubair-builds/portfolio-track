@@ -9,7 +9,6 @@ import { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import ProfessionalHeader from '@/components/ProfessionalHeader';
-import DividendTable from '@/components/DividendTable';
 import DividendUploadModal from '@/components/DividendUploadModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -38,19 +37,11 @@ interface Dividend {
   filerStatus?: string;
   netDividend?: number;
   grossDividend?: number;
+  shares?: number;
   taxDeducted?: number;
   zakatDeducted?: number;
 }
 
-interface DividendStats {
-  totalRecords: number;
-  upcomingCount: number;
-  eligibleCount: number;
-  closedCount: number;
-  cashCount: number;
-  bonusCount: number;
-  rightCount: number;
-}
 
 interface DividendFinancialStats {
   totalNetDividend: number;
@@ -66,22 +57,20 @@ interface DividendSymbolStat {
   totalNetDividend: number;
   totalGrossDividend: number;
   totalTaxDeducted: number;
+  totalZakatDeducted: number;
   count: number;
 }
 
 export default function DividendsPage() {
   const router = useRouter();
   const { user, initializing, signout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'calendar' | 'history' | 'upload'>('history');
-  const [dividends, setDividends] = useState<Dividend[]>([]);
-  const [stats, setStats] = useState<DividendStats | null>(null);
   const [financialStats, setFinancialStats] = useState<DividendFinancialStats | null>(null);
   const [symbolStats, setSymbolStats] = useState<DividendSymbolStat[]>([]);
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
   const [symbolDetails, setSymbolDetails] = useState<Record<string, Dividend[]>>({});
-  const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(true); // Changed to true to show upload for all users
+  const [sortField, setSortField] = useState<'gross' | 'tax' | 'zakat' | 'net' | 'count'>('net');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -89,23 +78,6 @@ export default function DividendsPage() {
     }
   }, [initializing, user, router]);
 
-  useEffect(() => {
-    if (user) {
-      // Check for admin role
-      fetch('/api/auth/check')
-        .then(res => res.json())
-        .then(data => {
-          setIsAdmin(data.user?.role === 'admin' || true); // Allow all authenticated users
-        })
-        .catch(err => console.error('Error checking role:', err));
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (activeTab !== 'upload') {
-      fetchDividends();
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     fetchFinancialStats();
@@ -167,72 +139,62 @@ export default function DividendsPage() {
     }
   };
 
-  const fetchDividends = async () => {
-    setLoading(true);
-    try {
-      let endpoint = '/api/dividends';
-
-      if (activeTab === 'calendar') {
-        endpoint += '?status=upcoming';
-      } else if (activeTab === 'history') {
-        endpoint += '?status=closed';
-      }
-
-      const response = await fetch(endpoint);
-
-      if (response.ok) {
-        const data = await response.json();
-        setDividends(data.data || []);
-
-        // Calculate stats
-        if (data.data) {
-          const stats: DividendStats = {
-            totalRecords: data.data.length,
-            upcomingCount: data.data.filter((d: Dividend) => d.eligibilityStatus === 'Upcoming').length,
-            eligibleCount: data.data.filter((d: Dividend) => d.eligibilityStatus === 'Eligible').length,
-            closedCount: data.data.filter((d: Dividend) => d.eligibilityStatus === 'Closed').length,
-            cashCount: data.data.filter((d: Dividend) => d.dividendType === 'Cash').length,
-            bonusCount: data.data.filter((d: Dividend) => d.dividendType === 'Bonus').length,
-            rightCount: data.data.filter((d: Dividend) => d.dividendType === 'Right Shares').length,
-          };
-          setStats(stats);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch dividends:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUploadComplete = () => {
     setShowUploadModal(false);
-    fetchDividends();
     fetchFinancialStats();
     fetchSymbolStats();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this dividend record?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/dividends/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        fetchDividends();
-      } else {
-        alert('Failed to delete dividend');
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
-      alert('Failed to delete dividend');
+  const handleSort = (field: 'gross' | 'tax' | 'zakat' | 'net' | 'count') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
     }
   };
 
+  const sortedSymbolStats = [...symbolStats].sort((a, b) => {
+    let aValue: number;
+    let bValue: number;
+
+    switch (sortField) {
+      case 'gross':
+        aValue = a.totalGrossDividend;
+        bValue = b.totalGrossDividend;
+        break;
+      case 'tax':
+        aValue = a.totalTaxDeducted;
+        bValue = b.totalTaxDeducted;
+        break;
+      case 'zakat':
+        aValue = a.totalZakatDeducted;
+        bValue = b.totalZakatDeducted;
+        break;
+      case 'net':
+        aValue = a.totalNetDividend;
+        bValue = b.totalNetDividend;
+        break;
+      case 'count':
+        aValue = a.count;
+        bValue = b.count;
+        break;
+      default:
+        aValue = a.totalNetDividend;
+        bValue = b.totalNetDividend;
+    }
+
+    return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+  });
+
+  const formatDate = (date?: string) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: '2-digit'
+    });
+  };
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <ProfessionalHeader user={user} onSignOut={signout} />
@@ -264,28 +226,34 @@ export default function DividendsPage() {
 
         {/* Financial Stats Cards */}
         {financialStats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <Card className="p-4 border-l-4 border-l-indigo-500">
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Dividends</p>
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+                {financialStats.count.toLocaleString()}
+              </p>
+            </Card>
             <Card className="p-4 border-l-4 border-l-blue-500">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Gross Dividend</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
                 {financialStats.totalGrossDividend.toLocaleString()}
               </p>
             </Card>
             <Card className="p-4 border-l-4 border-l-red-500">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Tax Paid</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
                 {financialStats.totalTaxDeducted.toLocaleString()}
               </p>
             </Card>
             <Card className="p-4 border-l-4 border-l-amber-500">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Zakat</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
                 {financialStats.totalZakatDeducted.toLocaleString()}
               </p>
             </Card>
             <Card className="p-4 border-l-4 border-l-emerald-500">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Net Dividend</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                 {financialStats.totalNetDividend.toLocaleString()}
               </p>
             </Card>
@@ -302,14 +270,76 @@ export default function DividendsPage() {
                   <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
                     <tr>
                       <th className="px-6 py-3">Symbol</th>
-                      <th className="px-6 py-3 text-right">Gross Dividend</th>
-                      <th className="px-6 py-3 text-right">Tax Paid</th>
-                      <th className="px-6 py-3 text-right">Net Dividend</th>
-                      <th className="px-6 py-3 text-center">Count</th>
+                      <th className="px-6 py-3 text-center">
+                        <button
+                          onClick={() => handleSort('count')}
+                          className="flex items-center justify-center gap-1 w-full hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                        >
+                          Count
+                          {sortField === 'count' && (
+                            <svg className={`w-4 h-4 transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => handleSort('gross')}
+                          className="flex items-center justify-end gap-1 w-full hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                        >
+                          Gross Dividend
+                          {sortField === 'gross' && (
+                            <svg className={`w-4 h-4 transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => handleSort('tax')}
+                          className="flex items-center justify-end gap-1 w-full hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                        >
+                          Tax Paid
+                          {sortField === 'tax' && (
+                            <svg className={`w-4 h-4 transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => handleSort('zakat')}
+                          className="flex items-center justify-end gap-1 w-full hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                        >
+                          Zakat Paid
+                          {sortField === 'zakat' && (
+                            <svg className={`w-4 h-4 transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => handleSort('net')}
+                          className="flex items-center justify-end gap-1 w-full hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                        >
+                          Net Dividend
+                          {sortField === 'net' && (
+                            <svg className={`w-4 h-4 transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </button>
+                      </th>
+
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                    {symbolStats.map((stat) => (
+                    {sortedSymbolStats.map((stat) => (
                       <Fragment key={stat.symbol}>
                         <tr
                           className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
@@ -331,32 +361,35 @@ export default function DividendsPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-3 text-right text-slate-700 dark:text-slate-300">
+                          <td className="px-6 py-3 text-center font-medium text-indigo-600 dark:text-indigo-400">
+                            {stat.count}
+                          </td>
+                          <td className="px-6 py-3 text-right font-medium text-blue-600 dark:text-blue-400">
                             {stat.totalGrossDividend.toLocaleString()}
                           </td>
-                          <td className="px-6 py-3 text-right text-slate-700 dark:text-slate-300">
+                          <td className="px-6 py-3 text-right font-medium text-red-600 dark:text-red-400">
                             {stat.totalTaxDeducted.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-3 text-right font-medium text-amber-600 dark:text-amber-400">
+                            {stat.totalZakatDeducted.toLocaleString()}
                           </td>
                           <td className="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
                             {stat.totalNetDividend.toLocaleString()}
                           </td>
-                          <td className="px-6 py-3 text-center text-slate-600 dark:text-slate-400">
-                            {stat.count}
-                          </td>
                         </tr>
                         {expandedSymbol === stat.symbol && (
                           <tr className="bg-slate-50/50 dark:bg-slate-800/30">
-                            <td colSpan={5} className="px-6 py-4">
+                            <td colSpan={6} className="px-6 py-4">
                               <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-900">
                                 <table className="w-full text-xs text-left">
                                   <thead className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
                                     <tr>
                                       <th className="px-4 py-2">Payment Date</th>
-                                      <th className="px-4 py-2">Warrant No</th>
+                                      <th className="px-4 py-2">Shares</th>
                                       <th className="px-4 py-2 text-right">Gross Amount</th>
-                                      <th className="px-4 py-2 text-right">Tax</th>
-                                      <th className="px-4 py-2 text-right">Zakat</th>
-                                      <th className="px-4 py-2 text-right">Net Amount</th>
+                                      <th className="px-2 py-2 text-right">Tax</th>
+                                      <th className="px-3 py-2 text-right">Zakat</th>
+                                      <th className="px-1 py-2 text-right">Net Amount</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -364,21 +397,22 @@ export default function DividendsPage() {
                                       symbolDetails[stat.symbol].map((detail) => (
                                         <tr key={detail._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                           <td className="px-4 py-2 text-slate-700 dark:text-slate-300">
-                                            {detail.paymentDate ? new Date(detail.paymentDate).toLocaleDateString() : '-'}
+
+                                            {formatDate(detail.paymentDate)}
                                           </td>
                                           <td className="px-4 py-2 font-mono text-slate-600 dark:text-slate-400">
-                                            {detail.warrantNo || '-'}
+                                            {detail.shares || '-'}
                                           </td>
-                                          <td className="px-4 py-2 text-right text-slate-700 dark:text-slate-300">
+                                          <td className="px-4 py-2 text-right  text-blue-600 dark:text-blue-400">
                                             {detail.grossDividend?.toLocaleString() || '-'}
                                           </td>
-                                          <td className="px-4 py-2 text-right text-red-600 dark:text-red-400">
+                                          <td className="px-2 py-2 text-right text-red-600 dark:text-red-400">
                                             {detail.taxDeducted?.toLocaleString() || '-'}
                                           </td>
-                                          <td className="px-4 py-2 text-right text-amber-600 dark:text-amber-400">
+                                          <td className="px-3 py-2 text-right text-amber-600 dark:text-amber-400">
                                             {detail.zakatDeducted?.toLocaleString() || '-'}
                                           </td>
-                                          <td className="px-4 py-2 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                                          <td className="px-1 py-2 text-right font-medium text-emerald-600 dark:text-emerald-400">
                                             {detail.netDividend?.toLocaleString() || '-'}
                                           </td>
                                         </tr>
@@ -406,23 +440,6 @@ export default function DividendsPage() {
             </Card>
           </div>
         )}
-
-
-        {/* Content */}
-        <Card className="p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <DividendTable
-              dividends={dividends}
-              onRefresh={fetchDividends}
-              showActions={isAdmin}
-              onDelete={isAdmin ? handleDelete : undefined}
-            />
-          )}
-        </Card>
       </main>
 
       {/* Upload Modal */}
