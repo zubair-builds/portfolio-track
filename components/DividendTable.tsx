@@ -13,7 +13,7 @@ interface Dividend {
   _id: string;
   symbol: string;
   companyName: string;
-  sector: string;
+  sector?: string;
   dividendType: 'Cash' | 'Bonus' | 'Right Shares';
   announcementDate: string;
   exDividendDate: string;
@@ -28,6 +28,12 @@ interface Dividend {
   rightRatio?: string;
   eligibilityStatus?: 'Upcoming' | 'Eligible' | 'Closed';
   daysUntilPayment?: number;
+  // Payment fields
+  filerStatus?: string;
+  grossDividend?: number;
+  netDividend?: number;
+  taxDeducted?: number;
+  warrantNo?: string;
 }
 
 interface DividendTableProps {
@@ -66,7 +72,7 @@ export default function DividendTable({
       filtered = filtered.filter(d =>
         d.symbol.toLowerCase().includes(query) ||
         d.companyName.toLowerCase().includes(query) ||
-        d.sector.toLowerCase().includes(query)
+        (d.sector && d.sector.toLowerCase().includes(query))
       );
     }
 
@@ -193,40 +199,9 @@ export default function DividendTable({
             className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
-          {/* Type Filter */}
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-          >
-            <option value="all">All Types</option>
-            <option value="Cash">Cash</option>
-            <option value="Bonus">Bonus</option>
-            <option value="Right Shares">Right Shares</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-          >
-            <option value="all">All Status</option>
-            <option value="Upcoming">Upcoming</option>
-            <option value="Eligible">Eligible</option>
-            <option value="Closed">Closed</option>
-          </select>
         </div>
 
         <div className="flex gap-2">
-          {onRefresh && (
-            <Button variant="secondary" onClick={onRefresh}>
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </Button>
-          )}
           <span className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400">
             {filteredAndSorted.length} records
           </span>
@@ -254,42 +229,6 @@ export default function DividendTable({
               </th>
               <th
                 className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700"
-                onClick={() => handleSort('dividendType')}
-              >
-                <div className="flex items-center gap-1">
-                  Type
-                  {sortField === 'dividendType' && (
-                    <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </div>
-              </th>
-              <th
-                className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700"
-                onClick={() => handleSort('dividendRate')}
-              >
-                <div className="flex items-center gap-1">
-                  Value
-                  {sortField === 'dividendRate' && (
-                    <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </div>
-              </th>
-              <th
-                className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700"
-                onClick={() => handleSort('exDividendDate')}
-              >
-                <div className="flex items-center gap-1">
-                  Ex-Dividend
-                  {sortField === 'exDividendDate' && (
-                    <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </div>
-              </th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
-                Book Closure
-              </th>
-              <th
-                className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700"
                 onClick={() => handleSort('paymentDate')}
               >
                 <div className="flex items-center gap-1">
@@ -299,9 +238,13 @@ export default function DividendTable({
                   )}
                 </div>
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
-                Status
-              </th>
+
+              {/* Payment Columns */}
+              <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Filer</th>
+              <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Gross</th>
+              <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Tax</th>
+              <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Net</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Warrant</th>
               {showActions && (
                 <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">
                   Actions
@@ -325,29 +268,18 @@ export default function DividendTable({
                     <p className="font-medium text-slate-900 dark:text-white">
                       {dividend.companyName}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {dividend.sector}
-                    </p>
                   </div>
-                </td>
-                <td className="px-4 py-3">
-                  {getTypeBadge(dividend.dividendType)}
-                </td>
-                <td className="px-4 py-3 text-slate-900 dark:text-white font-medium">
-                  {renderDividendValue(dividend)}
-                </td>
-                <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                  {formatDate(dividend.exDividendDate)}
-                </td>
-                <td className="px-4 py-3 text-slate-700 dark:text-slate-300 text-xs">
-                  {formatDate(dividend.bookClosureStart)} - {formatDate(dividend.bookClosureEnd)}
                 </td>
                 <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                   {formatDate(dividend.paymentDate)}
                 </td>
-                <td className="px-4 py-3">
-                  {getStatusBadge(dividend.eligibilityStatus)}
-                </td>
+
+                {/* Payment Data */}
+                <td className="px-4 py-3 text-slate-700 dark:text-slate-300 text-xs">{dividend.filerStatus || '-'}</td>
+                <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">{dividend.grossDividend?.toLocaleString() || '-'}</td>
+                <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">{dividend.taxDeducted?.toLocaleString() || '-'}</td>
+                <td className="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{dividend.netDividend?.toLocaleString() || '-'}</td>
+                <td className="px-4 py-3 text-slate-700 dark:text-slate-300 text-xs font-mono">{dividend.warrantNo || '-'}</td>
                 {showActions && (
                   <td className="px-4 py-3 text-right">
                     <div className="flex gap-1 justify-end">
@@ -412,8 +344,8 @@ export default function DividendTable({
                     key={page}
                     onClick={() => setCurrentPage(page)}
                     className={`px-3 py-1 rounded ${currentPage === page
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }`}
                   >
                     {page}

@@ -48,9 +48,11 @@ export interface ParseResult {
 export function parseExcelFile(buffer: Buffer): ParsedDividendRow[] {
   const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
   const sheetName = workbook.SheetNames[0];
+  console.log(`[Parser] Reading sheet: ${sheetName}`);
   const worksheet = workbook.Sheets[sheetName];
 
   const rawData: Record<string, unknown>[] = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: '' });
+  console.log(`[Parser] Found ${rawData.length} rows in announcement file`);
 
   return rawData.map(row => normalizeColumnNames(row));
 }
@@ -143,8 +145,14 @@ function parseNumber(value: number | string | undefined): number | undefined {
 
   if (typeof value === 'number') return value;
 
-  // Remove currency symbols, commas, and % signs
-  const cleaned = value.toString().replace(/[₨,Rs.%\s]/g, '');
+  let cleaned = value.toString();
+
+  // Remove currency symbols (Rs., Rs, ₨) case-insensitive
+  cleaned = cleaned.replace(/Rs\.?/gi, '').replace(/₨/g, '');
+
+  // Remove commas, % and whitespace
+  cleaned = cleaned.replace(/[,%\s]/g, '');
+
   const num = parseFloat(cleaned);
 
   return isNaN(num) ? undefined : num;
@@ -332,4 +340,140 @@ export function detectInternalDuplicates(dividends: Omit<Dividend, '_id' | 'uplo
   });
 
   return duplicates;
+}
+
+// --- Payment Report Parsing ---
+
+import { PaymentDividend } from '../../lib/paymentDividendModel';
+
+export interface ParsedPaymentRow {
+  paymentDate?: string | Date;
+  symbol?: string;
+  companyName?: string;
+  warrantNo?: string;
+  filerStatus?: string;
+  netDividend?: number | string;
+  grossDividend?: number | string;
+  taxDeducted?: number | string;
+  zakatDeducted?: number | string;
+}
+
+export interface PaymentParseResult {
+  success: boolean;
+  type: 'payment_report' | 'announcement';
+  data?: Omit<PaymentDividend, '_id' | 'uploadedAt' | 'uploadedBy'>[];
+  announcementData?: ParseResult; // If it was actually an announcement file
+  errors: ValidationError[];
+}
+
+/**
+ * Parse Payment Report (CDC Format)
+ */
+export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+  const sheetName = workbook.SheetNames[0];
+  console.log(`[Parser] Reading sheet for payment check: ${sheetName}`);
+  const worksheet = workbook.Sheets[sheetName];
+
+  // Convert to array of arrays to inspect structure
+  const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' }) as unknown[][];
+  console.log(`[Parser] Total rows found: ${rows.length}`);
+
+  // Check if this is a payment report
+  const isPaymentReport = rows.length > 1 &&
+    rows[1] &&
+    rows[1][0] &&
+    typeof rows[1][0] === 'string' &&
+    rows[1][0].includes('Dividend / Zakat & Tax Deduction Summary Report');
+
+  if (!isPaymentReport) {
+    console.log('[Parser] Not a payment report, falling back to announcement parser');
+    // Fallback to standard announcement parser
+    const announcementResult = parseAndValidate(buffer);
+    return {
+      success: announcementResult.success,
+      type: 'announcement',
+      announcementData: announcementResult,
+      errors: announcementResult.errors
+    };
+  }
+
+  // Find header row (usually row 12, index 12 in 0-indexed array if row 1 is index 0... wait, row 13 in Excel is index 12)
+  // Based on user's output: Row 12 has headers: 'Payment Date', 'Financial Year', ...
+  const dataStartIndex = 13;
+
+  if (rows.length <= dataStartIndex) {
+    return {
+      success: false,
+      type: 'payment_report',
+      errors: [{ row: 0, field: 'file', message: 'No data found in payment report' }]
+    };
+  }
+
+  const validPayments: Omit<PaymentDividend, '_id' | 'uploadedAt' | 'uploadedBy'>[] = [];
+  const errors: ValidationError[] = [];
+
+  console.log(`[Parser] Starting payment row parsing from index ${dataStartIndex}`);
+
+  for (let i = dataStartIndex; i < rows.length; i++) {
+    const row = rows[i] as (string | number | undefined)[];
+    if (!row || row.length === 0 || !row[0]) continue; // Skip empty rows
+
+    // Map columns based on fixed indices from the report format
+    // 0: Payment Date
+    // 4: Sec. Symbol - Sec. Name
+    // 6: Warrant #
+    // 7: Filer Status
+    // 9: Gross Dividend
+    // 10: Tax
+    // 12: Zakat
+    // 13: Net Dividend
+
+    try {
+      const paymentDate = parseDate(row[0] as string);
+      const symbolAndName = row[4] as string;
+      const warrantNo = row[6]?.toString();
+      const filerStatus = row[7]?.toString();
+      const grossDividend = parseNumber(row[9] as string | number);
+      const taxDeducted = parseNumber(row[10] as string | number);
+      const zakatDeducted = parseNumber(row[12] as string | number);
+      const netDividend = parseNumber(row[13] as string | number);
+
+      if (!paymentDate || !symbolAndName || !warrantNo || grossDividend === undefined) {
+        // Skip invalid rows but log error? Or just skip footer rows?
+        continue;
+      }
+
+      // Split Symbol and Name
+      const [symbolPart, ...nameParts] = symbolAndName.split('-');
+      const symbol = symbolPart.trim();
+      const companyName = nameParts.join('-').trim();
+
+      validPayments.push({
+        paymentDate,
+        symbol,
+        companyName,
+        warrantNo,
+        filerStatus: filerStatus || 'Unknown',
+        grossDividend,
+        taxDeducted: taxDeducted || 0,
+        zakatDeducted: zakatDeducted || 0,
+        netDividend: netDividend || 0,
+        updatedAt: new Date()
+      });
+
+    } catch (err) {
+      console.error('Row parse error:', err);
+      errors.push({ row: i + 1, field: 'row', message: 'Failed to parse row' });
+    }
+  }
+
+  console.log(`[Parser] Finished parsing. Valid payments: ${validPayments.length}, Errors: ${errors.length}`);
+
+  return {
+    success: validPayments.length > 0,
+    type: 'payment_report',
+    data: validPayments,
+    errors
+  };
 }
