@@ -162,6 +162,60 @@ export async function getPaymentDividendStats(symbol: string) {
 }
 
 /**
+ * Get aggregated portfolio dividend statistics for a user
+ */
+export async function getPortfolioDividendStats(uploadedBy: string) {
+  const collection = await getCollection();
+
+  const stats = await collection.aggregate([
+    { $match: { uploadedBy } },
+    {
+      $group: {
+        _id: null,
+        totalNetDividend: { $sum: '$netDividend' },
+        totalGrossDividend: { $sum: '$grossDividend' },
+        totalTaxDeducted: { $sum: '$taxDeducted' },
+        totalZakatDeducted: { $sum: '$zakatDeducted' },
+        count: { $sum: 1 }
+      }
+    }
+  ]).toArray();
+
+  return stats[0] || {
+    totalNetDividend: 0,
+    totalGrossDividend: 0,
+    totalTaxDeducted: 0,
+    totalZakatDeducted: 0,
+    count: 0
+  };
+}
+
+/**
+ * Get dividend statistics grouped by symbol
+ */
+export async function getDividendStatsBySymbol(uploadedBy: string) {
+  const collection = await getCollection();
+
+  const stats = await collection.aggregate([
+    { $match: { uploadedBy } },
+    {
+      $group: {
+        _id: '$symbol',
+        symbol: { $first: '$symbol' },
+        companyName: { $first: '$companyName' },
+        totalNetDividend: { $sum: '$netDividend' },
+        totalGrossDividend: { $sum: '$grossDividend' },
+        totalTaxDeducted: { $sum: '$taxDeducted' },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { totalNetDividend: -1 } }
+  ]).toArray();
+
+  return stats;
+}
+
+/**
  * Update payment dividend
  */
 export async function updatePaymentDividend(

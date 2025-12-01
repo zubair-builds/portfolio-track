@@ -31,23 +31,23 @@ export default function KSE100Widget({
 }: KSE100WidgetProps) {
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[100px]">
-        <div className="flex items-start justify-between mb-2">
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[138px] flex flex-col justify-between">
+        <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1.5">
               <div className="h-4 w-20 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
               <div className="h-4 w-16 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
             </div>
             <div className="flex items-baseline gap-2">
-              <div className="h-7 w-24 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="h-8 w-24 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
               <div className="h-4 w-16 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 mt-3">
+        <div className="grid grid-cols-3 gap-2">
           {[1, 2, 3].map((i) => (
             <div key={i}>
-              <div className="h-3 w-8 bg-slate-100 dark:bg-slate-700 rounded animate-pulse mb-1" />
+              <div className="h-3 w-8 bg-slate-100 dark:bg-slate-700 rounded animate-pulse mb-0.5" />
               <div className="h-4 w-16 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
             </div>
           ))}
@@ -68,8 +68,8 @@ export default function KSE100Widget({
   const isPositive = index.change >= 0;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[100px]">
-      <div className="flex items-start justify-between mb-2">
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[138px] flex flex-col justify-between">
+      <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
