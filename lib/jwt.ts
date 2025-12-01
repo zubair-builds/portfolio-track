@@ -9,6 +9,7 @@ export interface CustomJwtPayload extends JwtPayload {
   user: {
     email: string;
     name: string;
+    role?: string;
   };
 }
 

@@ -56,10 +56,11 @@ async function fetchDividendsFromPSX(symbol: string): Promise<PSXDividendRespons
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ symbol: string }> }
+  { params }: { params: Promise<{ identifier: string }> }
 ) {
   try {
-    const { symbol } = await params;
+    const { identifier } = await params;
+    const symbol = identifier;
 
     if (!symbol) {
       return NextResponse.json(
@@ -111,7 +112,7 @@ export async function GET(
       message: `Dividend history refreshed for ${symbol}`,
     });
   } catch (error) {
-    console.error(`Error in GET /api/dividends/${(await params).symbol}/refresh:`, error);
+    console.error(`Error in GET /api/dividends/${(await params).identifier}/refresh:`, error);
     return NextResponse.json(
       { error: 'Failed to refresh dividend history' },
       { status: 500 }
