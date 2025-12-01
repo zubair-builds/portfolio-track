@@ -506,7 +506,7 @@ export default function Page() {
           )}
 
           {/* Tabs Navigation */}
-          <div className="bg-white dark:bg-slate-900/60 sticky top-12 z-40 border-b border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-900 relative border-b border-slate-200 dark:border-slate-700">
             <div className="container mx-auto max-w-7xl">
               <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
             </div>

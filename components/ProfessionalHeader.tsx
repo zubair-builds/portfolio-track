@@ -47,7 +47,7 @@ export default function ProfessionalHeader({
   const stateInfo = marketState ? getMarketStateInfo(marketState) : null;
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-sm">
+    <header className="relative border-b bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm">
       <div className="container mx-auto max-w-7xl">
         <div className="flex items-center justify-between h-12 px-4">
           {/* Left: Logo and Title */}

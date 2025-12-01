@@ -306,7 +306,7 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
                       </td>
                       <td className="px-4 py-3">
                         <Link
-                          href={`/companies/${tx.symbol.toLowerCase()}`}
+                          href={`/symbol/${tx.symbol.toLowerCase()}`}
                           className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                         >
                           {tx.symbol}
