@@ -79,10 +79,12 @@ export async function POST(req: NextRequest) {
       const warnings: string[] = [];
 
       // Check for existing duplicates
+      // Check for existing duplicates
       for (const payment of payments) {
         const existing = await checkDuplicatePaymentDividend(
           payment.symbol,
           payment.paymentDate,
+          payment.netDividend,
           payment.warrantNo
         );
         if (existing) {
