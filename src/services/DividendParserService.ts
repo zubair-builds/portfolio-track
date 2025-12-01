@@ -133,6 +133,25 @@ function parseDate(dateValue: string | Date | undefined): Date | undefined {
     return dateValue;
   }
 
+  // Handle DD/MM/YYYY or D/M/YY format
+  if (typeof dateValue === 'string') {
+    // Check for DD/MM/YYYY or D/M/YYYY or D/M/YY
+    const dmyMatch = dateValue.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+    if (dmyMatch) {
+      const day = parseInt(dmyMatch[1], 10);
+      const month = parseInt(dmyMatch[2], 10) - 1; // Months are 0-indexed
+      let year = parseInt(dmyMatch[3], 10);
+
+      // Handle 2-digit year
+      if (year < 100) {
+        year += 2000;
+      }
+
+      const date = new Date(year, month, day);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+  }
+
   const date = new Date(dateValue);
   return isNaN(date.getTime()) ? undefined : date;
 }
@@ -370,7 +389,7 @@ export interface PaymentParseResult {
  * Parse Payment Report (CDC Format)
  */
 export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
-  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
   const sheetName = workbook.SheetNames[0];
   console.log(`[Parser] Reading sheet for payment check: ${sheetName}`);
   const worksheet = workbook.Sheets[sheetName];
@@ -398,18 +417,69 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
     };
   }
 
-  // Find header row (usually row 12, index 12 in 0-indexed array if row 1 is index 0... wait, row 13 in Excel is index 12)
-  // Based on user's output: Row 12 has headers: 'Payment Date', 'Financial Year', ...
-  const dataStartIndex = 13;
+  // Dynamic Header Detection
+  let headerRowIndex = -1;
+  const headerKeywords = ['Payment Date', 'Sec. Symbol', 'Warrant', 'Net Dividend'];
 
-  if (rows.length <= dataStartIndex) {
-    return {
-      success: false,
-      type: 'payment_report',
-      errors: [{ row: 0, field: 'file', message: 'No data found in payment report' }]
-    };
+  // Scan first 20 rows for header
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const row = rows[i] as string[];
+    if (!row) continue;
+
+    // Check if row contains multiple keywords
+    const matchCount = headerKeywords.filter(keyword =>
+      row.some(cell => typeof cell === 'string' && cell.includes(keyword))
+    ).length;
+
+    if (matchCount >= 2) {
+      headerRowIndex = i;
+      console.log(`[Parser] Header row found at index ${i}`);
+      break;
+    }
   }
 
+  if (headerRowIndex === -1) {
+    console.warn('[Parser] Could not find header row dynamically, falling back to default index 12');
+    headerRowIndex = 12; // Fallback to observed default
+  }
+
+  // Dynamic Column Mapping
+  const headerRow = rows[headerRowIndex] as string[];
+  const colMap: Record<string, number> = {};
+
+  if (headerRow) {
+    headerRow.forEach((cell, index) => {
+      if (typeof cell === 'string') {
+        const cleanHeader = cell.trim().toLowerCase();
+        if (cleanHeader.includes('payment date')) colMap['paymentDate'] = index;
+        else if (cleanHeader.includes('sec. symbol') || cleanHeader.includes('sec name')) colMap['symbolName'] = index;
+        else if (cleanHeader.includes('warrant')) colMap['warrant'] = index;
+        else if (cleanHeader.includes('filer status')) colMap['filerStatus'] = index;
+        else if (cleanHeader.includes('gross dividend')) colMap['gross'] = index;
+        else if (cleanHeader.includes('tax')) colMap['tax'] = index;
+        else if (cleanHeader.includes('zakat')) colMap['zakat'] = index;
+        else if (cleanHeader.includes('net dividend')) colMap['net'] = index;
+      }
+    });
+  }
+
+  console.log('[Parser] Column mapping:', JSON.stringify(colMap));
+
+  // Default indices if mapping fails (fallback)
+  const getColIndex = (key: string, defaultIdx: number) => colMap[key] !== undefined ? colMap[key] : defaultIdx;
+
+  const idx = {
+    paymentDate: getColIndex('paymentDate', 0),
+    symbolName: getColIndex('symbolName', 4),
+    warrant: getColIndex('warrant', 6),
+    filerStatus: getColIndex('filerStatus', 7),
+    gross: getColIndex('gross', 9),
+    tax: getColIndex('tax', 10),
+    zakat: getColIndex('zakat', 12),
+    net: getColIndex('net', 13)
+  };
+
+  const dataStartIndex = headerRowIndex + 1;
   const validPayments: Omit<PaymentDividend, '_id' | 'uploadedAt' | 'uploadedBy'>[] = [];
   const errors: ValidationError[] = [];
 
@@ -417,30 +487,41 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
 
   for (let i = dataStartIndex; i < rows.length; i++) {
     const row = rows[i] as (string | number | undefined)[];
-    if (!row || row.length === 0 || !row[0]) continue; // Skip empty rows
-
-    // Map columns based on fixed indices from the report format
-    // 0: Payment Date
-    // 4: Sec. Symbol - Sec. Name
-    // 6: Warrant #
-    // 7: Filer Status
-    // 9: Gross Dividend
-    // 10: Tax
-    // 12: Zakat
-    // 13: Net Dividend
+    if (!row || row.length === 0 || !row[idx.paymentDate]) {
+      // Log skipped row if it looks like it might have data but failed check
+      if (row && row.length > 5) {
+        console.log(`[Parser] Skipping row ${i}: Missing payment date or empty. Row content: ${JSON.stringify(row.slice(0, 5))}...`);
+      }
+      continue;
+    }
 
     try {
-      const paymentDate = parseDate(row[0] as string);
-      const symbolAndName = row[4] as string;
-      const warrantNo = row[6]?.toString();
-      const filerStatus = row[7]?.toString();
-      const grossDividend = parseNumber(row[9] as string | number);
-      const taxDeducted = parseNumber(row[10] as string | number);
-      const zakatDeducted = parseNumber(row[12] as string | number);
-      const netDividend = parseNumber(row[13] as string | number);
+      const paymentDate = parseDate(row[idx.paymentDate] as string);
+      const symbolAndName = row[idx.symbolName] as string;
+      const warrantNo = row[idx.warrant]?.toString();
+      const filerStatus = row[idx.filerStatus]?.toString();
+      const grossDividend = parseNumber(row[idx.gross] as string | number);
+      const taxDeducted = parseNumber(row[idx.tax] as string | number);
+      const zakatDeducted = parseNumber(row[idx.zakat] as string | number);
+      const netDividend = parseNumber(row[idx.net] as string | number);
 
-      if (!paymentDate || !symbolAndName || !warrantNo || grossDividend === undefined) {
-        // Skip invalid rows but log error? Or just skip footer rows?
+      if (!paymentDate) {
+        console.log(`[Parser] Skipping row ${i}: Invalid payment date`);
+        continue;
+      }
+
+      if (!symbolAndName) {
+        console.log(`[Parser] Skipping row ${i}: Missing symbol/name`);
+        continue;
+      }
+
+      if (!warrantNo) {
+        console.log(`[Parser] Warning row ${i}: Missing warrant number, but proceeding`);
+        // continue; // Don't skip, just warn
+      }
+
+      if (grossDividend === undefined) {
+        console.log(`[Parser] Skipping row ${i}: Missing gross dividend`);
         continue;
       }
 
@@ -463,7 +544,7 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
       });
 
     } catch (err) {
-      console.error('Row parse error:', err);
+      console.error(`Row ${i} parse error:`, err);
       errors.push({ row: i + 1, field: 'row', message: 'Failed to parse row' });
     }
   }
