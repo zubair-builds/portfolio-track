@@ -13,6 +13,7 @@ export interface PaymentDividend {
   companyName: string;
   warrantNo: string;
   filerStatus: string;
+  shares: number;
   netDividend: number;
   grossDividend: number;
   taxDeducted: number;
@@ -38,7 +39,6 @@ export async function initializePaymentDividendIndexes() {
   const collection = await getCollection();
 
   await collection.createIndex({ symbol: 1, paymentDate: -1 });
-  await collection.createIndex({ warrantNo: 1 }, { unique: true });
   await collection.createIndex({ uploadedBy: 1 });
   await collection.createIndex({ paymentDate: 1 });
 }
@@ -49,6 +49,7 @@ export async function initializePaymentDividendIndexes() {
 export async function checkDuplicatePaymentDividend(
   symbol: string,
   paymentDate: Date,
+  netDividend: number,
   warrantNo: string
 ): Promise<boolean> {
   const collection = await getCollection();
@@ -56,6 +57,7 @@ export async function checkDuplicatePaymentDividend(
   const existing = await collection.findOne({
     symbol: symbol.toUpperCase(),
     paymentDate,
+    netDividend,
     warrantNo
   });
 
@@ -148,6 +150,7 @@ export async function getPaymentDividendStats(symbol: string) {
       $group: {
         _id: null,
         totalPayments: { $sum: 1 },
+        totalShares: { $sum: '$shares' },
         totalNetDividend: { $sum: '$netDividend' },
         totalGrossDividend: { $sum: '$grossDividend' },
         totalTaxDeducted: { $sum: '$taxDeducted' },
@@ -206,6 +209,7 @@ export async function getDividendStatsBySymbol(uploadedBy: string) {
         totalNetDividend: { $sum: '$netDividend' },
         totalGrossDividend: { $sum: '$grossDividend' },
         totalTaxDeducted: { $sum: '$taxDeducted' },
+        totalZakatDeducted: { $sum: '$zakatDeducted' },
         count: { $sum: 1 }
       }
     },

@@ -371,6 +371,7 @@ export interface ParsedPaymentRow {
   companyName?: string;
   warrantNo?: string;
   filerStatus?: string;
+  shares?: number | string;
   netDividend?: number | string;
   grossDividend?: number | string;
   taxDeducted?: number | string;
@@ -419,7 +420,7 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
 
   // Dynamic Header Detection
   let headerRowIndex = -1;
-  const headerKeywords = ['Payment Date', 'Sec. Symbol', 'Warrant', 'Net Dividend'];
+  const headerKeywords = ['Payment Date', 'Sec. Symbol', 'Warrant', 'Net Dividend', 'No. of Securities'];
 
   // Scan first 20 rows for header
   for (let i = 0; i < Math.min(rows.length, 20); i++) {
@@ -455,8 +456,9 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
         else if (cleanHeader.includes('sec. symbol') || cleanHeader.includes('sec name')) colMap['symbolName'] = index;
         else if (cleanHeader.includes('warrant')) colMap['warrant'] = index;
         else if (cleanHeader.includes('filer status')) colMap['filerStatus'] = index;
+        else if (cleanHeader.includes('no. of securities') || cleanHeader.includes('securities')) colMap['shares'] = index;
         else if (cleanHeader.includes('gross dividend')) colMap['gross'] = index;
-        else if (cleanHeader.includes('tax')) colMap['tax'] = index;
+        else if (cleanHeader === 'tax' || (cleanHeader.includes('tax') && !cleanHeader.includes("jh's"))) colMap['tax'] = index;
         else if (cleanHeader.includes('zakat')) colMap['zakat'] = index;
         else if (cleanHeader.includes('net dividend')) colMap['net'] = index;
       }
@@ -473,6 +475,7 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
     symbolName: getColIndex('symbolName', 4),
     warrant: getColIndex('warrant', 6),
     filerStatus: getColIndex('filerStatus', 7),
+    shares: getColIndex('shares', 8),
     gross: getColIndex('gross', 9),
     tax: getColIndex('tax', 10),
     zakat: getColIndex('zakat', 12),
@@ -500,6 +503,7 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
       const symbolAndName = row[idx.symbolName] as string;
       const warrantNo = row[idx.warrant]?.toString();
       const filerStatus = row[idx.filerStatus]?.toString();
+      const shares = parseNumber(row[idx.shares] as string | number);
       const grossDividend = parseNumber(row[idx.gross] as string | number);
       const taxDeducted = parseNumber(row[idx.tax] as string | number);
       const zakatDeducted = parseNumber(row[idx.zakat] as string | number);
@@ -515,10 +519,6 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
         continue;
       }
 
-      if (!warrantNo) {
-        console.log(`[Parser] Warning row ${i}: Missing warrant number, but proceeding`);
-        // continue; // Don't skip, just warn
-      }
 
       if (grossDividend === undefined) {
         console.log(`[Parser] Skipping row ${i}: Missing gross dividend`);
@@ -536,6 +536,7 @@ export function parsePaymentReport(buffer: Buffer): PaymentParseResult {
         companyName,
         warrantNo,
         filerStatus: filerStatus || 'Unknown',
+        shares: shares || 0,
         grossDividend,
         taxDeducted: taxDeducted || 0,
         zakatDeducted: zakatDeducted || 0,
