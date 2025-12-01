@@ -4,16 +4,17 @@ import { getUserFromCookies } from '@/lib/jwt';
 export async function GET() {
   try {
     const user = await getUserFromCookies();
-    
+
     if (!user) {
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
-    return NextResponse.json({ 
-      user: { 
+    return NextResponse.json({
+      user: {
         email: user.email,
-        name: user.name
-      } 
+        name: user.name,
+        role: user.role
+      }
     });
   } catch (error) {
     console.error('Auth check error:', error);
