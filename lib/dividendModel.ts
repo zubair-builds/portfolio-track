@@ -56,17 +56,19 @@ export interface DividendFilter {
   startDate?: Date;
   endDate?: Date;
   eligibilityStatus?: string;
+  uploadedBy?: string;
   page?: number;
   limit?: number;
 }
 
 const DB_NAME = process.env.MONGODB_DB || 'portfolioTrack';
 const COLLECTION_NAME = 'dividends';
+const paymentDividends = "paymentDividends"
 
-async function getCollection(): Promise<Collection<Dividend>> {
+async function getCollection(name = paymentDividends): Promise<Collection<Dividend>> {
   const client = await clientPromise;
   const db: Db = client.db(DB_NAME);
-  return db.collection<Dividend>(COLLECTION_NAME);
+  return db.collection<Dividend>(name);
 }
 
 /**
@@ -167,7 +169,7 @@ export async function createDividendsBulk(userId: string, dividends: Omit<Divide
  * Get dividends with filtering and pagination
  */
 export async function getDividends(filter: DividendFilter): Promise<{ dividends: Dividend[]; total: number }> {
-  const collection = await getCollection();
+  const collection = await getCollection(paymentDividends);
 
   const query: Filter<Dividend> = {};
 
@@ -187,7 +189,7 @@ export async function getDividends(filter: DividendFilter): Promise<{ dividends:
     query.dividendType = filter.dividendType;
   }
 
-  if (filter.eligibilityStatus) {
+  if (false && filter.eligibilityStatus) {
     query['calculated.eligibilityStatus'] = filter.eligibilityStatus;
   }
 
@@ -197,9 +199,15 @@ export async function getDividends(filter: DividendFilter): Promise<{ dividends:
     if (filter.endDate) query['dates.announcement'].$lte = filter.endDate;
   }
 
+  if (filter.uploadedBy) {
+    query.uploadedBy = filter.uploadedBy;
+  }
+
   const page = filter.page || 1;
   const limit = filter.limit || 50;
   const skip = (page - 1) * limit;
+
+  console.log(`[DB] Querying dividends:`, JSON.stringify(query));
 
   const [dividends, total] = await Promise.all([
     collection.find(query)

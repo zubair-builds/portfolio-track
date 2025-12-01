@@ -73,8 +73,11 @@ export async function GET(request: NextRequest) {
       }
 
       filter.limit = limit;
+      filter.uploadedBy = user.email;
+      console.log(`[Dividends API] Fetching dividends with filter:`, JSON.stringify(filter));
       const result = await getDividends(filter);
       dividends = result.dividends;
+      console.log(`[Dividends API] Found ${dividends.length} records`);
     }
 
     return NextResponse.json({

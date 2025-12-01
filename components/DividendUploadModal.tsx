@@ -35,6 +35,7 @@ export default function DividendUploadModal({ onClose, onUploadComplete }: Divid
   const [dragActive, setDragActive] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [importMode, setImportMode] = useState<'skip' | 'overwrite'>('skip');
+  const [fileType, setFileType] = useState<'announcement' | 'payment'>('payment');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -93,7 +94,9 @@ export default function DividendUploadModal({ onClose, onUploadComplete }: Divid
       formData.append('mode', importMode);
 
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/dividends/upload', {
+      const endpoint = '/api/dividends/upload';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -122,8 +125,8 @@ export default function DividendUploadModal({ onClose, onUploadComplete }: Divid
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 shadow-xl">
         <div className="p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
@@ -145,11 +148,56 @@ export default function DividendUploadModal({ onClose, onUploadComplete }: Divid
             </button>
           </div>
 
+          {/* File Type Selection */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Select File Format
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  value="payment"
+                  checked={fileType === 'payment'}
+                  onChange={(e) => setFileType(e.target.value as 'payment')}
+                  className="mr-2"
+                  disabled={!!file}
+                />
+                <div className="text-sm">
+                  <div className="font-medium text-slate-700 dark:text-slate-300">
+                    Payment Dividend Report
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    CDC format with warrant numbers and tax details
+                  </div>
+                </div>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  value="announcement"
+                  checked={fileType === 'announcement'}
+                  onChange={(e) => setFileType(e.target.value as 'announcement')}
+                  className="mr-2"
+                  disabled={!!file}
+                />
+                <div className="text-sm">
+                  <div className="font-medium text-slate-700 dark:text-slate-300">
+                    Dividend Announcement
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Standard format with dates and financials
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           {/* Upload Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
-                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
-                : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400'
+              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+              : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400'
               }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -270,8 +318,8 @@ export default function DividendUploadModal({ onClose, onUploadComplete }: Divid
           {result && (
             <div
               className={`p-4 rounded-lg border ${result.success
-                  ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900'
-                  : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900'
+                ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900'
+                : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900'
                 }`}
             >
               <div className="flex items-start gap-2">
@@ -303,8 +351,8 @@ export default function DividendUploadModal({ onClose, onUploadComplete }: Divid
                 <div className="flex-1">
                   <p
                     className={`font-medium ${result.success
-                        ? 'text-emerald-800 dark:text-emerald-200'
-                        : 'text-red-800 dark:text-red-200'
+                      ? 'text-emerald-800 dark:text-emerald-200'
+                      : 'text-red-800 dark:text-red-200'
                       }`}
                   >
                     {result.message || result.error}
@@ -370,14 +418,28 @@ export default function DividendUploadModal({ onClose, onUploadComplete }: Divid
 
           {/* Instructions */}
           <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <p className="font-medium">Required columns:</p>
-            <ul className="list-disc list-inside space-y-0.5 ml-2">
-              <li>Symbol, Company Name, Sector, Dividend Type</li>
-              <li>Announcement Date, Ex-Dividend Date, Book Closure Start/End</li>
-              <li>For Cash: Dividend Rate or Dividend Per Share</li>
-              <li>For Bonus: Bonus Ratio (e.g., &quot;1:10&quot;)</li>
-              <li>For Right Shares: Right Ratio (e.g., &quot;1:5&quot;)</li>
-            </ul>
+            <p className="font-medium">
+              {fileType === 'payment' ? 'Payment Dividend Format:' : 'Dividend Announcement Format:'}
+            </p>
+            {fileType === 'payment' ? (
+              <ul className="list-disc list-inside space-y-0.5 ml-2">
+                <li>File must have 12 lines of metadata header (will be skipped)</li>
+                <li>Column headers on line 13</li>
+                <li>Required: Sec. Symbol - Sec. Name (format: SYMBOL - Company Name)</li>
+                <li>Required: Payment Date (DD/MM/YYYY format)</li>
+                <li>Required: Warrant #, Filer Status*</li>
+                <li>Required: Net Dividend, Gross Dividend, Tax Deducted, Zakat Deducted</li>
+                <li>Numeric values can include commas and quotes (e.g., &quot;1,000.00&quot;)</li>
+              </ul>
+            ) : (
+              <ul className="list-disc list-inside space-y-0.5 ml-2">
+                <li>Symbol, Company Name, Sector, Dividend Type</li>
+                <li>Announcement Date, Ex-Dividend Date, Book Closure Start/End</li>
+                <li>For Cash: Dividend Rate or Dividend Per Share</li>
+                <li>For Bonus: Bonus Ratio (e.g., &quot;1:10&quot;)</li>
+                <li>For Right Shares: Right Ratio (e.g., &quot;1:5&quot;)</li>
+              </ul>
+            )}
           </div>
         </div>
       </Card>
