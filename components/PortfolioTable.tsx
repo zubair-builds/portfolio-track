@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Stock,
@@ -25,7 +25,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
   const [sortField, setSortField] = useState<keyof Stock | 'gainLoss' | 'gainLossPercent'>('symbol');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'details'>('overview');
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showSellModal, setShowSellModal] = useState(false);
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
 
@@ -234,36 +234,12 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
             </div>
           </div>
 
-          {/* Column View Tabs */}
-          <div className="mb-4 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex gap-1">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'overview'
-                    ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('details')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'details'
-                    ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-              >
-                Details
-              </button>
-            </div>
-          </div>
+          {/* Single table view (no tabs) */}
 
           {/* Table */}
           <div className="overflow-x-auto -mx-6 px-6">
-            <table className={`table-professional table-sticky-header w-full ${activeTab === 'overview' ? 'min-w-[900px]' :
-                'min-w-[750px]'
-              }`}>
-              <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/50">
+            <table className={`table-professional table-sticky-header w-full min-w-[900px]`}>
+              <thead className="sticky top-0 z-10 bg-white dark:bg-slate-900 shadow-sm">
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   {/* Symbol - Always visible */}
                   <th className="text-left py-3 px-4">
@@ -275,9 +251,11 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                       <SortIcon field="symbol" />
                     </button>
                   </th>
-
-                  {/* Overview Tab Columns (merged with Performance) */}
-                  {activeTab === 'overview' && (
+                  {/* Expand column */}
+                  <th className="text-left py-3 px-2">
+                    <span className="sr-only">Expand</span>
+                  </th>
+                  {/* Core columns */}
                     <>
                       <th className="text-right py-3 px-4">
                         <button
@@ -336,51 +314,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                         </span>
                       </th>
                     </>
-                  )}
 
-                  {/* Details Tab Columns */}
-                  {activeTab === 'details' && (
-                    <>
-                      <th className="text-right py-3 px-4">
-                        <button
-                          onClick={() => handleSort('shares')}
-                          className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                        >
-                          Shares
-                          <SortIcon field="shares" />
-                        </button>
-                      </th>
-                      <th className="text-right py-3 px-4">
-                        <button
-                          onClick={() => handleSort('avgBuy')}
-                          className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                        >
-                          Avg Buy
-                          <SortIcon field="avgBuy" />
-                        </button>
-                      </th>
-                      <th className="text-right py-3 px-4">
-                        <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                          Purchase Date
-                        </span>
-                      </th>
-                      <th className="text-right py-3 px-4">
-                        <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                          Days Held
-                        </span>
-                      </th>
-                      <th className="text-right py-3 px-4">
-                        <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                          Investment
-                        </span>
-                      </th>
-                      <th className="text-right py-3 px-4">
-                        <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                          Current Value
-                        </span>
-                      </th>
-                    </>
-                  )}
 
                   {/* Actions - Always visible */}
                   {(onEditStock || onDeleteStock) && (
@@ -413,8 +347,8 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                   );
 
                   return (
+                    <React.Fragment key={stock.symbol}>
                     <tr
-                      key={stock.symbol}
                       className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                     >
                       {/* Symbol - Always visible */}
@@ -456,9 +390,32 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                           })()}
                         </div>
                       </td>
+                      {/* Expand toggle */}
+                      <td className="py-3 px-2">
+                        <button
+                          aria-label="Toggle details"
+                          onClick={() => {
+                            setExpanded(prev => {
+                              const next = new Set(prev);
+                              if (next.has(stock.symbol)) next.delete(stock.symbol); else next.add(stock.symbol);
+                              return next;
+                            });
+                          }}
+                          className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          {expanded.has(stock.symbol) ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </button>
+                      </td>
 
-                      {/* Overview Tab Cells (merged with Performance) */}
-                      {activeTab === 'overview' && (
+                      {/* Core cells */}
                         <>
                           <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
                             ₨{stock.currentPrice.toFixed(2)}
@@ -487,31 +444,8 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                               : 'N/A'}
                           </td>
                         </>
-                      )}
 
-                      {/* Details Tab Cells */}
-                      {activeTab === 'details' && (
-                        <>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            {stock.shares.toLocaleString()}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            ₨{stock.avgBuy.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm tabular-nums">
-                            {formatPurchaseDate(stock.purchaseDate)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 text-sm tabular-nums">
-                            {formatDaysHeld(daysHeld)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            ₨{investment.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            ₨{currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                        </>
-                      )}
+                      {/* Details moved to expandable row below */}
 
                       {/* Actions - Always visible */}
                       {(onEditStock || onDeleteStock) && (
@@ -561,6 +495,27 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                         </td>
                       )}
                     </tr>
+                    {expanded.has(stock.symbol) && (
+                      <tr className="bg-slate-50/60 dark:bg-slate-800/40">
+                        <td colSpan={12} className="py-4 px-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-3 rounded border border-slate-200 dark:border-slate-700">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">Purchase Date</p>
+                              <p className="text-sm font-medium">{formatPurchaseDate(stock.purchaseDate)}</p>
+                            </div>
+                            <div className="p-3 rounded border border-slate-200 dark:border-slate-700">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">Days Held</p>
+                              <p className="text-sm font-medium">{formatDaysHeld(daysHeld)}</p>
+                            </div>
+                            <div className="p-3 rounded border border-slate-200 dark:border-slate-700">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">Shares</p>
+                              <p className="text-sm font-medium">{stock.shares.toLocaleString()}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
