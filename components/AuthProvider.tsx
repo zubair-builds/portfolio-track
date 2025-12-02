@@ -68,11 +68,34 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     }
 
+    // Check for existing user in localStorage first
     const current = readCurrentUser();
     if (current) {
       setUser(current);
+      setInitializing(false);
+      return;
     }
-    setInitializing(false);
+
+    // If no localStorage user, check server-side cookie (for OAuth users)
+    fetch('/api/auth/check', {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            persistCurrentUser(data.user);
+            setUser(data.user);
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('Auth check failed:', error);
+      })
+      .finally(() => {
+        setInitializing(false);
+      });
   }, []);
 
   const signup = useCallback(async ({ name, email, password }: { name: string; email: string; password: string }) => {
