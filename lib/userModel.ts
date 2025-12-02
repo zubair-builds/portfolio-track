@@ -7,6 +7,9 @@ export interface UserDocument {
   passwordHash: string;
   portfolioInitialized?: boolean;
   watchlistInitialized?: boolean;
+  googleAccessToken?: string;
+  googleRefreshToken?: string;
+  googleTokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
