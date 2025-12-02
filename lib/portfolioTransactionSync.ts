@@ -263,11 +263,14 @@ export async function getPortfolioSummaryWithGains(
     totalCGTPaid += holding.totalCGTPaid;
   }
 
+  // Fetch total dividend income for user
+  const { netDividend = 0, grossDividend = 0, taxDeducted = 0, zakatDeducted = 0 } = await import('./dividendUtils').then(m => m.getUserDividendIncome(userId));
+
   const unrealizedGainsPercent = totalInvested > 0
     ? (unrealizedGains / totalInvested) * 100
     : 0;
 
-  const totalGains = realizedGains + unrealizedGains;
+  const totalGains = realizedGains + unrealizedGains + netDividend;
   const totalGainsPercent = totalInvested > 0
     ? (totalGains / totalInvested) * 100
     : 0;
@@ -284,5 +287,9 @@ export async function getPortfolioSummaryWithGains(
     totalGains,
     totalGainsPercent,
     netProfit,
+    totalDividendIncome: netDividend,
+    totalDividendTax: taxDeducted,
+    totalDividendGross: grossDividend,
+    totalDividendZakat: zakatDeducted,
   };
 }

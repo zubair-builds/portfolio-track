@@ -21,6 +21,7 @@ import { Stock, WatchlistItem, calculatePortfolioStats } from "../lib/portfolioD
 import { useAuth } from "../components/AuthProvider";
 import { useIndexPrices } from "../hooks/useIndexPrices";
 import { usePortfolioData } from "../hooks/usePortfolioData";
+import { useDividendData } from "../hooks/useDividendData";
 import ProfessionalHeader from "../components/ProfessionalHeader";
 import PortfolioHero from "../components/PortfolioHero";
 import KSE100Widget from "../components/KSE100Widget";
@@ -33,6 +34,7 @@ export default function Page() {
   const kse100Symbols = useMemo(() => ['KSE100'], []);
   const { indices: [kse100], loading: kse100Loading, error: kse100Error, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
   const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, error: portfolioError, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
+  const { dividendStats, isLoading: dividendLoading, error: dividendError, refresh: refreshDividendData } = useDividendData(user?.email, { includeBySymbol: true });
   
   // Extract symbols from portfolio, watchlist, and indices for LiveTicker filter
   const tickerFilteredSymbols = useMemo(() => {
@@ -358,7 +360,16 @@ export default function Page() {
   };
 
   // Calculate portfolio stats for hero component (must be before conditional returns)
-  const portfolioStats = useMemo(() => calculatePortfolioStats(portfolioStocks), [portfolioStocks]);
+  const portfolioStats = useMemo(() => {
+    const dividendData = dividendStats ? {
+      netDividend: dividendStats.totalNet,
+      grossDividend: dividendStats.totalGross,
+      taxDeducted: dividendStats.totalTax,
+      zakatDeducted: dividendStats.totalZakat,
+    } : undefined;
+    
+    return calculatePortfolioStats(portfolioStocks, 0, dividendData);
+  }, [portfolioStocks, dividendStats]);
   const portfolioReturn = portfolioStats.totalGainLossPercent;
 
   // Define tabs
@@ -522,6 +533,7 @@ export default function Page() {
                 onDeleteStock={handleDeleteStock}
                 onAddStock={() => setShowAddStock(true)}
                 onRefresh={refreshPortfolioData}
+                dividendStats={dividendStats}
               />
             )}
 

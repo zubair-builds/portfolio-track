@@ -145,7 +145,7 @@ export default function PortfolioHero({
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {/* Total Investment */}
           <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
@@ -187,10 +187,29 @@ export default function PortfolioHero({
                 )}
               </div>
             </div>
-            <p className={`text-xl sm:text-2xl font-bold tabular-nums ${gainLossColor}`}>
+            <p className={`text-xl sm:text-2xl font-bold tabular-nums ${gainLossColor}`}> 
               {isPositive ? '+' : ''}{stats.totalGainLossPercent.toFixed(2)}%
             </p>
           </div>
+
+          {/* Dividend Income */}
+          {typeof stats.totalDividendIncome === 'number' && (
+            <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-yellow-200/50 dark:border-yellow-800/30 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 uppercase tracking-wide">
+                  Dividends
+                </p>
+                <div className="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-xl sm:text-2xl font-bold text-yellow-700 dark:text-yellow-300 tabular-nums">
+                ₨{stats.totalDividendIncome.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+          )}
 
           {/* Number of Positions */}
           <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-md transition-shadow">

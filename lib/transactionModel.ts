@@ -6,7 +6,7 @@ import clientPromise from './mongodb';
  * Tracks individual transactions with FIFO cost basis calculation
  */
 
-export type TransactionType = 'BUY' | 'SELL';
+export type TransactionType = 'BUY' | 'SELL' | 'DIVIDEND';
 export type TransactionStatus = 'active' | 'deleted';
 
 export interface TransactionDocument {
@@ -16,7 +16,7 @@ export interface TransactionDocument {
   transactionType: TransactionType;
   shares: number;
   pricePerShare: number;
-  totalAmount: number; // shares * pricePerShare
+  totalAmount: number; // shares * pricePerShare (or dividend amount for DIVIDEND type)
   transactionDate: Date;
   notes?: string;
 
@@ -30,6 +30,13 @@ export interface TransactionDocument {
   cgtAmount?: number; // Capital Gains Tax (15%)
   holdingPeriodDays?: number; // Average holding period
   lotsUsed?: FIFOLot[]; // Which buy lots were used
+
+  // For DIVIDEND transactions
+  dividendPerShare?: number; // Dividend amount per share
+  grossDividend?: number; // Before tax
+  taxDeducted?: number; // WHT deducted
+  zakatDeducted?: number; // Zakat deducted
+  netDividend?: number; // After deductions
 }
 
 export interface FIFOLot {

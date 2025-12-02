@@ -344,8 +344,10 @@ Begin your stock analysis report now:`;
       // Calculate portfolio metrics
       const totalInvestment = stocks.reduce((sum, s) => sum + (s.shares * s.avgBuy), 0);
       const currentValue = stocks.reduce((sum, s) => sum + (s.shares * s.currentPrice), 0);
-      const totalReturn = ((currentValue - totalInvestment) / totalInvestment * 100);
-      const totalReturnAmount = currentValue - totalInvestment;
+      // Fetch dividend income for user
+      const { netDividend = 0, taxDeducted = 0, zakatDeducted = 0 } = await import('../../../lib/dividendUtils').then(m => m.getUserDividendIncome(userId));
+      const totalReturnAmount = currentValue - totalInvestment + netDividend;
+      const totalReturn = (totalReturnAmount / totalInvestment) * 100;
 
       // Build detailed holdings breakdown
       const holdingsDetails = enrichedData.map((stock) => {
@@ -411,12 +413,7 @@ Begin your stock analysis report now:`;
       const topLoser = sortedByReturn[sortedByReturn.length - 1];
 
       // Calculate portfolio dividend income
-      const totalDividendIncome = holdingsDetails.reduce((sum, stock) => {
-        if (stock.lastDividend) {
-          return sum + (stock.shares * stock.lastDividend);
-        }
-        return sum;
-      }, 0);
+      const totalDividendIncome = netDividend;
 
       // Build prompt sections
       const portfolioOverview = `
