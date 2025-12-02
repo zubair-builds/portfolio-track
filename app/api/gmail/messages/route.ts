@@ -119,12 +119,17 @@ export async function GET(request: NextRequest) {
         const detail = await detailResponse.json();
         const headers = detail.payload?.headers || [];
         
+        interface EmailHeader {
+          name: string;
+          value: string;
+        }
+        
         return {
           id: detail.id,
           threadId: detail.threadId,
-          subject: headers.find((h: any) => h.name === 'Subject')?.value || '(No Subject)',
-          from: headers.find((h: any) => h.name === 'From')?.value || '',
-          date: headers.find((h: any) => h.name === 'Date')?.value || '',
+          subject: (headers as EmailHeader[]).find((h) => h.name === 'Subject')?.value || '(No Subject)',
+          from: (headers as EmailHeader[]).find((h) => h.name === 'From')?.value || '',
+          date: (headers as EmailHeader[]).find((h) => h.name === 'Date')?.value || '',
           snippet: detail.snippet,
         };
       })
