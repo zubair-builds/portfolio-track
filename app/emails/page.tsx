@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import ProfessionalHeader from '@/components/ProfessionalHeader';
@@ -32,13 +32,7 @@ export default function EmailsPage() {
     }
   }, [initializing, user, router]);
 
-  useEffect(() => {
-    if (user) {
-      fetchEmails();
-    }
-  }, [user]);
-
-  const fetchEmails = async () => {
+  const fetchEmails = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -58,7 +52,13 @@ export default function EmailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (user) {
+      fetchEmails();
+    }
+  }, [user, fetchEmails]);
 
   const handleSignOut = () => {
     signout();
