@@ -12,6 +12,9 @@ interface InvestmentPositionCardProps {
   priceHistory?: Array<{ date: string; price: number }>;
   dividendYield?: number;
   lastDividend?: number;
+  receivedDividend?: number; // Actual dividends received for this symbol
+  receivedDividendGross?: number; // Gross dividend before tax
+  receivedDividendTax?: number; // Tax deducted
 }
 
 export function InvestmentPositionCard({
@@ -21,12 +24,22 @@ export function InvestmentPositionCard({
   priceHistory,
   dividendYield,
   lastDividend,
+  receivedDividend,
+  receivedDividendGross,
+  receivedDividendTax,
 }: InvestmentPositionCardProps) {
   const investment = shares * avgBuy;
   const currentValue = shares * currentPrice;
   const gainLoss = currentValue - investment;
   const gainLossPercent = ((currentPrice - avgBuy) / avgBuy) * 100;
   const isPositive = gainLoss >= 0;
+
+  // Calculate total return including dividends
+  const totalReturn = receivedDividend ? gainLoss + receivedDividend : gainLoss;
+  const totalReturnPercent = receivedDividend 
+    ? ((totalReturn) / investment) * 100 
+    : gainLossPercent;
+  const isTotalReturnPositive = totalReturn >= 0;
 
   // Extract prices for sparkline (last 30 days or available data)
   const sparklineData = useMemo(() => {
@@ -148,8 +161,8 @@ export function InvestmentPositionCard({
         </div>
 
         {/* Additional Info Row */}
-        {(dividendYield !== undefined || annualDividendIncome !== null) && (
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+        {(dividendYield !== undefined || annualDividendIncome !== null || receivedDividend) && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             {dividendYield !== undefined && (
               <div>
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
@@ -170,6 +183,67 @@ export function InvestmentPositionCard({
                 </p>
               </div>
             )}
+            {receivedDividend !== undefined && receivedDividend > 0 && (
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Received Dividends
+                </p>
+                <p className="text-lg font-bold text-green-700 dark:text-green-300">
+                  ₨{formatNumber(receivedDividend)}
+                </p>
+                {receivedDividendGross && receivedDividendGross > receivedDividend && (
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Gross: ₨{formatNumber(receivedDividendGross)}
+                    {receivedDividendTax && ` (Tax: ₨${formatNumber(receivedDividendTax)})`}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Total Return with Dividends (if dividends received) */}
+        {receivedDividend !== undefined && receivedDividend > 0 && (
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg p-4 border-2 border-indigo-200 dark:border-indigo-800">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Total Return (incl. Dividends)
+                </p>
+                <Badge variant={isTotalReturnPositive ? 'success' : 'danger'} className="text-xs">
+                  {isTotalReturnPositive ? '+' : ''}{formatPercent(totalReturnPercent)}
+                </Badge>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className={`text-3xl font-bold font-mono ${
+                  isTotalReturnPositive
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {isTotalReturnPositive ? '+' : ''}₨{formatNumber(totalReturn)}
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  = Capital {isPositive ? 'Gain' : 'Loss'} + Dividends
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                <div>
+                  <p className="text-slate-600 dark:text-slate-400">Capital {isPositive ? 'Gain' : 'Loss'}</p>
+                  <p className={`font-semibold ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    {isPositive ? '+' : ''}₨{formatNumber(gainLoss)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-600 dark:text-slate-400">Dividends</p>
+                  <p className="font-semibold text-green-600 dark:text-green-400">
+                    +₨{formatNumber(receivedDividend)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

@@ -14,6 +14,18 @@ interface PortfolioTabProps {
   onDeleteStock: (stock: Stock) => void;
   onAddStock: () => void;
   onRefresh?: () => void;
+  dividendStats?: {
+    totalNet: number;
+    totalGross: number;
+    totalTax: number;
+    totalZakat: number;
+    bySymbol?: Array<{
+      symbol: string;
+      netDividend: number;
+      grossDividend: number;
+      taxDeducted: number;
+    }>;
+  } | null;
 }
 
 export default function PortfolioTab({
@@ -23,8 +35,18 @@ export default function PortfolioTab({
   onDeleteStock,
   onAddStock,
   onRefresh,
+  dividendStats,
 }: PortfolioTabProps) {
-  const portfolioStats = useMemo(() => calculatePortfolioStats(stocks), [stocks]);
+  const portfolioStats = useMemo(() => {
+    const dividendData = dividendStats ? {
+      netDividend: dividendStats.totalNet,
+      grossDividend: dividendStats.totalGross,
+      taxDeducted: dividendStats.totalTax,
+      zakatDeducted: dividendStats.totalZakat,
+    } : undefined;
+    
+    return calculatePortfolioStats(stocks, 0, dividendData);
+  }, [stocks, dividendStats]);
 
   if (isLoading && stocks.length === 0) {
     return (

@@ -44,46 +44,70 @@ export interface PortfolioStats {
   totalGainLossPercent: number;
   topGainer: { symbol: string; gainPercent: number } | null;
   topLoser: { symbol: string; lossPercent: number } | null;
+  totalDividendIncome?: number; // Net dividend income received
+  grossDividendIncome?: number; // Before tax
+  dividendTaxDeducted?: number; // Total WHT
+  dividendYield?: number; // Dividend income as % of investment
+  totalReturnWithDividends?: number; // Gain/Loss + Dividends
+  totalReturnPercent?: number; // Total return as % of investment
 }
 
-export function calculatePortfolioStats(stocks: Stock[]): PortfolioStats {
-  let totalInvestment = 0;
-  let currentValue = 0;
-  let topGainer = null;
-  let topLoser = null;
-  let maxGainPercent = -Infinity;
-  let maxLossPercent = Infinity;
+export function calculatePortfolioStats(
+  stocks: Stock[],
+  dividendIncome: number = 0,
+  dividendData?: {
+    netDividend?: number;
+    grossDividend?: number;
+    taxDeducted?: number;
+    zakatDeducted?: number;
+  }
+): PortfolioStats {
+    let totalInvestment = 0;
+    let currentValue = 0;
+    let topGainer = null;
+    let topLoser = null;
+    let maxGainPercent = -Infinity;
+    let maxLossPercent = Infinity;
 
-  stocks.forEach((stock) => {
-    const investment = stock.shares * stock.avgBuy;
-    const value = stock.shares * stock.currentPrice;
-    const gainLossPercent = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
+    stocks.forEach((stock) => {
+      const investment = stock.shares * stock.avgBuy;
+      const value = stock.shares * stock.currentPrice;
+      const gainLossPercent = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
 
-    totalInvestment += investment;
-    currentValue += value;
+      totalInvestment += investment;
+      currentValue += value;
 
-    if (gainLossPercent > maxGainPercent) {
-      maxGainPercent = gainLossPercent;
-      topGainer = { symbol: stock.symbol, gainPercent: gainLossPercent };
-    }
+      if (gainLossPercent > maxGainPercent) {
+        maxGainPercent = gainLossPercent;
+        topGainer = { symbol: stock.symbol, gainPercent: gainLossPercent };
+      }
 
-    if (gainLossPercent < maxLossPercent) {
-      maxLossPercent = gainLossPercent;
-      topLoser = { symbol: stock.symbol, lossPercent: gainLossPercent };
-    }
-  });
+      if (gainLossPercent < maxLossPercent) {
+        maxLossPercent = gainLossPercent;
+        topLoser = { symbol: stock.symbol, lossPercent: gainLossPercent };
+      }
+    });
 
-  const totalGainLoss = currentValue - totalInvestment;
-  const totalGainLossPercent = (totalGainLoss / totalInvestment) * 100;
+    const capitalGainLoss = currentValue - totalInvestment;
+    const netDividendIncome = dividendData?.netDividend || dividendIncome || 0;
+    const totalGainLoss = capitalGainLoss + netDividendIncome;
+    const totalGainLossPercent = totalInvestment > 0 ? (totalGainLoss / totalInvestment) * 100 : 0;
+    const dividendYield = totalInvestment > 0 ? (netDividendIncome / totalInvestment) * 100 : 0;
 
-  return {
-    totalInvestment,
-    currentValue,
-    totalGainLoss,
-    totalGainLossPercent,
-    topGainer,
-    topLoser,
-  };
+    return {
+      totalInvestment,
+      currentValue,
+      totalGainLoss,
+      totalGainLossPercent,
+      topGainer,
+      topLoser,
+      totalDividendIncome: netDividendIncome,
+      grossDividendIncome: dividendData?.grossDividend || 0,
+      dividendTaxDeducted: dividendData?.taxDeducted || 0,
+      dividendYield,
+      totalReturnWithDividends: totalGainLoss,
+      totalReturnPercent: totalGainLossPercent,
+    };
 }
 
 /**

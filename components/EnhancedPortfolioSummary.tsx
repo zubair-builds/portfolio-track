@@ -40,34 +40,34 @@ export default function EnhancedPortfolioSummary({ stats }: EnhancedPortfolioSum
   const unrealizedGains = stats.totalGainLoss;
   const realizedGains = transactionStats?.totalRealizedGains || 0;
   const totalGains = unrealizedGains + realizedGains;
-  
+
   const isUnrealizedPositive = unrealizedGains >= 0;
   const isRealizedPositive = realizedGains >= 0;
   const isTotalPositive = totalGains >= 0;
 
-  const unrealizedColor = isUnrealizedPositive 
-    ? 'text-emerald-600 dark:text-emerald-400' 
+  const unrealizedColor = isUnrealizedPositive
+    ? 'text-emerald-600 dark:text-emerald-400'
     : 'text-rose-600 dark:text-rose-400';
-  const unrealizedBg = isUnrealizedPositive 
-    ? 'bg-emerald-50 dark:bg-emerald-900/20' 
+  const unrealizedBg = isUnrealizedPositive
+    ? 'bg-emerald-50 dark:bg-emerald-900/20'
     : 'bg-rose-50 dark:bg-rose-900/20';
 
-  const realizedColor = isRealizedPositive 
-    ? 'text-emerald-600 dark:text-emerald-400' 
+  const realizedColor = isRealizedPositive
+    ? 'text-emerald-600 dark:text-emerald-400'
     : 'text-rose-600 dark:text-rose-400';
-  const realizedBg = isRealizedPositive 
-    ? 'bg-emerald-50 dark:bg-emerald-900/20' 
+  const realizedBg = isRealizedPositive
+    ? 'bg-emerald-50 dark:bg-emerald-900/20'
     : 'bg-rose-50 dark:bg-rose-900/20';
 
-  const totalColor = isTotalPositive 
-    ? 'text-emerald-600 dark:text-emerald-400' 
+  const totalColor = isTotalPositive
+    ? 'text-emerald-600 dark:text-emerald-400'
     : 'text-rose-600 dark:text-rose-400';
-  const totalBg = isTotalPositive 
-    ? 'bg-emerald-50 dark:bg-emerald-900/20' 
+  const totalBg = isTotalPositive
+    ? 'bg-emerald-50 dark:bg-emerald-900/20'
     : 'bg-rose-50 dark:bg-rose-900/20';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Total Investment */}
       <Card className="hover:shadow-lg transition-all duration-150">
         <CardContent className="p-6">
@@ -110,7 +110,38 @@ export default function EnhancedPortfolioSummary({ stats }: EnhancedPortfolioSum
         </CardContent>
       </Card>
 
-      {/* Unrealized Gains */}
+      {/* Dividend Income */}
+      {typeof stats.totalDividendIncome === 'number' && (
+        <Card className="hover:shadow-lg transition-all duration-150 bg-yellow-50 dark:bg-yellow-900/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 uppercase tracking-wide mb-1">
+                Income from Dividends
+              </p>
+              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300 tabular-nums">
+                ₨{stats.totalDividendIncome.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              {typeof stats.totalDividendTax === 'number' && (
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                  Tax Deducted: ₨{stats.totalDividendTax.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              )}
+              {typeof stats.totalDividendZakat === 'number' && (
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                  Zakat Deducted: ₨{stats.totalDividendZakat.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card className={`hover:shadow-lg transition-all duration-150 ${unrealizedBg}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">

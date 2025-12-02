@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePriceHistory } from '../../../hooks/usePriceHistory';
 import { useAuth } from '../../../components/AuthProvider';
 import { usePortfolioData } from '../../../hooks/usePortfolioData';
+import { useDividendData } from '../../../hooks/useDividendData';
 import PriceHistoryChart from '../../../components/PriceHistoryChart';
 import TimeRangeSelector from '../../../components/TimeRangeSelector';
 import { CompanyInfo } from '../../../components/CompanyInfo';
@@ -49,6 +50,9 @@ export default function SymbolDetailPage({
   const router = useRouter();
   const { user, signout } = useAuth();
   const { stocks: portfolioStocks, watchlist, refresh: refreshPortfolioData } = usePortfolioData(user?.email);
+  
+  // Fetch dividend data with symbol breakdown
+  const { dividendStats } = useDividendData(user?.email, { includeBySymbol: true });
 
   // Fetch KSE100 for market state
   const kse100Symbols = useMemo(() => ['KSE100'], []);
@@ -89,6 +93,13 @@ export default function SymbolDetailPage({
 
   // Check if user owns this stock
   const ownedStock = portfolioStocks.find(s => s.symbol.toUpperCase() === symbol);
+  
+  // Get symbol-specific dividend data
+  const symbolDividend = useMemo(() => {
+    if (!dividendStats?.bySymbol || !ownedStock) return null;
+    const symbolData = dividendStats.bySymbol.find(d => d.symbol === symbol);
+    return symbolData || null;
+  }, [dividendStats, symbol, ownedStock]);
 
   // Check if symbol is in watchlist
   useEffect(() => {
@@ -452,6 +463,10 @@ export default function SymbolDetailPage({
               avgBuy={ownedStock.avgBuy}
               currentPrice={metadata.currentPrice}
               priceHistory={priceHistoryForSparkline}
+              dividendYield={metadata.dividendYield}
+              receivedDividend={symbolDividend?.netDividend}
+              receivedDividendGross={symbolDividend?.grossDividend}
+              receivedDividendTax={symbolDividend?.taxDeducted}
             />
           )}
 
