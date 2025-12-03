@@ -26,7 +26,7 @@ export interface PaymentDividend {
 const DB_NAME = process.env.MONGODB_DB || 'portfolioTrack';
 const COLLECTION_NAME = 'paymentDividends';
 
-async function getCollection(): Promise<Collection<PaymentDividend>> {
+export async function getCollection(): Promise<Collection<PaymentDividend>> {
   const client = await clientPromise;
   const db: Db = client.db(DB_NAME);
   return db.collection<PaymentDividend>(COLLECTION_NAME);

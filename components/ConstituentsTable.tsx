@@ -28,7 +28,7 @@ function formatNumber(num: number | undefined | null, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-export default function ConstituentsTable({ constituents, indexSymbol }: ConstituentsTableProps) {
+export default function ConstituentsTable({ constituents }: ConstituentsTableProps) {
   const [constituentsData, setConstituentsData] = useState<Constituent[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<'symbol' | 'name' | 'sectorName' | 'currentPrice' | 'priceChangePercent'>('symbol');
@@ -70,7 +70,7 @@ export default function ConstituentsTable({ constituents, indexSymbol }: Constit
               peRatio: null,
               isNonCompliant: false,
             };
-          } catch (err) {
+          } catch {
             return {
               symbol,
               name: symbol,

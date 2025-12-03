@@ -23,7 +23,7 @@ export default function ChartClient({ data /* [{time, open, high, low, close}] *
         borderColor: '#5A5A5A', // Slightly lighter border
         timeVisible: true,
         secondsVisible: false,
-        tickMarkFormatter: (time, tickMarkType, locale) => {
+        tickMarkFormatter: (time) => {
           const date = new Date(time * 1000); // Convert back to milliseconds for Date object
           const hours = date.getHours().toString().padStart(2, '0');
           const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -47,7 +47,7 @@ export default function ChartClient({ data /* [{time, open, high, low, close}] *
         },
       },
     });
-    
+
     const series = chart.addLineSeries({ color: '#22c55e' }); // Changed to addLineSeries and set a color
     series.setData(data);
 

@@ -1,5 +1,13 @@
-import { PaymentDividend } from '../models/paymentDividend';
-import { Types } from 'mongoose';
+import { getCollection } from './paymentDividendModel';
+
+interface DividendMatchQuery {
+  uploadedBy: string;
+  symbol?: string;
+  paymentDate?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
+}
 
 /**
  * Aggregate total dividend income for a user (optionally by symbol and date range)
@@ -13,7 +21,8 @@ export async function getUserDividendIncome(
     endDate?: Date;
   }
 ) {
-  const match: any = { uploadedBy: userId };
+  const collection = await getCollection();
+  const match: DividendMatchQuery = { uploadedBy: userId };
   if (options?.symbol) match.symbol = options.symbol.toUpperCase();
   if (options?.startDate || options?.endDate) {
     match.paymentDate = {};
@@ -21,7 +30,7 @@ export async function getUserDividendIncome(
     if (options.endDate) match.paymentDate.$lte = options.endDate;
   }
 
-  const result = await PaymentDividend.aggregate([
+  const result = await collection.aggregate([
     { $match: match },
     {
       $group: {
@@ -33,7 +42,7 @@ export async function getUserDividendIncome(
         count: { $sum: 1 },
       },
     },
-  ]);
+  ]).toArray();
 
   return result[0] || {
     netDividend: 0,
@@ -54,14 +63,15 @@ export async function getUserDividendsBySymbol(
     endDate?: Date;
   }
 ) {
-  const match: any = { uploadedBy: userId };
+  const collection = await getCollection();
+  const match: DividendMatchQuery = { uploadedBy: userId };
   if (options?.startDate || options?.endDate) {
     match.paymentDate = {};
     if (options.startDate) match.paymentDate.$gte = options.startDate;
     if (options.endDate) match.paymentDate.$lte = options.endDate;
   }
 
-  const results = await PaymentDividend.aggregate([
+  const results = await collection.aggregate([
     { $match: match },
     {
       $group: {
@@ -75,7 +85,7 @@ export async function getUserDividendsBySymbol(
       },
     },
     { $sort: { netDividend: -1 } },
-  ]);
+  ]).toArray();
 
   return results.map((r) => ({
     symbol: r._id,

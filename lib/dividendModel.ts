@@ -62,7 +62,6 @@ export interface DividendFilter {
 }
 
 const DB_NAME = process.env.MONGODB_DB || 'portfolioTrack';
-const COLLECTION_NAME = 'dividends';
 const paymentDividends = "paymentDividends"
 
 async function getCollection(name = paymentDividends): Promise<Collection<Dividend>> {

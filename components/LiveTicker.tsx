@@ -558,9 +558,10 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
         batchFlushIntervalRef.current = null;
       }
 
-      // Flush any remaining batch updates
-      if (batchUpdatesRef.current.size > 0 && flushBatchUpdatesRef.current) {
-        flushBatchUpdatesRef.current();
+      // Clear any remaining batch updates
+      const currentBatchUpdatesRef = batchUpdatesRef.current;
+      if (currentBatchUpdatesRef) {
+        currentBatchUpdatesRef.clear();
       }
 
       unsubscribe();
