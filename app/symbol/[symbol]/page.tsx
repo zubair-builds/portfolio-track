@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+
 import { usePriceHistory } from '../../../hooks/usePriceHistory';
 import { useAuth } from '../../../components/AuthProvider';
 import { usePortfolioData } from '../../../hooks/usePortfolioData';
@@ -50,7 +50,7 @@ export default function SymbolDetailPage({
   const router = useRouter();
   const { user, signout } = useAuth();
   const { stocks: portfolioStocks, watchlist, refresh: refreshPortfolioData } = usePortfolioData(user?.email);
-  
+
   // Fetch dividend data with symbol breakdown
   const { dividendStats } = useDividendData(user?.email, { includeBySymbol: true });
 
@@ -75,7 +75,6 @@ export default function SymbolDetailPage({
   } = usePriceHistory(symbol, '1d');
 
   const [metadata, setMetadata] = useState<SymbolMetadata | null>(null);
-  const [metadataLoading, setMetadataLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
@@ -83,7 +82,6 @@ export default function SymbolDetailPage({
   // Sector peers state
   const [peers, setPeers] = useState<Company[]>([]);
   const [peersLoading, setPeersLoading] = useState(true);
-  const [peersError, setPeersError] = useState<string | null>(null);
   const [peersFilterOptions, setPeersFilterOptions] = useState<FilterOptions>({ sectors: [], indices: [] });
   const [peersFiltersLoading, setPeersFiltersLoading] = useState(true);
   const [peersSearchQuery, setPeersSearchQuery] = useState('');
@@ -93,7 +91,7 @@ export default function SymbolDetailPage({
 
   // Check if user owns this stock
   const ownedStock = portfolioStocks.find(s => s.symbol.toUpperCase() === symbol);
-  
+
   // Get symbol-specific dividend data
   const symbolDividend = useMemo(() => {
     if (!dividendStats?.bySymbol || !ownedStock) return null;
@@ -124,8 +122,6 @@ export default function SymbolDetailPage({
         }
       } catch (err) {
         console.error('Error fetching metadata:', err);
-      } finally {
-        setMetadataLoading(false);
       }
     };
 
@@ -156,7 +152,6 @@ export default function SymbolDetailPage({
   useEffect(() => {
     const fetchPeers = async () => {
       setPeersLoading(true);
-      setPeersError(null);
       try {
         const response = await fetch(`/api/symbols/${symbol}/sector-peers`);
         if (response.ok) {
@@ -167,12 +162,10 @@ export default function SymbolDetailPage({
             setPeers([]);
           }
         } else {
-          setPeersError('Failed to fetch sector peers');
           setPeers([]);
         }
       } catch (err) {
         console.error('Error fetching sector peers:', err);
-        setPeersError('Failed to fetch sector peers');
         setPeers([]);
       } finally {
         setPeersLoading(false);

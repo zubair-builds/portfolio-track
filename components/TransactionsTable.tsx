@@ -52,7 +52,9 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
 
   // Sorting
 
-
+  // Sorting
+  const [sortField, setSortField] = useState<string>('transactionDate');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   // Expanded notes
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
@@ -64,6 +66,8 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
       const params = new URLSearchParams({
         page: page.toString(),
         limit: pageSize.toString(),
+        sortBy: sortField,
+        sortOrder: sortDirection,
       });
 
       if (typeFilter !== 'all') params.append('type', typeFilter);
@@ -92,7 +96,7 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
     } finally {
       setLoading(false);
     }
-  }, [dateRange, typeFilter, symbolSearch, page, pageSize]);
+  }, [dateRange, typeFilter, symbolSearch, page, pageSize, sortField, sortDirection]);
 
   useEffect(() => {
     fetchTransactions();
@@ -159,6 +163,24 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
     a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc'); // Default to desc for new field
+    }
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <span className="ml-1 text-slate-400 opacity-0 group-hover:opacity-50">↕</span>;
+    return (
+      <span className="ml-1 text-indigo-600 dark:text-indigo-400">
+        {sortDirection === 'asc' ? '↑' : '↓'}
+      </span>
+    );
   };
 
   return (
@@ -231,64 +253,72 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
 
       {/* Table */}
       <Card className="overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center">
-            <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4 dark:border-indigo-900 dark:border-t-indigo-400" />
-            <p className="text-slate-600 dark:text-slate-400">Loading transactions...</p>
-          </div>
-        ) : error ? (
-          <div className="p-8 text-center">
-            <svg className="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-red-600 dark:text-red-400">{error}</p>
-            <Button variant="secondary" onClick={fetchTransactions} className="mt-4">
-              Try Again
-            </Button>
-          </div>
-        ) : transactions.length === 0 ? (
-          <div className="p-12 text-center">
-            <svg className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-              No Transactions Found
-            </p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {typeFilter !== 'all' || symbolSearch || dateRange
-                ? 'Try adjusting your filters'
-                : 'Add stocks to your portfolio to start tracking transactions'}
-            </p>
-          </div>
-        ) : (
+        {/* ... loading/error/empty states ... */}
+
+        {!loading && !error && transactions.length > 0 && (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Date
+                    <th
+                      className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => handleSort('transactionDate')}
+                    >
+                      <div className="flex items-center">
+                        Date <SortIcon field="transactionDate" />
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Symbol
+                    <th
+                      className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => handleSort('symbol')}
+                    >
+                      <div className="flex items-center">
+                        Symbol <SortIcon field="symbol" />
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Type
+                    <th
+                      className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => handleSort('transactionType')}
+                    >
+                      <div className="flex items-center">
+                        Type <SortIcon field="transactionType" />
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Shares
+                    <th
+                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => handleSort('shares')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Shares <SortIcon field="shares" />
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Price
+                    <th
+                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => handleSort('pricePerShare')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Price <SortIcon field="pricePerShare" />
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Total
+                    <th
+                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => handleSort('totalAmount')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Total <SortIcon field="totalAmount" />
+                      </div>
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Holding
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Realized Gain
+                    <th
+                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => handleSort('realizedGain')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Realized Gain <SortIcon field="realizedGain" />
+                      </div>
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Notes

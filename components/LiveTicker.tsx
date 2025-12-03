@@ -539,6 +539,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
 
   useEffect(() => {
     isMountedRef.current = true;
+    const batchUpdates = batchUpdatesRef.current;
 
     if (autoConnect) {
       connect();
@@ -559,9 +560,8 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
       }
 
       // Clear any remaining batch updates
-      const currentBatchUpdatesRef = batchUpdatesRef.current;
-      if (currentBatchUpdatesRef) {
-        currentBatchUpdatesRef.clear();
+      if (batchUpdates) {
+        batchUpdates.clear();
       }
 
       unsubscribe();
