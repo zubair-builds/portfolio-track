@@ -360,36 +360,36 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        h1: ({ node, ...props }) => <h1 className="mt-6 mb-4" {...props} />,
-                        h2: ({ node, ...props }) => <h2 className="mt-6 mb-3" {...props} />,
-                        h3: ({ node, ...props }) => <h3 className="mt-4 mb-2" {...props} />,
-                        h4: ({ node, ...props }) => <h4 className="mt-4 mb-2" {...props} />,
-                        p: ({ node, ...props }) => <p className="mb-4" {...props} />,
-                        ul: ({ node, ...props }) => <ul className="mb-4 space-y-2" {...props} />,
-                        ol: ({ node, ...props }) => <ol className="mb-4 space-y-2" {...props} />,
-                        li: ({ node, ...props }) => <li className="ml-4" {...props} />,
-                        blockquote: ({ node, ...props }) => (
-                          <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-4 text-slate-600 dark:text-slate-400" {...props} />
+                        h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4 text-slate-900 dark:text-white" {...props} />,
+                        h2: ({ ...props }) => <h2 className="text-xl font-bold mt-5 mb-3 text-slate-800 dark:text-slate-100" {...props} />,
+                        h3: ({ ...props }) => <h3 className="text-lg font-bold mt-4 mb-2 text-slate-800 dark:text-slate-200" {...props} />,
+                        h4: ({ ...props }) => <h4 className="text-base font-bold mt-3 mb-2 text-slate-700 dark:text-slate-300" {...props} />,
+                        p: ({ ...props }) => <p className="mb-3 leading-relaxed text-slate-700 dark:text-slate-300" {...props} />,
+                        ul: ({ ...props }) => <ul className="list-disc pl-5 mb-4 space-y-1 text-slate-700 dark:text-slate-300" {...props} />,
+                        ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-1 text-slate-700 dark:text-slate-300" {...props} />,
+                        li: ({ ...props }) => <li className="mb-1" {...props} />,
+                        blockquote: ({ ...props }) => (
+                          <blockquote className="border-l-4 border-indigo-500 pl-4 py-1 my-4 bg-slate-50 dark:bg-slate-800/50 italic text-slate-700 dark:text-slate-300 rounded-r" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        code: ({ node, inline, ...props }: { node?: any; inline?: boolean;[key: string]: any }) =>
+                        code: ({ inline, className, children, ...props }: any) =>
                           inline ? (
                             <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
                           ) : (
-                            <code className="block bg-slate-100 dark:bg-slate-800 p-4 rounded-lg overflow-x-auto text-sm font-mono" {...props} />
+                            <code className="block bg-slate-100 dark:bg-slate-800 p-4 rounded-lg overflow-x-auto text-sm font-mono" {...props}>{children}</code>
                           ),
-                        table: ({ node, ...props }) => (
-                          <div className="overflow-x-auto my-4">
-                            <table className="min-w-full border-collapse border border-slate-300 dark:border-slate-700" {...props} />
+                        table: ({ ...props }) => (
+                          <div className="overflow-x-auto my-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700" {...props} />
                           </div>
                         ),
-                        th: ({ node, ...props }) => (
-                          <th className="border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-4 py-2 text-left font-semibold" {...props} />
+                        th: ({ ...props }) => (
+                          <th className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider" {...props} />
                         ),
-                        td: ({ node, ...props }) => (
-                          <td className="border border-slate-300 dark:border-slate-700 px-4 py-2" {...props} />
+                        td: ({ ...props }) => (
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300 border-t border-slate-200 dark:border-slate-700" {...props} />
                         ),
-                        a: ({ node, ...props }) => (
+                        a: ({ ...props }) => (
                           <a className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 underline" target="_blank" rel="noopener noreferrer" {...props} />
                         ),
                       }}

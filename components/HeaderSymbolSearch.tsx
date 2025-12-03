@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useSymbolSearch, SearchSymbol } from '../hooks/useSymbolSearch';
+import { useSymbolSearch } from '../hooks/useSymbolSearch';
 
 export default function HeaderSymbolSearch() {
   const router = useRouter();
@@ -148,8 +148,8 @@ export default function HeaderSymbolSearch() {
                   href={`/symbol/${symbol.symbol}`}
                   onClick={() => handleSelectSymbol()}
                   className={`block w-full text-left px-4 py-3 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-b-0 ${index === selectedIndex
-                      ? 'bg-indigo-50 dark:bg-indigo-900/30'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >

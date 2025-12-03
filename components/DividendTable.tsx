@@ -6,7 +6,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 
 interface Dividend {
@@ -39,7 +38,6 @@ interface Dividend {
 
 interface DividendTableProps {
   dividends: Dividend[];
-  onRefresh?: () => void;
   showActions?: boolean;
   onEdit?: (dividend: Dividend) => void;
   onDelete?: (id: string) => void;
@@ -50,15 +48,12 @@ type SortDirection = 'asc' | 'desc';
 
 export default function DividendTable({
   dividends,
-  onRefresh,
   showActions = false,
   onEdit,
   onDelete
 }: DividendTableProps) {
   const [sortField, setSortField] = useState<SortField>('exDividendDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
@@ -75,16 +70,6 @@ export default function DividendTable({
         d.companyName.toLowerCase().includes(query) ||
         (d.sector && d.sector.toLowerCase().includes(query))
       );
-    }
-
-    // Type filter
-    if (filterType !== 'all') {
-      filtered = filtered.filter(d => d.dividendType === filterType);
-    }
-
-    // Status filter
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(d => d.eligibilityStatus === filterStatus);
     }
 
     // Sorting
@@ -109,7 +94,7 @@ export default function DividendTable({
     });
 
     return filtered;
-  }, [dividends, searchQuery, filterType, filterStatus, sortField, sortDirection]);
+  }, [dividends, searchQuery, sortField, sortDirection]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
@@ -136,55 +121,7 @@ export default function DividendTable({
     });
   };
 
-  const getStatusBadge = (status?: string) => {
-    if (!status) return null;
 
-    const colors = {
-      'Upcoming': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      'Eligible': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-      'Closed': 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
-    };
-
-    return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${colors[status as keyof typeof colors]}`}>
-        {status}
-      </span>
-    );
-  };
-
-  const getTypeBadge = (type: string) => {
-    const colors = {
-      'Cash': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      'Bonus': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      'Right Shares': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-    };
-
-    return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${colors[type as keyof typeof colors]}`}>
-        {type}
-      </span>
-    );
-  };
-
-  const renderDividendValue = (dividend: Dividend) => {
-    if (dividend.dividendType === 'Cash') {
-      if (dividend.dividendPerShare) {
-        return `PKR ${dividend.dividendPerShare.toFixed(2)}/share`;
-      }
-      if (dividend.dividendRate && dividend.faceValue) {
-        const perShare = (dividend.dividendRate / 100) * dividend.faceValue;
-        return `${dividend.dividendRate}% (PKR ${perShare.toFixed(2)})`;
-      }
-      if (dividend.dividendRate) {
-        return `${dividend.dividendRate}%`;
-      }
-    } else if (dividend.dividendType === 'Bonus') {
-      return dividend.bonusRatio || '-';
-    } else if (dividend.dividendType === 'Right Shares') {
-      return dividend.rightRatio || '-';
-    }
-    return '-';
-  };
 
   return (
     <div className="space-y-4">

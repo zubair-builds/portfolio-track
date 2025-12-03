@@ -13,7 +13,6 @@ interface AddWatchlistModalProps {
 
 export default function AddWatchlistModal({ onClose, onSave }: AddWatchlistModalProps) {
   const [symbol, setSymbol] = useState('');
-  const [selectedMetadata, setSelectedMetadata] = useState<SearchSymbol | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
@@ -21,7 +20,6 @@ export default function AddWatchlistModal({ onClose, onSave }: AddWatchlistModal
 
   const handleSymbolChange = async (newSymbol: string, metadata?: SearchSymbol) => {
     setSymbol(newSymbol);
-    setSelectedMetadata(metadata || null);
     setFetchedPrice(null);
     setError(null);
 
@@ -41,10 +39,6 @@ export default function AddWatchlistModal({ onClose, onSave }: AddWatchlistModal
           if (result.success && result.data?.currentPrice) {
             setFetchedPrice(result.data.currentPrice);
             // Update metadata with fetched price
-            setSelectedMetadata({
-              ...metadata,
-              currentPrice: result.data.currentPrice,
-            });
           }
         }
       } catch (err) {

@@ -90,6 +90,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { stocks, mode, symbol, forceRefresh, message, conversationHistory, context } = body;
 
+    const user = await getUserFromRequest(request);
+    const userId = user?.email || '';
+
     console.log('AI Insights request:', { mode, symbol, stocksLength: stocks?.length, forceRefresh, hasMessage: !!message });
 
     if (!mode) {
@@ -345,7 +348,7 @@ Begin your stock analysis report now:`;
       const totalInvestment = stocks.reduce((sum, s) => sum + (s.shares * s.avgBuy), 0);
       const currentValue = stocks.reduce((sum, s) => sum + (s.shares * s.currentPrice), 0);
       // Fetch dividend income for user
-      const { netDividend = 0, taxDeducted = 0, zakatDeducted = 0 } = await import('../../../lib/dividendUtils').then(m => m.getUserDividendIncome(userId));
+      const { netDividend = 0, taxDeducted = 0, zakatDeducted = 0 } = await import('../../../../lib/dividendUtils').then(m => m.getUserDividendIncome(userId));
       const totalReturnAmount = currentValue - totalInvestment + netDividend;
       const totalReturn = (totalReturnAmount / totalInvestment) * 100;
 

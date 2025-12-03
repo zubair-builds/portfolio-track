@@ -13,7 +13,6 @@ interface AddStockModalProps {
 
 export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
   const [symbol, setSymbol] = useState('');
-  const [selectedMetadata, setSelectedMetadata] = useState<SearchSymbol | null>(null);
   const [shares, setShares] = useState('');
   const [avgBuy, setAvgBuy] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(() => {
@@ -28,7 +27,6 @@ export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
 
   const handleSymbolChange = async (newSymbol: string, metadata?: SearchSymbol) => {
     setSymbol(newSymbol);
-    setSelectedMetadata(metadata || null);
     setFetchedPrice(null);
     setError(null);
 
@@ -48,10 +46,6 @@ export default function AddStockModal({ onClose, onSave }: AddStockModalProps) {
           if (result.success && result.data?.currentPrice) {
             setFetchedPrice(result.data.currentPrice);
             // Update metadata with fetched price
-            setSelectedMetadata({
-              ...metadata,
-              currentPrice: result.data.currentPrice,
-            });
           }
         }
       } catch (err) {

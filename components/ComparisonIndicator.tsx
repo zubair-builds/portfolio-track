@@ -6,14 +6,14 @@ interface ComparisonIndicatorProps {
   benchmarkName?: string;
 }
 
-export default function ComparisonIndicator({ 
-  portfolioReturn, 
-  benchmarkReturn, 
-  benchmarkName = 'KSE-100' 
+export default function ComparisonIndicator({
+  portfolioReturn,
+  benchmarkReturn,
+  benchmarkName = 'KSE-100'
 }: ComparisonIndicatorProps) {
   const difference = portfolioReturn - benchmarkReturn;
   const isOutperforming = difference > 0;
-  const absDifference = Math.abs(difference);
+
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-white/60 dark:bg-slate-800/60 rounded-lg backdrop-blur-sm border border-slate-200 dark:border-slate-700">

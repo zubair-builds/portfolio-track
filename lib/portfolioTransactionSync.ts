@@ -246,6 +246,10 @@ export async function getPortfolioSummaryWithGains(
   totalGains: number;
   totalGainsPercent: number;
   netProfit: number; // Total gains - CGT
+  totalDividendIncome?: number;
+  totalDividendTax?: number;
+  totalDividendGross?: number;
+  totalDividendZakat?: number;
 }> {
   const holdings = await getHoldingsWithGains(userId, currentPrices);
 

@@ -47,6 +47,8 @@ export interface PortfolioStats {
   totalDividendIncome?: number; // Net dividend income received
   grossDividendIncome?: number; // Before tax
   dividendTaxDeducted?: number; // Total WHT
+  totalDividendTax?: number;
+  totalDividendZakat?: number;
   dividendYield?: number; // Dividend income as % of investment
   totalReturnWithDividends?: number; // Gain/Loss + Dividends
   totalReturnPercent?: number; // Total return as % of investment
@@ -62,52 +64,54 @@ export function calculatePortfolioStats(
     zakatDeducted?: number;
   }
 ): PortfolioStats {
-    let totalInvestment = 0;
-    let currentValue = 0;
-    let topGainer = null;
-    let topLoser = null;
-    let maxGainPercent = -Infinity;
-    let maxLossPercent = Infinity;
+  let totalInvestment = 0;
+  let currentValue = 0;
+  let topGainer = null;
+  let topLoser = null;
+  let maxGainPercent = -Infinity;
+  let maxLossPercent = Infinity;
 
-    stocks.forEach((stock) => {
-      const investment = stock.shares * stock.avgBuy;
-      const value = stock.shares * stock.currentPrice;
-      const gainLossPercent = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
+  stocks.forEach((stock) => {
+    const investment = stock.shares * stock.avgBuy;
+    const value = stock.shares * stock.currentPrice;
+    const gainLossPercent = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
 
-      totalInvestment += investment;
-      currentValue += value;
+    totalInvestment += investment;
+    currentValue += value;
 
-      if (gainLossPercent > maxGainPercent) {
-        maxGainPercent = gainLossPercent;
-        topGainer = { symbol: stock.symbol, gainPercent: gainLossPercent };
-      }
+    if (gainLossPercent > maxGainPercent) {
+      maxGainPercent = gainLossPercent;
+      topGainer = { symbol: stock.symbol, gainPercent: gainLossPercent };
+    }
 
-      if (gainLossPercent < maxLossPercent) {
-        maxLossPercent = gainLossPercent;
-        topLoser = { symbol: stock.symbol, lossPercent: gainLossPercent };
-      }
-    });
+    if (gainLossPercent < maxLossPercent) {
+      maxLossPercent = gainLossPercent;
+      topLoser = { symbol: stock.symbol, lossPercent: gainLossPercent };
+    }
+  });
 
-    const capitalGainLoss = currentValue - totalInvestment;
-    const netDividendIncome = dividendData?.netDividend || dividendIncome || 0;
-    const totalGainLoss = capitalGainLoss + netDividendIncome;
-    const totalGainLossPercent = totalInvestment > 0 ? (totalGainLoss / totalInvestment) * 100 : 0;
-    const dividendYield = totalInvestment > 0 ? (netDividendIncome / totalInvestment) * 100 : 0;
+  const capitalGainLoss = currentValue - totalInvestment;
+  const netDividendIncome = dividendData?.netDividend || dividendIncome || 0;
+  const totalGainLoss = capitalGainLoss + netDividendIncome;
+  const totalGainLossPercent = totalInvestment > 0 ? (totalGainLoss / totalInvestment) * 100 : 0;
+  const dividendYield = totalInvestment > 0 ? (netDividendIncome / totalInvestment) * 100 : 0;
 
-    return {
-      totalInvestment,
-      currentValue,
-      totalGainLoss,
-      totalGainLossPercent,
-      topGainer,
-      topLoser,
-      totalDividendIncome: netDividendIncome,
-      grossDividendIncome: dividendData?.grossDividend || 0,
-      dividendTaxDeducted: dividendData?.taxDeducted || 0,
-      dividendYield,
-      totalReturnWithDividends: totalGainLoss,
-      totalReturnPercent: totalGainLossPercent,
-    };
+  return {
+    totalInvestment,
+    currentValue,
+    totalGainLoss,
+    totalGainLossPercent,
+    topGainer,
+    topLoser,
+    totalDividendIncome: netDividendIncome,
+    grossDividendIncome: dividendData?.grossDividend || 0,
+    dividendTaxDeducted: dividendData?.taxDeducted || 0,
+    totalDividendTax: dividendData?.taxDeducted || 0,
+    totalDividendZakat: dividendData?.zakatDeducted || 0,
+    dividendYield,
+    totalReturnWithDividends: totalGainLoss,
+    totalReturnPercent: totalGainLossPercent,
+  };
 }
 
 /**
@@ -133,12 +137,12 @@ export function calculateAnnualizedReturn(
 ): number | null {
   if (!daysHeld || daysHeld <= 0) return null;
   if (avgBuy <= 0) return null;
-  
+
   const returnRatio = currentPrice / avgBuy;
   const yearsHeld = daysHeld / 365;
-  
+
   if (yearsHeld <= 0) return null;
-  
+
   const annualizedReturn = (Math.pow(returnRatio, 1 / yearsHeld) - 1) * 100;
   return annualizedReturn;
 }
@@ -181,7 +185,7 @@ export function aggregatePositionsBySymbol(positions: Array<{
 }>): Stock[] {
   console.log('[aggregatePositionsBySymbol] Input positions count:', positions.length);
   console.log('[aggregatePositionsBySymbol] Input symbols:', positions.map(p => p.symbol));
-  
+
   const symbolMap = new Map<string, {
     positions: typeof positions;
     totalShares: number;
@@ -202,7 +206,7 @@ export function aggregatePositionsBySymbol(positions: Array<{
       // Calculate weighted average: sum(shares * avgBuy) / sum(shares)
       const totalValue = existing.positions.reduce((sum, p) => sum + (p.shares * p.avgBuy), 0);
       existing.weightedAvgBuy = totalValue / existing.totalShares;
-      
+
       // Use earliest purchase date
       if (position.purchaseDate) {
         const posDate = new Date(position.purchaseDate);
@@ -210,12 +214,12 @@ export function aggregatePositionsBySymbol(positions: Array<{
           existing.earliestPurchaseDate = posDate;
         }
       }
-      
+
       // Use current price from any position (they should all be the same)
       if (position.currentPrice !== undefined) {
         existing.currentPrice = position.currentPrice;
       }
-      
+
       // Use details from any position
       if (position.details && !existing.details) {
         existing.details = position.details;
@@ -242,10 +246,10 @@ export function aggregatePositionsBySymbol(positions: Array<{
     details: aggregated.details,
     positionCount: aggregated.positions.length,
   }));
-  
+
   console.log('[aggregatePositionsBySymbol] Output aggregated stocks count:', result.length);
   console.log('[aggregatePositionsBySymbol] Output symbols:', result.map(s => s.symbol));
-  
+
   return result;
 }
 
