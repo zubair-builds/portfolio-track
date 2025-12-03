@@ -185,7 +185,7 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
       } else {
         setError('Failed to load historical analysis');
       }
-    } catch (err) {
+    } catch {
       setError('Error loading historical analysis');
     } finally {
       setLoading(false);
@@ -372,7 +372,7 @@ export default function AIInsightsModal({ stocks, onClose, initialStock }: AIIns
                           <blockquote className="border-l-4 border-indigo-500 pl-4 py-1 my-4 bg-slate-50 dark:bg-slate-800/50 italic text-slate-700 dark:text-slate-300 rounded-r" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        code: ({ inline, className, children, ...props }: any) =>
+                        code: ({ inline, children, ...props }: any) =>
                           inline ? (
                             <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
                           ) : (

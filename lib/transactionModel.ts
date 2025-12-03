@@ -67,6 +67,8 @@ export interface TransactionFilter {
   status?: TransactionStatus;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 const TRANSACTIONS_COLLECTION = 'transactions';
@@ -120,6 +122,44 @@ export async function createTransaction(
 }
 
 /**
+ * Create multiple transactions (bulk upload)
+ */
+export async function createTransactionsBulk(
+  userId: string,
+  inputs: TransactionInput[]
+): Promise<{ insertedCount: number; insertedIds: ObjectId[] }> {
+  const collection = await getTransactionsCollection();
+  const now = new Date();
+
+  const transactions: TransactionDocument[] = inputs.map(input => ({
+    userId,
+    symbol: input.symbol.toUpperCase(),
+    transactionType: input.transactionType,
+    shares: input.shares,
+    pricePerShare: input.pricePerShare,
+    totalAmount: input.shares * input.pricePerShare,
+    transactionDate: input.transactionDate,
+    notes: input.notes,
+    createdAt: now,
+    lastModified: now,
+    status: 'active',
+    // Initialize FIFO fields for SELL transactions as undefined/empty
+    ...(input.transactionType === 'SELL' ? {
+      realizedGain: 0,
+      cgtAmount: 0,
+      holdingPeriodDays: 0,
+      lotsUsed: []
+    } : {})
+  }));
+
+  const result = await collection.insertMany(transactions);
+  return {
+    insertedCount: result.insertedCount,
+    insertedIds: Object.values(result.insertedIds),
+  };
+}
+
+/**
  * Get transactions with filtering and pagination
  */
 export async function getTransactions(
@@ -146,10 +186,20 @@ export async function getTransactions(
   const limit = filter.limit || 50;
   const skip = (page - 1) * limit;
 
+  // Determine sort
+  const sortField = filter.sortBy || 'transactionDate';
+  const sortOrder = filter.sortOrder === 'asc' ? 1 : -1;
+
+  // Always include secondary sort for stability
+  const sort: Record<string, 1 | -1> = { [sortField]: sortOrder };
+  if (sortField !== 'createdAt') {
+    sort.createdAt = -1;
+  }
+
   const [transactions, total] = await Promise.all([
     collection
       .find(query)
-      .sort({ transactionDate: -1, createdAt: -1 })
+      .sort(sort)
       .skip(skip)
       .limit(limit)
       .toArray(),

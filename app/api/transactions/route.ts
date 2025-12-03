@@ -14,7 +14,7 @@ import {
   deleteTransaction,
   getBuyTransactionsForSymbol,
   updateSellTransactionWithFIFO,
-  getTransactionStats,
+
   type TransactionInput,
   type TransactionFilter,
 } from '@/lib/transactionModel';
@@ -43,6 +43,8 @@ export async function GET(req: NextRequest) {
       status: (searchParams.get('status') as 'active' | 'deleted') || 'active',
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '50'),
+      sortBy: searchParams.get('sortBy') || undefined,
+      sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined,
     };
 
     // Date range filter

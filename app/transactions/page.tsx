@@ -10,8 +10,10 @@ import { useRouter } from 'next/navigation';
 import ProfessionalHeader from '@/components/ProfessionalHeader';
 import TransactionsTable from '@/components/TransactionsTable';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/components/AuthProvider';
-import { formatNumber, formatCurrency } from '@/lib/constants';
+import { formatCurrency } from '@/lib/constants';
+import TransactionUploadModal from '@/components/TransactionUploadModal';
 
 interface TransactionStats {
   totalTransactions: number;
@@ -26,6 +28,7 @@ export default function TransactionsPage() {
   const { user, initializing, signout } = useAuth();
   const [stats, setStats] = useState<TransactionStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user && !initializing) {
@@ -76,12 +79,20 @@ export default function TransactionsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-            Transaction History
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Complete record of all your stock transactions with FIFO-based gain calculations
-          </p>
+
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                Transaction History
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">
+                Complete record of all your stock transactions with FIFO-based gain calculations
+              </p>
+            </div>
+            <Button onClick={() => setIsUploadModalOpen(true)}>
+              Upload Transactions
+            </Button>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -157,11 +168,10 @@ export default function TransactionsPage() {
                 {loadingStats ? (
                   <div className="h-8 w-20 bg-slate-200 dark:bg-slate-700 animate-pulse rounded mt-1" />
                 ) : (
-                  <p className={`text-2xl font-bold mt-1 ${
-                    (stats?.totalRealizedGains || 0) >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-600 dark:text-red-400'
-                  }`}>
+                  <p className={`text-2xl font-bold mt-1 ${(stats?.totalRealizedGains || 0) >= 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-red-600 dark:text-red-400'
+                    }`}>
                     {(stats?.totalRealizedGains || 0) >= 0 ? '+' : ''}
                     {formatCurrency(stats?.totalRealizedGains || 0)}
                   </p>
@@ -200,6 +210,16 @@ export default function TransactionsPage() {
         {/* Transactions Table */}
         <TransactionsTable userId={user.email} />
       </main>
+
+      <TransactionUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUploadComplete={() => {
+          fetchStats();
+          // Ideally we should also refresh the table, but that might require lifting state or using a context/event
+          window.location.reload(); // Simple refresh for now to update table and stats
+        }}
+      />
     </div>
   );
 }

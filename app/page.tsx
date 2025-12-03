@@ -2,9 +2,6 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
 import Tabs, { Tab } from "../components/Tabs";
 import PortfolioTab from "../components/tabs/PortfolioTab";
 import WatchlistTab from "../components/tabs/WatchlistTab";
@@ -15,7 +12,6 @@ import AIFinancialChatbot from "../components/AIFinancialChatbot";
 import AddStockModal from "../components/AddStockModal";
 import EditStockModal from "../components/EditStockModal";
 import AddWatchlistModal from "../components/AddWatchlistModal";
-import HeaderSymbolSearch from "../components/HeaderSymbolSearch";
 import LiveTicker from "../components/LiveTicker";
 import { Stock, WatchlistItem, calculatePortfolioStats } from "../lib/portfolioData";
 import { useAuth } from "../components/AuthProvider";
@@ -29,13 +25,13 @@ import KSE100Widget from "../components/KSE100Widget";
 export default function Page() {
   const router = useRouter();
   const { user, initializing, signout } = useAuth();
-  
+
   // Memoize the symbols array to prevent unnecessary re-fetches
   const kse100Symbols = useMemo(() => ['KSE100'], []);
-  const { indices: [kse100], loading: kse100Loading, error: kse100Error, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
-  const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, error: portfolioError, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
-  const { dividendStats, isLoading: dividendLoading, error: dividendError, refresh: refreshDividendData } = useDividendData(user?.email, { includeBySymbol: true });
-  
+  const { indices: [kse100], loading: kse100Loading, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
+  const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
+  const { dividendStats } = useDividendData(user?.email, { includeBySymbol: true });
+
   // Extract symbols from portfolio, watchlist, and indices for LiveTicker filter
   const tickerFilteredSymbols = useMemo(() => {
     const portfolioSymbols = portfolioStocks.map(stock => stock.symbol.toUpperCase());
@@ -47,23 +43,9 @@ export default function Page() {
     return allSymbols;
   }, [portfolioStocks, watchlist, kse100]);
   const [refreshingKse100, setRefreshingKse100] = useState(false);
-  
+
   // Track overall loading state
-  const [pageLoaded, setPageLoaded] = useState(false);
-  const isDataLoading = kse100Loading || portfolioLoading;
-  const hasError = kse100Error || portfolioError;
 
-  // Mark page as loaded after initial data fetch completes
-  useEffect(() => {
-    if (!isDataLoading && !initializing) {
-      // Small delay to ensure smooth transition
-      const timer = setTimeout(() => setPageLoaded(true), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isDataLoading, initializing]);
-
-  // Removed full-page loading overlay - sections now show their own loading states
-  
   // Tab state
   const [activeTab, setActiveTab] = useState('portfolio');
 
@@ -76,10 +58,8 @@ export default function Page() {
     }
     prevTabRef.current = activeTab;
   }, [activeTab, isLoadingWatchlist, user?.email, loadWatchlist]);
-  
+
   // Modal states
-  const [fetchingSymbolData, setFetchingSymbolData] = useState(false);
-  const [symbolDataMessage, setSymbolDataMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingStock, setEditingStock] = useState<Stock | null>(null);
   const [showAddWatchlist, setShowAddWatchlist] = useState(false);
@@ -98,69 +78,30 @@ export default function Page() {
 
   const handleRefreshKse100 = async () => {
     if (refreshingKse100) return;
-    
+
     setRefreshingKse100(true);
     try {
       // Step 1: Fetch from PSX Terminal API and update DB
       const response = await fetch('/api/indices/refresh?symbols=KSE100');
-      
+
       if (!response.ok) {
         throw new Error(`Failed to refresh: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error('Refresh failed');
       }
-      
+
       // Step 2: Re-fetch from database to update UI
       await refreshKse100();
-      
+
     } catch (error) {
       console.error('Error refreshing KSE100:', error);
       alert('Failed to refresh KSE100 data. Please try again.');
     } finally {
       setRefreshingKse100(false);
-    }
-  };
-
-  const handleAnalyzeStock = async (stock: Stock) => {
-    // AI analysis now available through chatbot
-  };
-
-  const handleFetchSymbolData = async (stock: Stock) => {
-    setFetchingSymbolData(true);
-    setSymbolDataMessage(null);
-
-    try {
-      const response = await fetch('/api/ai/insights', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          stocks: [],
-          mode: 'symbols',
-          symbol: stock.symbol,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSymbolDataMessage({ type: 'success', text: result.message });
-        setTimeout(() => setSymbolDataMessage(null), 5000);
-      } else {
-        setSymbolDataMessage({ type: 'error', text: result.error || 'Failed to fetch symbol data.' });
-        setTimeout(() => setSymbolDataMessage(null), 5000);
-      }
-    } catch (err) {
-      console.error('Error fetching symbol data:', err);
-      setSymbolDataMessage({ type: 'error', text: 'Network error while fetching symbol data.' });
-      setTimeout(() => setSymbolDataMessage(null), 5000);
-    } finally {
-      setFetchingSymbolData(false);
     }
   };
 
@@ -317,27 +258,6 @@ export default function Page() {
     await refreshPortfolioData();
   };
 
-  const handleEditWatchlist = async (itemData: { symbol: string; thesis?: string; targetPrice?: number; note?: string }) => {
-    if (!user?.email) return;
-
-    const response = await fetch('/api/watchlist', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-User-Id': user.email,
-      },
-      body: JSON.stringify(itemData),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to update watchlist');
-    }
-
-    // Refresh only portfolio/watchlist data instead of reloading entire page
-    await refreshPortfolioData();
-  };
-
   const handleDeleteWatchlist = async (item: WatchlistItem) => {
     if (!user?.email) return;
     if (!confirm(`Remove ${item.symbol} from watchlist?`)) return;
@@ -367,10 +287,9 @@ export default function Page() {
       taxDeducted: dividendStats.totalTax,
       zakatDeducted: dividendStats.totalZakat,
     } : undefined;
-    
+
     return calculatePortfolioStats(portfolioStocks, 0, dividendData);
   }, [portfolioStocks, dividendStats]);
-  const portfolioReturn = portfolioStats.totalGainLossPercent;
 
   // Define tabs
   const tabs: Tab[] = [
@@ -439,176 +358,142 @@ export default function Page() {
   return (
     <>
       {/* Main Content */}
-    <div className="flex min-h-screen flex-col">
-      {/* Professional Header */}
-      <ProfessionalHeader
-        user={user}
-        onSignOut={handleSignOut}
-        marketState={kse100?.marketState}
-        onExport={handleExport}
-        onImport={handleImport}
-        importing={importing}
-        onRefresh={handleRefreshKse100}
-      />
+      <div className="flex min-h-screen flex-col">
+        {/* Professional Header */}
+        <ProfessionalHeader
+          user={user}
+          onSignOut={handleSignOut}
+          marketState={kse100?.marketState}
+          onExport={handleExport}
+          onImport={handleImport}
+          importing={importing}
+          onRefresh={handleRefreshKse100}
+        />
 
-      <main className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <div className="container mx-auto max-w-7xl space-y-4 sm:space-y-5 py-4 sm:py-6 px-4">
-          {/* Portfolio Hero Section */}
-          {activeTab === 'portfolio' && (
-            <PortfolioHero 
-              stats={portfolioStats} 
-              totalStocks={portfolioStocks.length}
-              isLoading={portfolioLoading && portfolioStocks.length === 0}
-              benchmarkReturn={kse100 ? kse100.changePercent * 100 : undefined}
-              benchmarkName="KSE-100"
-            />
-          )}
-
-          {/* KSE-100 Widget and Live Ticker Row */}
-          {activeTab === 'portfolio' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-            <div className="lg:col-span-1">
-              <KSE100Widget
-                index={kse100}
-                isLoading={kse100Loading}
-                onRefresh={handleRefreshKse100}
-                refreshing={refreshingKse100}
+        <main className="flex-1 bg-slate-50 dark:bg-slate-900">
+          <div className="container mx-auto max-w-7xl space-y-4 sm:space-y-5 py-4 sm:py-6 px-4">
+            {/* Portfolio Hero Section */}
+            {activeTab === 'portfolio' && (
+              <PortfolioHero
+                stats={portfolioStats}
+                totalStocks={portfolioStocks.length}
+                isLoading={portfolioLoading && portfolioStocks.length === 0}
+                benchmarkReturn={kse100 ? kse100.changePercent * 100 : undefined}
+                benchmarkName="KSE-100"
               />
-            </div>
-            <div className="lg:col-span-2">
-              <div className="rounded-lg border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <LiveTicker 
-                  marketType="REG" 
-                  autoConnect={false}
-                  filteredSymbols={tickerFilteredSymbols}
-                />
-              </div>
-            </div>
-          </div>
-          )}
+            )}
 
-          {/* Visual Separator */}
-          {activeTab === 'portfolio' && (
-            <div className="border-t border-slate-200 dark:border-slate-700" />
-          )}
-
-          {/* Symbol Data Fetch Message */}
-          {symbolDataMessage && (
-            <div className={`rounded-lg border p-4 ${
-              symbolDataMessage.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200'
-                : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200'
-            }`}>
-              <div className="flex items-start gap-3">
-                {symbolDataMessage.type === 'success' ? (
-                  <svg className="h-5 w-5 mt-0.5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5 mt-0.5 text-rose-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                )}
-                <div>
-                  <p className="font-medium">{symbolDataMessage.text}</p>
+            {/* KSE-100 Widget and Live Ticker Row */}
+            {activeTab === 'portfolio' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="lg:col-span-1">
+                  <KSE100Widget
+                    index={kse100}
+                    isLoading={kse100Loading}
+                    onRefresh={handleRefreshKse100}
+                    refreshing={refreshingKse100}
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <div className="rounded-lg border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <LiveTicker
+                      marketType="REG"
+                      autoConnect={false}
+                      filteredSymbols={tickerFilteredSymbols}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Tabs Navigation */}
-          <div className="bg-white dark:bg-slate-900 relative border-b border-slate-200 dark:border-slate-700">
-            <div className="container mx-auto max-w-7xl">
-              <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-            </div>
-          </div>
-
-          {/* Tab Content */}
-          <div className="container mx-auto max-w-7xl space-y-6 py-6 px-4">
+            {/* Visual Separator */}
             {activeTab === 'portfolio' && (
-              <PortfolioTab
-                stocks={portfolioStocks}
-                isLoading={portfolioLoading}
-                onEditStock={setEditingStock}
-                onDeleteStock={handleDeleteStock}
-                onAddStock={() => setShowAddStock(true)}
-                onRefresh={refreshPortfolioData}
-                dividendStats={dividendStats}
-              />
+              <div className="border-t border-slate-200 dark:border-slate-700" />
             )}
 
-            {activeTab === 'watchlist' && (
-              <WatchlistTab
-                watchlist={watchlist}
-                isLoading={isLoadingWatchlist}
-                onDeleteItem={handleDeleteWatchlist}
-                onAddWatchlist={() => setShowAddWatchlist(true)}
-              />
-            )}
-
-            {activeTab === 'analytics' && (
-              <AnalyticsTab userEmail={user?.email} />
-            )}
-
-            {activeTab === 'allocation' && (
-              <AllocationTab stocks={portfolioStocks} isLoading={portfolioLoading} />
-            )}
+            {/* Tabs Navigation */}
+            <div className="bg-white dark:bg-slate-900 relative border-b border-slate-200 dark:border-slate-700">
+              <div className="container mx-auto max-w-7xl">
+                <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+              </div>
             </div>
-        </div>
-      </main>
 
-      {/* Cache Manager */}
-      <CacheManager />
+            {/* Tab Content */}
+            <div className="container mx-auto max-w-7xl space-y-6 py-6 px-4">
+              {activeTab === 'portfolio' && (
+                <PortfolioTab
+                  stocks={portfolioStocks}
+                  isLoading={portfolioLoading}
+                  onEditStock={setEditingStock}
+                  onDeleteStock={handleDeleteStock}
+                  onAddStock={() => setShowAddStock(true)}
+                  onRefresh={refreshPortfolioData}
+                  dividendStats={dividendStats}
+                />
+              )}
 
+              {activeTab === 'watchlist' && (
+                <WatchlistTab
+                  watchlist={watchlist}
+                  isLoading={isLoadingWatchlist}
+                  onDeleteItem={handleDeleteWatchlist}
+                  onAddWatchlist={() => setShowAddWatchlist(true)}
+                />
+              )}
 
-      {/* Fetching Symbol Data Loading Indicator */}
-      {fetchingSymbolData && (
-        <div className="fixed bottom-4 left-4 z-50 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 shadow-lg dark:border-blue-900/60 dark:bg-blue-950/40">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin dark:border-blue-900 dark:border-t-blue-400" />
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Fetching symbol data...
-            </p>
+              {activeTab === 'analytics' && (
+                <AnalyticsTab userEmail={user?.email} />
+              )}
+
+              {activeTab === 'allocation' && (
+                <AllocationTab stocks={portfolioStocks} isLoading={portfolioLoading} />
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        </main>
 
-      {/* AI Financial Chatbot */}
-      <AIFinancialChatbot stocks={portfolioStocks} />
+        {/* Cache Manager */}
+        <CacheManager />
 
-      {/* Add Stock Modal */}
-      {showAddStock && (
-        <AddStockModal
-          onClose={() => setShowAddStock(false)}
-          onSave={handleAddStock}
-        />
-      )}
 
-      {/* Edit Stock Modal */}
-      {editingStock && (
-        <EditStockModal
-          stock={editingStock}
-          onClose={() => setEditingStock(null)}
-          onSave={handleEditStock}
-        />
-      )}
 
-      {/* Add Watchlist Modal */}
-      {showAddWatchlist && (
-        <AddWatchlistModal
-          onClose={() => setShowAddWatchlist(false)}
-          onSave={handleAddWatchlist}
-        />
-      )}
 
-      {/* Footer */}
-      <footer className="mt-auto border-t bg-white/80 dark:bg-slate-950/70">
-        <div className="container mx-auto max-w-7xl flex flex-col items-start justify-between gap-3 py-6 px-4 text-sm text-slate-600 dark:text-slate-400 md:flex-row">
-          <span>© {new Date().getFullYear()} My Portfolio Tracker</span>
-          <span className="text-xs">This is informational and not investment advice.</span>
-        </div>
-      </footer>
-    </div>
+        {/* AI Financial Chatbot */}
+        <AIFinancialChatbot stocks={portfolioStocks} />
+
+        {/* Add Stock Modal */}
+        {showAddStock && (
+          <AddStockModal
+            onClose={() => setShowAddStock(false)}
+            onSave={handleAddStock}
+          />
+        )}
+
+        {/* Edit Stock Modal */}
+        {editingStock && (
+          <EditStockModal
+            stock={editingStock}
+            onClose={() => setEditingStock(null)}
+            onSave={handleEditStock}
+          />
+        )}
+
+        {/* Add Watchlist Modal */}
+        {showAddWatchlist && (
+          <AddWatchlistModal
+            onClose={() => setShowAddWatchlist(false)}
+            onSave={handleAddWatchlist}
+          />
+        )}
+
+        {/* Footer */}
+        <footer className="mt-auto border-t bg-white/80 dark:bg-slate-950/70">
+          <div className="container mx-auto max-w-7xl flex flex-col items-start justify-between gap-3 py-6 px-4 text-sm text-slate-600 dark:text-slate-400 md:flex-row">
+            <span>© {new Date().getFullYear()} My Portfolio Tracker</span>
+            <span className="text-xs">This is informational and not investment advice.</span>
+          </div>
+        </footer>
+      </div>
     </>
   );
 }
