@@ -484,7 +484,7 @@ export default function SymbolDetailPage({
                     </p>
                   </div>
 
-                  {(!hasData && (!checking && !loading && !fetching && !error)) && (
+                  {( (!checking && !loading && !fetching && !error)) && (
                     <Button
                       variant="primary"
                       onClick={handleFetchData}

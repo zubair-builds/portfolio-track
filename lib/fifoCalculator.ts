@@ -145,6 +145,7 @@ export function calculateHoldingsFromTransactions(transactions: TransactionDocum
   totalInvested: number;
   totalRealizedGains: number;
   totalCGTPaid: number;
+  firstBuyDate?: Date;
 } {
   let currentShares = 0;
   let totalCost = 0;
@@ -179,6 +180,7 @@ export function calculateHoldingsFromTransactions(transactions: TransactionDocum
     totalInvested: totalCost,
     totalRealizedGains,
     totalCGTPaid,
+    firstBuyDate: sortedTx.length > 0 ? sortedTx[0].transactionDate : undefined,
   };
 }
 
