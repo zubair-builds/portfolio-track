@@ -374,3 +374,59 @@ export async function getTransactionStats(userId: string): Promise<{
     totalCGTPaid,
   };
 }
+
+/**
+ * Get all transactions for specific symbols (for bulk FIFO recalc)
+ */
+export async function getTransactionsForSymbols(
+  userId: string,
+  symbols: string[]
+): Promise<TransactionDocument[]> {
+  const collection = await getTransactionsCollection();
+
+  return await collection
+    .find({
+      userId,
+      symbol: { $in: symbols.map(s => s.toUpperCase()) },
+      status: 'active',
+    })
+    .sort({ transactionDate: 1, createdAt: 1 })
+    .toArray();
+}
+
+/**
+ * Bulk update transactions with FIFO results
+ */
+export async function bulkUpdateFIFO(
+  updates: {
+    transactionId: string;
+    fifoResult: {
+      realizedGain: number;
+      cgtAmount: number;
+      holdingPeriodDays: number;
+      lotsUsed: FIFOLot[];
+    };
+  }[]
+): Promise<void> {
+  if (updates.length === 0) return;
+
+  const collection = await getTransactionsCollection();
+
+  const bulkOps = updates.map(update => ({
+    updateOne: {
+      filter: { _id: new ObjectId(update.transactionId) },
+      update: {
+        $set: {
+          realizedGain: update.fifoResult.realizedGain,
+          cgtAmount: update.fifoResult.cgtAmount,
+          holdingPeriodDays: update.fifoResult.holdingPeriodDays,
+          lotsUsed: update.fifoResult.lotsUsed,
+          lastModified: new Date(),
+        },
+      },
+    },
+  }));
+
+  await collection.bulkWrite(bulkOps);
+}
+

@@ -215,3 +215,123 @@ export function getHoldingPeriodLabel(days: number): string {
   if (days < 365) return 'Short-term';
   return 'Long-term';
 }
+/**
+ * Recalculate FIFO for a series of transactions (mixed BUY/SELL)
+ * Used for bulk uploads or re-processing history
+ * @param transactions - Chronological list of transactions for a single symbol
+ * @returns List of updates to be applied to SELL transactions
+ */
+export function recalculateFIFOForSeries(
+  transactions: TransactionDocument[]
+): { transactionId: string; fifoResult: FIFOCalculationResult }[] {
+  const updates: { transactionId: string; fifoResult: FIFOCalculationResult }[] = [];
+
+  // Keep track of available buy lots
+  // We need to clone them because we'll be consuming them
+  const availableLots: {
+    buyTx: TransactionDocument;
+    remainingShares: number;
+  }[] = [];
+
+  // Sort by date (oldest first) just in case
+  const sortedTx = [...transactions].sort((a, b) => {
+    const dateDiff = a.transactionDate.getTime() - b.transactionDate.getTime();
+    if (dateDiff !== 0) return dateDiff;
+    // Secondary sort by creation time if available, otherwise stable sort
+    if (a.createdAt && b.createdAt) {
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    }
+    return 0;
+  });
+
+  for (const tx of sortedTx) {
+    if (tx.transactionType === 'BUY') {
+      // Add to available lots
+      availableLots.push({
+        buyTx: tx,
+        remainingShares: tx.shares,
+      });
+    } else if (tx.transactionType === 'SELL') {
+      // Calculate FIFO for this sell using currently available lots
+      const lotsUsed: FIFOLot[] = [];
+      const breakdown: string[] = [];
+
+      let remainingToSell = tx.shares;
+      let totalCost = 0;
+      const totalProceeds = tx.shares * tx.pricePerShare;
+      let totalWeightedHoldingDays = 0;
+
+      // Iterate through available lots
+      for (let i = 0; i < availableLots.length; i++) {
+        if (remainingToSell <= 0) break;
+
+        const lot = availableLots[i];
+        if (lot.remainingShares <= 0) continue;
+
+        const sharesToUse = Math.min(remainingToSell, lot.remainingShares);
+
+        // Calculate holding period
+        const holdingDays = Math.floor(
+          (tx.transactionDate.getTime() - lot.buyTx.transactionDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Calculate gain
+        const costForThisLot = sharesToUse * lot.buyTx.pricePerShare;
+        const proceedsForThisLot = sharesToUse * tx.pricePerShare;
+        const gainForThisLot = proceedsForThisLot - costForThisLot;
+        const cgtForThisLot = gainForThisLot > 0 ? gainForThisLot * CGT_RATE : 0;
+
+        totalCost += costForThisLot;
+        totalWeightedHoldingDays += holdingDays * sharesToUse;
+
+        // Record lot usage
+        lotsUsed.push({
+          buyTransactionId: lot.buyTx._id!.toString(),
+          shares: sharesToUse,
+          buyPrice: lot.buyTx.pricePerShare,
+          buyDate: lot.buyTx.transactionDate,
+          holdingDays,
+          gain: gainForThisLot,
+          cgtAmount: cgtForThisLot,
+        });
+
+        const holdingLabel = holdingDays >= 365 ? 'Long-term' : 'Short-term';
+        breakdown.push(
+          `Lot ${lotsUsed.length}: ${sharesToUse.toLocaleString()} shares @ ${lot.buyTx.pricePerShare.toFixed(
+            2
+          )} (bought ${lot.buyTx.transactionDate.toLocaleDateString()}, held ${holdingDays} days - ${holdingLabel}), Gain: ${gainForThisLot.toFixed(
+            2
+          )}, CGT: ${cgtForThisLot.toFixed(2)}`
+        );
+
+        // Update lot state
+        lot.remainingShares -= sharesToUse;
+        remainingToSell -= sharesToUse;
+      }
+
+      // Calculate totals
+      const realizedGain = totalProceeds - totalCost;
+      const totalCGT = realizedGain > 0 ? realizedGain * CGT_RATE : 0;
+      const avgHoldingDays = tx.shares > 0 ? Math.floor(totalWeightedHoldingDays / tx.shares) : 0;
+
+      const result: FIFOCalculationResult = {
+        lotsUsed,
+        totalCost,
+        totalProceeds,
+        realizedGain,
+        totalCGT,
+        holdingPeriodDays: avgHoldingDays,
+        breakdown,
+        remainingShares: remainingToSell,
+      };
+
+      updates.push({
+        transactionId: tx._id!.toString(),
+        fifoResult: result,
+      });
+    }
+  }
+
+  return updates;
+}
+

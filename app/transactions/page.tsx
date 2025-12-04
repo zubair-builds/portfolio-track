@@ -45,11 +45,7 @@ export default function TransactionsPage() {
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      const response = await fetch('/api/transactions/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      const response = await fetch('/api/transactions/stats');
 
       const result = await response.json();
 
