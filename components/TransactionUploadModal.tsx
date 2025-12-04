@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog';
+import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { formatNumber } from '@/lib/constants';
 
@@ -152,81 +152,134 @@ export default function TransactionUploadModal({ isOpen, onClose, onUploadComple
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Upload Transactions</DialogTitle>
-                </DialogHeader>
-
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Upload Transactions"
+            subtitle={step === 'input' ? 'Paste your transaction data' : 'Review detected transactions'}
+        >
+            <div className="space-y-6">
                 {step === 'input' ? (
                     <div className="space-y-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                            Paste your transaction JSON data below. The system will automatically detect Buy/Sell operations based on balance changes.
-                        </p>
-                        <textarea
-                            className="w-full h-64 p-4 font-mono text-sm border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500"
-                            placeholder='[{"date": "...", "securitySymbol": "...", ...}]'
-                            value={jsonInput}
-                            onChange={(e) => setJsonInput(e.target.value)}
-                        />
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
-                        <div className="flex justify-end gap-3">
-                            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                            <Button onClick={handleParse} disabled={!jsonInput.trim()}>
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                Paste your transaction JSON data below. The system will automatically detect Buy/Sell operations based on balance changes.
+                            </p>
+                        </div>
+
+                        <div className="relative">
+                            <textarea
+                                className="w-full h-64 p-4 font-mono text-sm border-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none"
+                                placeholder='[{"date": "...", "securitySymbol": "...", ...}]'
+                                value={jsonInput}
+                                onChange={(e) => setJsonInput(e.target.value)}
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-4 flex items-start gap-3">
+                                <svg className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <p className="text-sm text-rose-700 dark:text-rose-300 font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <Button
+                                variant="secondary"
+                                onClick={onClose}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleParse}
+                                disabled={!jsonInput.trim()}
+                                className="flex-1"
+                            >
                                 Preview Transactions
                             </Button>
                         </div>
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-semibold text-lg">Detected Transactions ({previewData.length})</h3>
-                            <Button variant="outline" size="sm" onClick={() => setStep('input')}>Back to Input</Button>
+                        <div className="flex justify-between items-center px-1">
+                            <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
+                                Detected Transactions <span className="text-slate-500 dark:text-slate-400 font-normal">({previewData.length})</span>
+                            </h3>
+                            <Button variant="secondary" size="sm" onClick={() => setStep('input')}>
+                                Back to Input
+                            </Button>
                         </div>
 
-                        <div className="border rounded-lg overflow-hidden">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                    <tr>
-                                        <th className="p-3">Date</th>
-                                        <th className="p-3">Symbol</th>
-                                        <th className="p-3">Type</th>
-                                        <th className="p-3 text-right">Shares</th>
-                                        <th className="p-3 text-right">Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                    {previewData.map((tx, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                            <td className="p-3">{tx.originalDate}</td>
-                                            <td className="p-3 font-medium">{tx.symbol}</td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-1 rounded text-xs font-medium ${tx.transactionType === 'BUY'
-                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                    }`}>
-                                                    {tx.transactionType}
-                                                </span>
-                                            </td>
-                                            <td className="p-3 text-right">{formatNumber(tx.shares)}</td>
-                                            <td className="p-3 text-right text-slate-500">0.00</td>
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 sticky top-0 backdrop-blur-sm z-10">
+                                        <tr>
+                                            <th className="p-3 font-semibold">Date</th>
+                                            <th className="p-3 font-semibold">Symbol</th>
+                                            <th className="p-3 font-semibold">Type</th>
+                                            <th className="p-3 font-semibold text-right">Shares</th>
+                                            <th className="p-3 font-semibold text-right">Price</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                                        {previewData.map((tx, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="p-3 text-slate-600 dark:text-slate-400">{tx.originalDate}</td>
+                                                <td className="p-3 font-semibold text-slate-900 dark:text-slate-100">{tx.symbol}</td>
+                                                <td className="p-3">
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${tx.transactionType === 'BUY'
+                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                        : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                                                        }`}>
+                                                        {tx.transactionType}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3 text-right font-medium text-slate-700 dark:text-slate-300">{formatNumber(tx.shares)}</td>
+                                                <td className="p-3 text-right text-slate-400 font-mono">0.00</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
+                        {error && (
+                            <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-4 flex items-start gap-3">
+                                <svg className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <p className="text-sm text-rose-700 dark:text-rose-300 font-medium">{error}</p>
+                            </div>
+                        )}
 
-                        <div className="flex justify-end gap-3">
-                            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                            <Button onClick={handleUpload} disabled={loading || previewData.length === 0}>
-                                {loading ? 'Uploading...' : 'Confirm Upload'}
+                        <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <Button
+                                variant="secondary"
+                                onClick={onClose}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleUpload}
+                                disabled={loading || previewData.length === 0}
+                                className="flex-1"
+                            >
+                                {loading ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                        Uploading...
+                                    </span>
+                                ) : 'Confirm Upload'}
                             </Button>
                         </div>
                     </div>
                 )}
-            </DialogContent>
-        </Dialog>
+            </div>
+        </Modal>
     );
 }

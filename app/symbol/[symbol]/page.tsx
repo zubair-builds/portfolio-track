@@ -405,7 +405,6 @@ export default function SymbolDetailPage({
         user={user}
         onSignOut={handleSignOut}
         marketState={kse100?.marketState}
-        onRefresh={handleRefreshSymbol}
       />
 
       <main className="space-y-6">
@@ -484,7 +483,7 @@ export default function SymbolDetailPage({
                     </p>
                   </div>
 
-                  {( (!checking && !loading && !fetching && !error)) && (
+                  {((!checking && !loading && !fetching && !error)) && (
                     <Button
                       variant="primary"
                       onClick={handleFetchData}

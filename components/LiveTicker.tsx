@@ -479,12 +479,14 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
       };
 
       ws.onerror = (event) => {
-        console.error('WebSocket error:', event);
+        if (!isMountedRef.current) return;
+        console.error('WebSocket error occurred'); // Avoid logging the event object directly to prevent potential serialization issues
         setConnectionState('error');
         setError('Connection error occurred');
       };
 
       ws.onclose = (event) => {
+        if (!isMountedRef.current) return;
         console.log('WebSocket closed:', event.code, event.reason);
         setConnectionState('disconnected');
         subscriptionKeyRef.current = null;
@@ -521,7 +523,9 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
           setConnectionState('reconnecting');
 
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
+            if (isMountedRef.current) {
+              connect();
+            }
           }, delay);
         } else if (!isManualDisconnectRef.current) {
           setError('Maximum reconnection attempts reached. Please refresh the page.');
@@ -532,8 +536,10 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
       };
     } catch (err) {
       console.error('Error creating WebSocket connection:', err);
-      setConnectionState('error');
-      setError('Failed to create WebSocket connection');
+      if (isMountedRef.current) {
+        setConnectionState('error');
+        setError('Failed to create WebSocket connection');
+      }
     }
   }, [marketType, getNextRequestId, sendPong, flushBatchUpdates]);
 
@@ -623,161 +629,209 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
   };
 
   return (
-    <div className="space-y-4 min-h-[100px] flex flex-col">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-2 h-2 rounded-full animate-pulse ${getConnectionStatusColor()}`}></div>
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            Live Ticker ({marketType})
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            {getConnectionStatusText()}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleToggleConnection}
-            disabled={connectionState === 'connecting' || connectionState === 'reconnecting'}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${connectionState === 'connected' || connectionState === 'reconnecting'
-              ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-              : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50'
-              } disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5`}
-          >
-            {connectionState === 'connected' || connectionState === 'reconnecting' ? (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Stop
-              </>
-            ) : (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Start
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+    <div className="relative overflow-hidden rounded-3xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl shadow-indigo-500/5 ring-1 ring-black/5">
+      {/* Decorative background gradients */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-50" />
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Horizontal Scrolling Ticker */}
-      {updates.length > 0 && connectionState === 'connected' && (
-        <>
-          <style>{`
-            @keyframes ticker-scroll {
-              0% {
-                transform: translateX(0);
-              }
-              100% {
-                transform: translateX(-50%);
-              }
-            }
-            .ticker-scroll-container {
-              animation: ticker-scroll 30s linear infinite;
-            }
-            .ticker-scroll-container:hover {
-              animation-play-state: paused;
-            }
-          `}</style>
-          <div className="relative w-full overflow-hidden bg-slate-900 dark:bg-slate-800 rounded-lg border border-slate-700 dark:border-slate-600 py-3 group">
-            <div className="flex ticker-scroll-container whitespace-nowrap">
-              {/* Duplicate content for seamless loop */}
-              {[...updates, ...updates].map((update, i) => {
-                const changeColor = update.change >= 0 ? 'text-green-400' : 'text-red-400';
-                const bgColor = update.change >= 0
-                  ? 'bg-green-900/20 border-green-700/50'
-                  : 'bg-red-900/20 border-red-700/50';
-                // Use stable key: symbol + duplicate index (0-99 for first copy, 100-199 for second)
-                // Position in array is stable since we don't reorder, only update values
-                const isSecondCopy = i >= updates.length;
-                const originalIndex = isSecondCopy ? i - updates.length : i;
-                const stableKey = `ticker-${update.symbol}-${originalIndex}-${isSecondCopy ? 'copy' : 'orig'}`;
-                return (
-                  <div
-                    key={stableKey}
-                    className={`inline-flex items-center gap-2 px-4 py-2 mx-2 rounded-lg border ${bgColor} flex-shrink-0 transition-opacity hover:opacity-90`}
-                  >
-                    <span className="font-mono font-bold text-indigo-400 text-sm">
-                      {update.symbol}
-                    </span>
-                    <span className="text-slate-300 dark:text-slate-200 font-mono text-sm transition-colors duration-200">
-                      {formatPrice(update.price)}
-                    </span>
-                    <span className={`font-mono font-semibold text-sm ${changeColor} transition-colors duration-200`}>
-                      {update.change >= 0 ? '+' : ''}{formatPrice(update.change)} ({update.changePercent >= 0 ? '+' : ''}{update.changePercent.toFixed(2)}%)
-                    </span>
-                    <span className="text-slate-500 text-xs">|</span>
-                  </div>
-                );
-              })}
+      <div className="relative p-5 space-y-5">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className={`relative flex h-3 w-3`}>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${connectionState === 'connected' ? 'bg-emerald-400' : connectionState === 'connecting' ? 'bg-amber-400' : 'bg-rose-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${connectionState === 'connected' ? 'bg-emerald-500' : connectionState === 'connecting' ? 'bg-amber-500' : 'bg-rose-500'}`}></span>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                Market Pulse
+              </h3>
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span className="uppercase tracking-wider">{marketType}</span>
+                <span>•</span>
+                <span className={`${connectionState === 'connected' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
+                  {getConnectionStatusText()}
+                </span>
+              </div>
             </div>
           </div>
-        </>
-      )}
 
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 p-3">
-          <p className="text-sm text-red-800 dark:text-red-200 font-medium">Error: {error}</p>
-          {connectionState === 'error' && (
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                setError(null);
-                reconnectAttemptsRef.current = 0;
-                connect();
+                const dummyData: MarketUpdate[] = [
+                  { symbol: 'OGDC', market: 'REG', price: 118.50, change: 2.30, changePercent: 1.98, volume: 500000, trades: 150, value: 59250000, high: 119.00, low: 116.50, bid: 118.40, ask: 118.60, bidVol: 1000, askVol: 1500, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'PPL', market: 'REG', price: 78.25, change: -1.15, changePercent: -1.45, volume: 350000, trades: 120, value: 27387500, high: 79.50, low: 77.80, bid: 78.20, ask: 78.30, bidVol: 800, askVol: 1200, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'TRG', market: 'REG', price: 95.60, change: 4.50, changePercent: 4.94, volume: 1200000, trades: 450, value: 114720000, high: 95.60, low: 91.00, bid: 95.50, ask: 95.70, bidVol: 5000, askVol: 2000, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'LUCK', market: 'REG', price: 650.00, change: 12.50, changePercent: 1.96, volume: 150000, trades: 80, value: 97500000, high: 655.00, low: 640.00, bid: 649.50, ask: 650.50, bidVol: 200, askVol: 300, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'SYS', market: 'REG', price: 420.75, change: -5.25, changePercent: -1.23, volume: 200000, trades: 100, value: 84150000, high: 428.00, low: 418.00, bid: 420.50, ask: 421.00, bidVol: 400, askVol: 600, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'ENGRO', market: 'REG', price: 285.40, change: 1.80, changePercent: 0.63, volume: 180000, trades: 90, value: 51372000, high: 287.00, low: 284.00, bid: 285.20, ask: 285.60, bidVol: 300, askVol: 500, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'HUBC', market: 'REG', price: 85.90, change: 0.40, changePercent: 0.47, volume: 600000, trades: 200, value: 51540000, high: 86.50, low: 85.00, bid: 85.80, ask: 86.00, bidVol: 1500, askVol: 1800, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'UBL', market: 'REG', price: 145.20, change: -0.80, changePercent: -0.55, volume: 250000, trades: 110, value: 36300000, high: 146.50, low: 144.80, bid: 145.00, ask: 145.40, bidVol: 600, askVol: 900, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'MCB', market: 'REG', price: 168.50, change: 1.50, changePercent: 0.90, volume: 180000, trades: 85, value: 30330000, high: 169.00, low: 167.00, bid: 168.30, ask: 168.70, bidVol: 400, askVol: 700, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                  { symbol: 'FFC', market: 'REG', price: 112.30, change: 0.70, changePercent: 0.63, volume: 300000, trades: 130, value: 33690000, high: 113.00, low: 111.50, bid: 112.20, ask: 112.40, bidVol: 800, askVol: 1000, state: 'OPEN', timestamp: Date.now(), receivedAt: new Date() },
+                ];
+                setUpdates(dummyData);
+                setConnectionState('connected');
               }}
-              className="mt-2 text-xs text-red-600 dark:text-red-400 hover:underline"
+              className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+              title="Load Demo Data"
             >
-              Retry connection
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Show message when no updates yet */}
-      {updates.length === 0 && connectionState === 'connected' && (
-        <div className="flex items-center justify-center min-h-[60px] bg-slate-900 dark:bg-slate-800 rounded-lg border border-slate-700 dark:border-slate-600">
-          <div className="flex items-center gap-3">
-            <div className="text-slate-500 dark:text-slate-400">
-              <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </div>
-            <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">
-              Waiting for market data...
-            </p>
-          </div>
-        </div>
-      )}
+            </button>
 
-      {/* Show placeholder when stopped/disconnected/connecting to maintain height */}
-      {(connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'connecting' || connectionState === 'reconnecting') && updates.length === 0 && (
-        <div className="flex-1 flex items-center justify-center min-h-[60px] bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
-          <div className="text-center">
-            {(connectionState === 'connecting' || connectionState === 'reconnecting') ? (
-              <>
-                <div className="text-slate-400 dark:text-slate-500 mb-2">
-                  <svg className="w-6 h-6 mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                  {connectionState === 'connecting' ? 'Connecting...' : 'Reconnecting...'}
-                </p>
-              </>
-            ) : (
-              <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+            <button
+              onClick={handleToggleConnection}
+              disabled={connectionState === 'connecting' || connectionState === 'reconnecting'}
+              className={`p-2 rounded-lg transition-colors ${connectionState === 'connected' || connectionState === 'reconnecting'
+                ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30'
+                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={connectionState === 'connected' || connectionState === 'reconnecting' ? 'Stop Ticker' : 'Start Ticker'}
+            >
+              {connectionState === 'connected' || connectionState === 'reconnecting' ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span>Ticker stopped. Click Start to begin receiving live updates.</span>
-              </div>
-            )}
+              )}
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Horizontal Scrolling Ticker */}
+        {updates.length > 0 && connectionState === 'connected' && (
+          <>
+            <style>{`
+              @keyframes ticker-scroll {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+              }
+              .ticker-scroll-container {
+                animation: ticker-scroll 40s linear infinite;
+              }
+              .ticker-scroll-container:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
+            <div className="relative w-full overflow-hidden py-2 group">
+              {/* Fade masks for smooth edges */}
+              <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white dark:from-slate-900 to-transparent z-10 pointer-events-none" />
+              <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white dark:from-slate-900 to-transparent z-10 pointer-events-none" />
+
+              <div className="flex ticker-scroll-container whitespace-nowrap">
+                {[...updates, ...updates].map((update, i) => {
+                  const isPositive = update.change >= 0;
+                  const isSecondCopy = i >= updates.length;
+                  const originalIndex = isSecondCopy ? i - updates.length : i;
+                  const stableKey = `ticker-${update.symbol}-${originalIndex}-${isSecondCopy ? 'copy' : 'orig'}`;
+
+                  return (
+                    <div
+                      key={stableKey}
+                      className="inline-flex items-center gap-3 px-5 py-3 mx-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 cursor-default"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900 dark:text-white text-sm tracking-tight">
+                          {update.symbol}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          {formatPrice(update.price)}
+                        </span>
+                      </div>
+
+                      <div className={`flex flex-col items-end ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        <div className="flex items-center gap-1 font-bold text-sm">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isPositive ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" : "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"} />
+                          </svg>
+                          <span>{isPositive ? '+' : ''}{formatPrice(update.change)}</span>
+                        </div>
+                        <span className="text-xs font-medium bg-current/10 px-1.5 py-0.5 rounded-md">
+                          {isPositive ? '+' : ''}{update.changePercent.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {error && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/30 p-4 flex items-start gap-3">
+            <div className="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-full text-rose-600 dark:text-rose-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-rose-900 dark:text-rose-200">Connection Error</h4>
+              <p className="text-sm text-rose-700 dark:text-rose-300 mt-1">{error}</p>
+              {connectionState === 'error' && (
+                <button
+                  onClick={() => {
+                    setError(null);
+                    reconnectAttemptsRef.current = 0;
+                    connect();
+                  }}
+                  className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-300 hover:text-rose-900 dark:hover:text-rose-100 underline decoration-rose-400/50 underline-offset-2"
+                >
+                  Retry connection
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {updates.length === 0 && connectionState === 'connected' && (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-3">
+              <svg className="w-6 h-6 text-indigo-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <p className="text-slate-900 dark:text-white font-medium">Waiting for market data...</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Real-time updates will appear here automatically</p>
+          </div>
+        )}
+
+        {/* Stopped/Connecting State */}
+        {(connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'connecting' || connectionState === 'reconnecting') && updates.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            {(connectionState === 'connecting' || connectionState === 'reconnecting') ? (
+              <>
+                <div className="relative w-12 h-12 mb-4">
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+                </div>
+                <p className="text-slate-900 dark:text-white font-medium">
+                  {connectionState === 'connecting' ? 'Connecting to Exchange...' : 'Reconnecting...'}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-slate-900 dark:text-white font-medium">Live Ticker Paused</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Click Start to resume real-time updates</p>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

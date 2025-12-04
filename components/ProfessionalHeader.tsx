@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Badge } from './ui/Badge';
 import HeaderSymbolSearch from './HeaderSymbolSearch';
 import { getMarketStateInfo } from '@/lib/constants';
@@ -10,33 +11,21 @@ interface ProfessionalHeaderProps {
   user: { name: string; email: string } | null;
   onSignOut: () => void;
   marketState?: string;
-  onExport?: (format: 'json' | 'csv') => void;
-  onImport?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  importing?: boolean;
-  onRefresh?: () => void;
 }
 
 export default function ProfessionalHeader({
   user,
   onSignOut,
   marketState,
-  onExport,
-  onImport,
-  importing = false,
-  onRefresh,
 }: ProfessionalHeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showActionsMenu, setShowActionsMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
-      }
-      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
-        setShowActionsMenu(false);
       }
     };
 
@@ -46,238 +35,153 @@ export default function ProfessionalHeader({
 
   const stateInfo = marketState ? getMarketStateInfo(marketState) : null;
 
+  const navLinks = [
+    { href: '/companies', label: 'Companies' },
+    { href: '/indices', label: 'Indices' },
+    { href: '/transactions', label: 'Transactions' },
+    { href: '/dividends', label: 'Dividends' },
+  ];
+
   return (
-    <header className="relative border-b bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm">
-      <div className="container mx-auto max-w-7xl">
-        <div className="flex items-center justify-between h-12 px-4">
-          {/* Left: Logo and Title */}
-          <Link 
-            href="/" 
-            className="flex items-center gap-3 flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+    <header className="sticky top-0 z-50 w-full">
+      {/* Glassmorphic Container */}
+      <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-sm transition-all duration-300" />
+
+      {/* Decorative Top Line */}
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-50" />
+
+      <div className="relative container mx-auto max-w-7xl h-16 px-4 flex items-center justify-between gap-4">
+        {/* Left: Brand & Status */}
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <Link
+            href="/"
+            className="group flex items-center gap-3 hover:opacity-90 transition-all"
             aria-label="Go to homepage"
           >
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/30 transition-all duration-300 group-hover:scale-105">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                Portfolio Tracker
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-none">
+                Portfolio
               </h1>
+              <p className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 tracking-wider uppercase">
+                Tracker
+              </p>
             </div>
           </Link>
 
-          {/* Center: Search and Navigation */}
-          <div className="hidden md:flex items-center gap-4 flex-1 max-w-2xl mx-6">
-            <Link
-              href="/companies"
-              className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
-            >
-              Companies
-            </Link>
-            <Link
-              href="/indices"
-              className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
-            >
-              Indices
-            </Link>
-            <Link
-              href="/transactions"
-              className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
-            >
-              Transactions
-            </Link>
-            <Link
-              href="/dividends"
-              className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition whitespace-nowrap"
-            >
-              Dividends
-            </Link>
-            <div className="flex-1 min-w-0">
-              <HeaderSymbolSearch />
-            </div>
-          </div>
-
-          {/* Right: Actions and User */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Market Status */}
-            {stateInfo && (
-              <Badge 
+          {/* Market Status Badge */}
+          {stateInfo && (
+            <div className="hidden md:flex items-center">
+              <div className={`h-4 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2`} />
+              <Badge
                 variant={stateInfo.variant}
-                className={`${marketState === 'PRE' ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-300' : ''} hidden sm:inline-flex`}
+                className="text-[10px] px-2 py-0.5 h-6"
               >
                 {stateInfo.showPulse && (
-                  <span className="relative inline-flex h-2 w-2 mr-1.5">
+                  <span className="relative inline-flex h-1.5 w-1.5 mr-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-600" />
                   </span>
                 )}
                 {stateInfo.label}
               </Badge>
-            )}
-
-            {/* Quick Action Buttons - Visible on Desktop */}
-            <div className="hidden md:flex items-center gap-1">
-              {onRefresh && (
-                <button
-                  onClick={onRefresh}
-                  className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
-                  title="Refresh Data"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-              )}
-              {onExport && (
-                <>
-                  <button
-                    onClick={() => onExport('json')}
-                    className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
-                    title="Export JSON"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => onExport('csv')}
-                    className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
-                    title="Export CSV"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </button>
-                </>
-              )}
             </div>
+          )}
+        </div>
 
-            {/* Quick Actions Menu - Mobile and Additional Options */}
-            <div className="relative" ref={actionsMenuRef}>
+        {/* Center: Navigation & Search */}
+        <div className="flex-1 flex items-center justify-center max-w-3xl px-4 gap-6">
+          {/* Nav Links - Desktop */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`
+                    relative px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200
+                    ${isActive
+                      ? 'text-slate-900 dark:text-white bg-slate-100/50 dark:bg-slate-800/50'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/30'
+                    }
+                  `}
+                >
+                  {link.label}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-500" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md w-full">
+            <HeaderSymbolSearch />
+          </div>
+        </div>
+
+        {/* Right: User & Controls */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Theme Toggle */}
+          <button
+            onClick={() => document.documentElement.classList.toggle('dark')}
+            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+            title="Toggle dark mode"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </button>
+
+          {/* User Profile */}
+          {user && (
+            <div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => setShowActionsMenu(!showActionsMenu)}
-                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 md:hidden"
-                title="Quick Actions"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 group"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:block text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white max-w-[100px] truncate">
+                  {user.name}
+                </span>
+                <svg className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              {showActionsMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-50">
-                  {onRefresh && (
-                    <button
-                      onClick={() => {
-                        onRefresh();
-                        setShowActionsMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 transform origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{user.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{user.email}</p>
+                  </div>
+
+                  <div className="p-1">
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                      onClick={() => setShowUserMenu(false)}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.607 2.296.07 2.572-1.065z" />
                       </svg>
-                      Refresh Data
-                    </button>
-                  )}
-                  {onExport && (
-                    <>
-                      <button
-                        onClick={() => {
-                          onExport('json');
-                          setShowActionsMenu(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                        </svg>
-                        Export JSON
-                      </button>
-                      <button
-                        onClick={() => {
-                          onExport('csv');
-                          setShowActionsMenu(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Export CSV
-                      </button>
-                    </>
-                  )}
-                  {onImport && (
-                    <label className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={(e) => {
-                          onImport(e);
-                          setShowActionsMenu(false);
-                        }}
-                        disabled={importing}
-                        className="hidden"
-                      />
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      Import Portfolio
-                    </label>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={() => document.documentElement.classList.toggle('dark')}
-              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
-              title="Toggle dark mode"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            </button>
-
-            {/* User Menu */}
-            {user && (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                >
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="hidden lg:block text-left">
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-tight">
-                      {user.name}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
-                      {user.email}
-                    </p>
-                  </div>
-                  <svg className="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-50">
-                    <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{user.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{user.email}</p>
-                    </div>
+                      Settings
+                    </Link>
                     <button
                       onClick={() => {
                         onSignOut();
                         setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -285,10 +189,10 @@ export default function ProfessionalHeader({
                       Sign out
                     </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

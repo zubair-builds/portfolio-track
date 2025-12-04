@@ -10,7 +10,7 @@ import AllocationTab from "../components/tabs/AllocationTab";
 import CacheManager from "../components/CacheManager";
 import AIFinancialChatbot from "../components/AIFinancialChatbot";
 import AddStockModal from "../components/AddStockModal";
-import EditStockModal from "../components/EditStockModal";
+
 import AddWatchlistModal from "../components/AddWatchlistModal";
 import LiveTicker from "../components/LiveTicker";
 import { Stock, WatchlistItem, calculatePortfolioStats } from "../lib/portfolioData";
@@ -61,7 +61,7 @@ export default function Page() {
 
   // Modal states
   const [showAddStock, setShowAddStock] = useState(false);
-  const [editingStock, setEditingStock] = useState<Stock | null>(null);
+
   const [showAddWatchlist, setShowAddWatchlist] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -128,28 +128,7 @@ export default function Page() {
     await refreshPortfolioData(); // Reload to fetch updated portfolio
   };
 
-  const handleEditStock = async (stockData: { symbol: string; shares: number; avgBuy: number; purchaseDate?: Date }) => {
-    if (!user?.email) return;
 
-    const response = await fetch('/api/portfolio', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-User-Id': user.email,
-      },
-      body: JSON.stringify({
-        ...stockData,
-        purchaseDate: stockData.purchaseDate?.toISOString(),
-      }),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to update stock');
-    }
-
-    await refreshPortfolioData(); // Reload to fetch updated portfolio
-  };
 
   const handleDeleteStock = async (stock: Stock) => {
     if (!user?.email) return;
@@ -358,44 +337,53 @@ export default function Page() {
   return (
     <>
       {/* Main Content */}
-      <div className="flex min-h-screen flex-col">
-        {/* Professional Header */}
-        <ProfessionalHeader
-          user={user}
-          onSignOut={handleSignOut}
-          marketState={kse100?.marketState}
-          onExport={handleExport}
-          onImport={handleImport}
-          importing={importing}
-          onRefresh={handleRefreshKse100}
-        />
+      <div className="flex min-h-screen flex-col bg-[#FDFDFD] dark:bg-[#0B0F19] relative selection:bg-indigo-500/30">
+        {/* Global Background Effects - Adjusted opacity for better contrast */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-[1000px] h-[600px] bg-indigo-500/3 dark:bg-indigo-500/5 rounded-full blur-[120px] -translate-y-1/2" />
+          <div className="absolute bottom-0 right-1/4 w-[800px] h-[600px] bg-purple-500/3 dark:bg-purple-500/5 rounded-full blur-[100px] translate-y-1/3" />
+          <div className="absolute top-1/2 left-1/2 w-[600px] h-[400px] bg-pink-500/3 dark:bg-pink-500/5 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
+        </div>
 
-        <main className="flex-1 bg-slate-50 dark:bg-slate-900">
-          <div className="container mx-auto max-w-7xl space-y-4 sm:space-y-5 py-4 sm:py-6 px-4">
+        {/* Professional Header */}
+        <div className="relative z-50">
+          <ProfessionalHeader
+            user={user}
+            onSignOut={handleSignOut}
+            marketState={kse100?.marketState}
+          />
+        </div>
+
+        <main className="flex-1 relative z-10">
+          <div className="container mx-auto max-w-7xl space-y-8 py-8 px-4 sm:px-6 lg:px-8">
             {/* Portfolio Hero Section */}
             {activeTab === 'portfolio' && (
-              <PortfolioHero
-                stats={portfolioStats}
-                totalStocks={portfolioStocks.length}
-                isLoading={portfolioLoading && portfolioStocks.length === 0}
-                benchmarkReturn={kse100 ? kse100.changePercent * 100 : undefined}
-                benchmarkName="KSE-100"
-              />
+              <div className="transform transition-all duration-500 ease-out">
+                <PortfolioHero
+                  stats={portfolioStats}
+                  totalStocks={portfolioStocks.length}
+                  isLoading={portfolioLoading && portfolioStocks.length === 0}
+                  benchmarkReturn={kse100 ? kse100.changePercent * 100 : undefined}
+                  benchmarkName="KSE-100"
+                />
+              </div>
             )}
 
             {/* KSE-100 Widget and Live Ticker Row */}
             {activeTab === 'portfolio' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-                <div className="lg:col-span-1">
-                  <KSE100Widget
-                    index={kse100}
-                    isLoading={kse100Loading}
-                    onRefresh={handleRefreshKse100}
-                    refreshing={refreshingKse100}
-                  />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 h-full">
+                  <div className="h-full rounded-3xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl shadow-indigo-500/5 ring-1 ring-black/5 overflow-hidden transition-all duration-300 hover:shadow-indigo-500/10">
+                    <KSE100Widget
+                      index={kse100}
+                      isLoading={kse100Loading}
+                      onRefresh={handleRefreshKse100}
+                      refreshing={refreshingKse100}
+                    />
+                  </div>
                 </div>
-                <div className="lg:col-span-2">
-                  <div className="rounded-lg border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <div className="lg:col-span-2 h-full">
+                  <div className="h-full transition-all duration-300 hover:scale-[1.01]">
                     <LiveTicker
                       marketType="REG"
                       autoConnect={false}
@@ -406,47 +394,50 @@ export default function Page() {
               </div>
             )}
 
-            {/* Visual Separator */}
-            {activeTab === 'portfolio' && (
-              <div className="border-t border-slate-200 dark:border-slate-700" />
-            )}
-
             {/* Tabs Navigation */}
-            <div className="bg-white dark:bg-slate-900 relative border-b border-slate-200 dark:border-slate-700">
-              <div className="container mx-auto max-w-7xl">
+            <div className="sticky top-4 z-40">
+              <div className="rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-lg shadow-indigo-500/5 ring-1 ring-black/5 p-1.5 transition-all duration-300">
                 <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
               </div>
             </div>
 
             {/* Tab Content */}
-            <div className="container mx-auto max-w-7xl space-y-6 py-6 px-4">
+            <div className="min-h-[400px] transition-all duration-500 ease-in-out">
               {activeTab === 'portfolio' && (
-                <PortfolioTab
-                  stocks={portfolioStocks}
-                  isLoading={portfolioLoading}
-                  onEditStock={setEditingStock}
-                  onDeleteStock={handleDeleteStock}
-                  onAddStock={() => setShowAddStock(true)}
-                  onRefresh={refreshPortfolioData}
-                  dividendStats={dividendStats}
-                />
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <PortfolioTab
+                    stocks={portfolioStocks}
+                    isLoading={portfolioLoading}
+                    onEditStock={undefined}
+                    onDeleteStock={handleDeleteStock}
+                    onAddStock={() => setShowAddStock(true)}
+                    onRefresh={refreshPortfolioData}
+                    dividendStats={dividendStats}
+                  />
+                </div>
               )}
 
               {activeTab === 'watchlist' && (
-                <WatchlistTab
-                  watchlist={watchlist}
-                  isLoading={isLoadingWatchlist}
-                  onDeleteItem={handleDeleteWatchlist}
-                  onAddWatchlist={() => setShowAddWatchlist(true)}
-                />
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <WatchlistTab
+                    watchlist={watchlist}
+                    isLoading={isLoadingWatchlist}
+                    onDeleteItem={handleDeleteWatchlist}
+                    onAddWatchlist={() => setShowAddWatchlist(true)}
+                  />
+                </div>
               )}
 
               {activeTab === 'analytics' && (
-                <AnalyticsTab userEmail={user?.email} />
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <AnalyticsTab userEmail={user?.email} />
+                </div>
               )}
 
               {activeTab === 'allocation' && (
-                <AllocationTab stocks={portfolioStocks} isLoading={portfolioLoading} />
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <AllocationTab stocks={portfolioStocks} isLoading={portfolioLoading} />
+                </div>
               )}
             </div>
           </div>
@@ -454,9 +445,6 @@ export default function Page() {
 
         {/* Cache Manager */}
         <CacheManager />
-
-
-
 
         {/* AI Financial Chatbot */}
         <AIFinancialChatbot stocks={portfolioStocks} />
@@ -469,15 +457,6 @@ export default function Page() {
           />
         )}
 
-        {/* Edit Stock Modal */}
-        {editingStock && (
-          <EditStockModal
-            stock={editingStock}
-            onClose={() => setEditingStock(null)}
-            onSave={handleEditStock}
-          />
-        )}
-
         {/* Add Watchlist Modal */}
         {showAddWatchlist && (
           <AddWatchlistModal
@@ -487,10 +466,19 @@ export default function Page() {
         )}
 
         {/* Footer */}
-        <footer className="mt-auto border-t bg-white/80 dark:bg-slate-950/70">
-          <div className="container mx-auto max-w-7xl flex flex-col items-start justify-between gap-3 py-6 px-4 text-sm text-slate-600 dark:text-slate-400 md:flex-row">
-            <span>© {new Date().getFullYear()} My Portfolio Tracker</span>
-            <span className="text-xs">This is informational and not investment advice.</span>
+        <footer className="mt-auto border-t border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm relative z-10">
+          <div className="container mx-auto max-w-7xl flex flex-col items-center justify-between gap-4 py-8 px-4 text-sm text-slate-500 dark:text-slate-400 md:flex-row">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-indigo-500" />
+              <span className="font-medium">© {new Date().getFullYear()} My Portfolio Tracker</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms</a>
+              <span className="text-xs bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                Not investment advice
+              </span>
+            </div>
           </div>
         </footer>
       </div>
