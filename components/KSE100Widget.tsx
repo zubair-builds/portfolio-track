@@ -68,7 +68,7 @@ export default function KSE100Widget({
   const isPositive = index.change >= 0;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[138px] flex flex-col justify-between">
+    <div className="h-full bg-transparent p-5 flex flex-col justify-between">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">

@@ -7,9 +7,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/GlassTable';
 import DateRangeFilter, { type DateRangeValue } from './DateRangeFilter';
 import { formatNumber, formatCurrency } from '@/lib/constants';
 
@@ -49,8 +49,6 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [total, setTotal] = useState(0);
-
-  // Sorting
 
   // Sorting
   const [sortField, setSortField] = useState<string>('transactionDate');
@@ -175,7 +173,7 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
   };
 
   const SortIcon = ({ field }: { field: string }) => {
-    if (sortField !== field) return <span className="ml-1 text-slate-400 opacity-0 group-hover:opacity-50">↕</span>;
+    if (sortField !== field) return <span className="ml-1 text-slate-400 opacity-0 group-hover:opacity-50 transition-opacity">↕</span>;
     return (
       <span className="ml-1 text-indigo-600 dark:text-indigo-400">
         {sortDirection === 'asc' ? '↑' : '↓'}
@@ -185,289 +183,302 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Filters */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          {/* Date Range Filter */}
-          <DateRangeFilter value={dateRange || undefined} onChange={setDateRange} />
+      {/* Glassmorphic Filters Bar */}
+      <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 rounded-2xl p-4 shadow-sm">
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
 
-          {/* Type and Symbol Filters */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Transaction Type
-              </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as 'all' | 'BUY' | 'SELL')}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">All Transactions</option>
-                <option value="BUY">Buys Only</option>
-                <option value="SELL">Sells Only</option>
-              </select>
-            </div>
-
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Symbol Search
-              </label>
+          {/* Left: Filters */}
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            {/* Search */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
               <input
                 type="text"
                 value={symbolSearch}
                 onChange={(e) => setSymbolSearch(e.target.value)}
-                placeholder="e.g., OGDC"
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500"
+                placeholder="Search symbol..."
+                className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all w-full sm:w-48"
               />
             </div>
 
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Page Size
-              </label>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value={25}>25 per page</option>
-                <option value={50}>50 per page</option>
-                <option value={100}>100 per page</option>
-              </select>
+            {/* Type Filter */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+              {(['all', 'BUY', 'SELL'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setTypeFilter(type)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${typeFilter === type
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    }`}
+                >
+                  {type === 'all' ? 'All' : type === 'BUY' ? 'Buys' : 'Sells'}
+                </button>
+              ))}
             </div>
 
-            <div className="flex items-end">
-              <Button variant="secondary" onClick={exportToCSV} disabled={transactions.length === 0}>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export CSV
-              </Button>
+            {/* Date Range */}
+            <div className="w-full sm:w-auto">
+              <DateRangeFilter value={dateRange || undefined} onChange={setDateRange} />
             </div>
           </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            >
+              <option value={25}>25 rows</option>
+              <option value={50}>50 rows</option>
+              <option value={100}>100 rows</option>
+            </select>
+
+            <Button
+              variant="secondary"
+              onClick={exportToCSV}
+              disabled={transactions.length === 0}
+              className="hidden sm:flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export
+            </Button>
+          </div>
         </div>
-      </Card>
+      </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
-        {/* ... loading/error/empty states ... */}
-
-        {!loading && !error && transactions.length > 0 && (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                  <tr>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      onClick={() => handleSort('transactionDate')}
-                    >
-                      <div className="flex items-center">
-                        Date <SortIcon field="transactionDate" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      onClick={() => handleSort('symbol')}
-                    >
-                      <div className="flex items-center">
-                        Symbol <SortIcon field="symbol" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      onClick={() => handleSort('transactionType')}
-                    >
-                      <div className="flex items-center">
-                        Type <SortIcon field="transactionType" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      onClick={() => handleSort('shares')}
-                    >
-                      <div className="flex items-center justify-end">
-                        Shares <SortIcon field="shares" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      onClick={() => handleSort('pricePerShare')}
-                    >
-                      <div className="flex items-center justify-end">
-                        Price <SortIcon field="pricePerShare" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      onClick={() => handleSort('totalAmount')}
-                    >
-                      <div className="flex items-center justify-end">
-                        Total <SortIcon field="totalAmount" />
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Holding
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider cursor-pointer group hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      onClick={() => handleSort('realizedGain')}
-                    >
-                      <div className="flex items-center justify-end">
-                        Realized Gain <SortIcon field="realizedGain" />
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Notes
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                  {transactions.map((tx) => (
-                    <tr key={tx._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
-                        {new Date(tx.transactionDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/symbol/${tx.symbol.toLowerCase()}`}
-                          className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-                        >
-                          {tx.symbol}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={tx.transactionType === 'BUY' ? 'success' : 'danger'}>
-                          {tx.transactionType}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right text-slate-900 dark:text-slate-100">
-                        {formatNumber(tx.shares)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right text-slate-900 dark:text-slate-100">
-                        {formatCurrency(tx.pricePerShare)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-slate-900 dark:text-slate-100">
-                        {formatCurrency(tx.totalAmount)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {tx.holdingPeriodDays !== undefined && (
-                          <Badge variant={tx.holdingPeriodDays >= 365 ? 'success' : 'secondary'}>
-                            {tx.holdingPeriodDays}d
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {tx.realizedGain !== undefined && (
-                          <div className="space-y-1">
-                            <p className={`text-sm font-medium ${tx.realizedGain >= 0
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-red-600 dark:text-red-400'
-                              }`}>
-                              {tx.realizedGain >= 0 ? '+' : ''}{formatCurrency(tx.realizedGain)}
-                            </p>
-                            {tx.cgtAmount !== undefined && tx.cgtAmount > 0 && (
-                              <p className="text-xs text-orange-600 dark:text-orange-400">
-                                CGT: {formatCurrency(tx.cgtAmount)}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 max-w-xs">
-                        {tx.notes && (
-                          <div>
-                            <p className={expandedNotes.has(tx._id) ? '' : 'truncate'}>
-                              {tx.notes}
-                            </p>
-                            {tx.notes.length > 50 && (
-                              <button
-                                onClick={() => toggleNoteExpansion(tx._id)}
-                                className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 mt-1"
-                              >
-                                {expandedNotes.has(tx._id) ? 'Show less' : 'Show more'}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleDelete(tx._id)}
-                          className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                          title="Delete transaction"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, total)} of {total} transactions
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="text-sm"
-                  >
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (page <= 3) {
-                        pageNum = i + 1;
-                      } else if (page >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = page - 2 + i;
-                      }
-
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={page === pageNum ? 'primary' : 'secondary'}
-                          onClick={() => setPage(pageNum)}
-                          className="text-sm w-10"
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
+      {!loading && !error && transactions.length > 0 ? (
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+                <TableHead onClick={() => handleSort('transactionDate')}>
+                  <div className="flex items-center gap-1">
+                    Date <SortIcon field="transactionDate" />
                   </div>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="text-sm"
-                  >
-                    Next
-                  </Button>
-                </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort('symbol')}>
+                  <div className="flex items-center gap-1">
+                    Symbol <SortIcon field="symbol" />
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort('transactionType')}>
+                  <div className="flex items-center gap-1">
+                    Type <SortIcon field="transactionType" />
+                  </div>
+                </TableHead>
+                <TableHead className="text-right" onClick={() => handleSort('shares')}>
+                  <div className="flex items-center justify-end gap-1">
+                    Shares <SortIcon field="shares" />
+                  </div>
+                </TableHead>
+                <TableHead className="text-right" onClick={() => handleSort('pricePerShare')}>
+                  <div className="flex items-center justify-end gap-1">
+                    Price <SortIcon field="pricePerShare" />
+                  </div>
+                </TableHead>
+                <TableHead className="text-right" onClick={() => handleSort('totalAmount')}>
+                  <div className="flex items-center justify-end gap-1">
+                    Total <SortIcon field="totalAmount" />
+                  </div>
+                </TableHead>
+                <TableHead className="text-center">Holding</TableHead>
+                <TableHead className="text-right" onClick={() => handleSort('realizedGain')}>
+                  <div className="flex items-center justify-end gap-1">
+                    Gain/Loss <SortIcon field="realizedGain" />
+                  </div>
+                </TableHead>
+                <TableHead>Notes</TableHead>
+                <TableHead className="text-center w-16">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((tx) => (
+                <TableRow key={tx._id}>
+                  <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                    {new Date(tx.transactionDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/symbol/${tx.symbol.toLowerCase()}`}
+                      className="font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
+                    >
+                      {tx.symbol}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={tx.transactionType === 'BUY' ? 'success' : 'danger'}
+                      className="uppercase text-[10px] tracking-wider px-2 py-0.5"
+                    >
+                      {tx.transactionType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-medium text-slate-700 dark:text-slate-300">
+                    {formatNumber(tx.shares)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatCurrency(tx.pricePerShare)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                    {formatCurrency(tx.totalAmount)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {tx.holdingPeriodDays !== undefined && (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${tx.holdingPeriodDays >= 365
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                        }`}>
+                        {tx.holdingPeriodDays}d
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {tx.realizedGain !== undefined && (
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className={`font-semibold tabular-nums ${tx.realizedGain >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                          }`}>
+                          {tx.realizedGain >= 0 ? '+' : ''}{formatCurrency(tx.realizedGain)}
+                        </span>
+                        {tx.cgtAmount !== undefined && tx.cgtAmount > 0 && (
+                          <span className="text-[10px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-1.5 py-0.5 rounded">
+                            CGT: {formatCurrency(tx.cgtAmount)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="max-w-xs">
+                    {tx.notes && (
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className={expandedNotes.has(tx._id) ? '' : 'truncate'}>
+                          {tx.notes}
+                        </p>
+                        {tx.notes.length > 50 && (
+                          <button
+                            onClick={() => toggleNoteExpansion(tx._id)}
+                            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 mt-0.5 font-medium"
+                          >
+                            {expandedNotes.has(tx._id) ? 'Show less' : 'Show more'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <button
+                      onClick={() => handleDelete(tx._id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all dark:text-slate-500 dark:hover:text-rose-400 dark:hover:bg-rose-900/20"
+                      title="Delete transaction"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-4">
+              <div className="text-sm text-slate-500 dark:text-slate-400">
+                Showing <span className="font-medium text-slate-900 dark:text-slate-100">{((page - 1) * pageSize) + 1}</span> to <span className="font-medium text-slate-900 dark:text-slate-100">{Math.min(page * pageSize, total)}</span> of <span className="font-medium text-slate-900 dark:text-slate-100">{total}</span> results
               </div>
-            )}
-          </>
-        )}
-      </Card>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="text-sm h-8 px-3"
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${page === pageNum
+                            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="text-sm h-8 px-3"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        !loading && !error && (
+          <div className="text-center py-20 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 backdrop-blur-sm">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-1">
+              No transactions found
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400">
+              Try adjusting your filters or upload new transactions.
+            </p>
+          </div>
+        )
+      )}
+
+      {loading && (
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800/50 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-center">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

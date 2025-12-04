@@ -232,10 +232,10 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
           {/* Table */}
           <div className="overflow-x-auto -mx-6 px-6">
             <table className={`table-professional table-sticky-header w-full min-w-[900px]`}>
-              <thead className="sticky top-0 z-10 bg-white dark:bg-slate-900 shadow-sm">
+              <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
                 <tr className="border-b border-slate-200 dark:border-slate-700">
-                  {/* Symbol - Always visible */}
-                  <th className="text-left py-3 px-4 w-28">
+                  {/* Symbol */}
+                  <th className="text-left py-4 px-4 w-28">
                     <button
                       onClick={() => handleSort('symbol')}
                       className="flex items-center gap-2 font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -244,75 +244,54 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                       <SortIcon field="symbol" />
                     </button>
                   </th>
-                  {/* Shares moved to main header */}
-                  <th className="text-right py-3 px-4">
+
+                  {/* Shares */}
+                  <th className="text-right py-4 px-4">
                     <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
                       Shares
                     </span>
                   </th>
-                  {/* Core columns */}
-                  <>
-                    <th className="text-right py-3 px-4">
-                      <button
-                        onClick={() => handleSort('currentPrice')}
-                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      >
-                        Current Price
-                        <SortIcon field="currentPrice" />
-                      </button>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                        Current Value
-                      </span>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                        Weight
-                      </span>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <button
-                        onClick={() => handleSort('avgBuy')}
-                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      >
-                        Avg Buy
-                        <SortIcon field="avgBuy" />
-                      </button>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                        Investment
-                      </span>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <button
-                        onClick={() => handleSort('gainLoss')}
-                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      >
-                        Gain/Loss
-                        <SortIcon field="gainLoss" />
-                      </button>
-                    </th>
-                    <th className="text-right py-3 px-4">
-                      <button
-                        onClick={() => handleSort('gainLossPercent')}
-                        className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      >
-                        Gain/Loss %
-                        <SortIcon field="gainLossPercent" />
-                      </button>
-                    </th>
 
-                  </>
+                  {/* Price (Grouped) */}
+                  <th className="text-right py-4 px-4">
+                    <button
+                      onClick={() => handleSort('currentPrice')}
+                      className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
+                      Price
+                      <SortIcon field="currentPrice" />
+                    </button>
+                  </th>
 
+                  {/* Value (Grouped) */}
+                  <th className="text-right py-4 px-4">
+                    <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                      Value
+                    </span>
+                  </th>
 
-                  {/* Actions - Always visible */}
+                  {/* Weight */}
+                  <th className="text-right py-4 px-4 w-32">
+                    <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                      Weight
+                    </span>
+                  </th>
+
+                  {/* Gain/Loss (Grouped) */}
+                  <th className="text-right py-4 px-4">
+                    <button
+                      onClick={() => handleSort('gainLoss')}
+                      className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
+                      Gain/Loss
+                      <SortIcon field="gainLoss" />
+                    </button>
+                  </th>
+
+                  {/* Actions */}
                   {(onEditStock || onDeleteStock) && (
-                    <th className="text-right py-3 px-4">
-                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                        Actions
-                      </span>
+                    <th className="text-right py-4 px-4 w-16">
+                      <span className="sr-only">Actions</span>
                     </th>
                   )}
                 </tr>
@@ -334,21 +313,21 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                   return (
                     <React.Fragment key={stock.symbol}>
                       <tr
-                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                        className="border-b border-slate-100 dark:border-slate-800 even:bg-slate-50/50 dark:even:bg-slate-800/30 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors"
                       >
-                        {/* Symbol - Always visible (narrower with truncation) */}
-                        <td className="py-3 px-4 w-28">
+                        {/* Symbol */}
+                        <td className="py-4 px-4 w-28">
                           <div className="flex items-center gap-2">
                             <Link
                               href={`/symbol/${stock.symbol}`}
-                              className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline truncate inline-block max-w-[5.5rem]"
+                              className="font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
                               title="View price history"
                             >
                               {stock.symbol}
                             </Link>
                             {stock.positionCount && stock.positionCount > 1 && (
                               <span
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
                                 title={`${stock.positionCount} positions aggregated`}
                               >
                                 {stock.positionCount}
@@ -362,11 +341,11 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                                   className="inline-flex items-center"
                                 >
                                   {meta.isNonCompliant ? (
-                                    <svg className="w-4 h-4 text-rose-500 dark:text-rose-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                                     </svg>
                                   ) : (
-                                    <svg className="w-4 h-4 text-emerald-500 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
                                   )}
@@ -375,56 +354,81 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                             })()}
                           </div>
                         </td>
-                        {/* Shares cell in main row */}
-                        <td className="py-3 px-4 text-right tabular-nums">
+
+                        {/* Shares */}
+                        <td className="py-4 px-4 text-right tabular-nums font-medium text-slate-700 dark:text-slate-300">
                           {stock.shares.toLocaleString('en-PK')}
                         </td>
 
-                        {/* Core cells */}
-                        <>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            ₨{stock.currentPrice.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            ₨{currentValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 tabular-nums text-sm">
-                            {totalPortfolioValue > 0 ? ((currentValue / totalPortfolioValue) * 100).toFixed(2) : '0.00'}%
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            ₨{stock.avgBuy.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                            ₨{investment.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
-                            {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className={`py-3 px-4 text-right font-semibold tabular-nums ${textColor} ${bgColor}`}>
-                            {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
-                          </td>
+                        {/* Price (Grouped) */}
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-medium text-slate-900 dark:text-slate-100 tabular-nums">
+                              ₨{stock.currentPrice.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                              Avg: ₨{stock.avgBuy.toFixed(2)}
+                            </span>
+                          </div>
+                        </td>
 
-                        </>
+                        {/* Value (Grouped) */}
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-medium text-slate-900 dark:text-slate-100 tabular-nums">
+                              ₨{currentValue.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                              Inv: ₨{investment.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </span>
+                          </div>
+                        </td>
 
-                        {/* Details moved to expandable row below */}
-
-                        {/* Actions - Always visible */}
-                        {(onEditStock || onDeleteStock) && (
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openManageModal(stock);
-                                }}
-                                className="p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition dark:text-slate-300 dark:hover:bg-slate-800"
-                                title="Manage"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.607 2.296.07 2.572-1.065z" />
-                                </svg>
-                              </button>
+                        {/* Weight */}
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-indigo-500 rounded-full"
+                                style={{ width: `${totalPortfolioValue > 0 ? (currentValue / totalPortfolioValue) * 100 : 0}%` }}
+                              />
                             </div>
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 tabular-nums w-10">
+                              {totalPortfolioValue > 0 ? ((currentValue / totalPortfolioValue) * 100).toFixed(1) : '0.0'}%
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Gain/Loss (Grouped) */}
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`font-medium tabular-nums ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </span>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium tabular-nums ${isPositive
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                              }`}>
+                              {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        {(onEditStock || onDeleteStock) && (
+                          <td className="py-4 px-4 text-right">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openManageModal(stock);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800"
+                              title="Manage"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                              </svg>
+                            </button>
                           </td>
                         )}
                       </tr>
