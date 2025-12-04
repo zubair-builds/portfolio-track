@@ -105,7 +105,7 @@ const sampleData = [
         "pendingOut": "0"
     },
     {
-        "date": "31/03/2022",
+        "date": "30/03/2022",
         "securitySymbol": "AVN",
         "securityName": "AVANCEON LIMITED",
         "transVolume": "25",
@@ -118,7 +118,7 @@ const sampleData = [
         "pendingOut": "0"
     },
     {
-        "date": "31/03/2022",
+        "date": "30/03/2022",
         "securitySymbol": "AVN",
         "securityName": "AVANCEON LIMITED",
         "transVolume": "25",

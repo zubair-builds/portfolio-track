@@ -4,24 +4,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
+import { getUserFromRequest } from '@/lib/jwt';
 import { getTransactionStats } from '@/lib/transactionModel';
 
 export async function GET(req: NextRequest) {
   try {
     // Verify authentication
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
+    const user = getUserFromRequest(req);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-
-    const userId = decoded.user.email;
+    const userId = user.email;
     const stats = await getTransactionStats(userId);
 
     return NextResponse.json({

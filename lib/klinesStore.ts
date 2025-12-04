@@ -255,3 +255,32 @@ export async function getClosingPrices(
   }));
 }
 
+
+
+/**
+ * Get K-Line for a specific date (1d timeframe)
+ * Used for looking up historical prices
+ */
+export async function getKlineForDate(
+  symbol: string,
+  date: Date
+): Promise<KlineDocument | null> {
+  const collection = await getKlinesCollection();
+
+  // Normalize date to start of day (UTC) to match how klines are stored
+  // Assuming klines are stored with 00:00:00 timestamp for daily candles
+  const startOfDay = new Date(date);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(date);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+
+  return collection.findOne({
+    symbol: symbol.toUpperCase(),
+    timeframe: '1d',
+    timestamp: {
+      $gte: startOfDay,
+      $lte: endOfDay
+    }
+  });
+}
