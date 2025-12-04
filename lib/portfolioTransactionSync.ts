@@ -145,6 +145,7 @@ export async function syncPortfolioWithTransactions(
           symbol: holding.symbol,
           shares: txData.currentShares,
           avgBuy: txData.averageCost,
+          purchaseDate: txData.firstBuyDate,
         });
 
         result.holdingsUpdated++;
@@ -216,6 +217,7 @@ export async function reconcileDiscrepancies(
           symbol,
           shares: txData.currentShares,
           avgBuy: txData.averageCost,
+          purchaseDate: txData.firstBuyDate,
         });
         resolved++;
       }
