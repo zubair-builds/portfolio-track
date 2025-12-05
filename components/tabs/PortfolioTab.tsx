@@ -1,11 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
 import { SectionTitle } from '../ui/SectionTitle';
-import EnhancedPortfolioSummary from '../EnhancedPortfolioSummary';
+// import EnhancedPortfolioSummary from '../EnhancedPortfolioSummary';
 import PortfolioTable from '../PortfolioTable';
 
-import { calculatePortfolioStats, Stock } from '../../lib/portfolioData';
+import { Stock } from '../../lib/portfolioData';
 
 interface PortfolioTabProps {
   stocks: Stock[];
@@ -35,18 +34,18 @@ export default function PortfolioTab({
   onDeleteStock,
   onAddStock,
   onRefresh,
-  dividendStats,
+  // dividendStats,
 }: PortfolioTabProps) {
-  const portfolioStats = useMemo(() => {
-    const dividendData = dividendStats ? {
-      netDividend: dividendStats.totalNet,
-      grossDividend: dividendStats.totalGross,
-      taxDeducted: dividendStats.totalTax,
-      zakatDeducted: dividendStats.totalZakat,
-    } : undefined;
-    
-    return calculatePortfolioStats(stocks, 0, dividendData);
-  }, [stocks, dividendStats]);
+  // const portfolioStats = useMemo(() => {
+  //   const dividendData = dividendStats ? {
+  //     netDividend: dividendStats.totalNet,
+  //     grossDividend: dividendStats.totalGross,
+  //     taxDeducted: dividendStats.totalTax,
+  //     zakatDeducted: dividendStats.totalZakat,
+  //   } : undefined;
+
+  //   return calculatePortfolioStats(stocks, 0, dividendData);
+  // }, [stocks, dividendStats]);
 
   if (isLoading && stocks.length === 0) {
     return (
@@ -68,7 +67,7 @@ export default function PortfolioTab({
   return (
     <div className="space-y-8">
       {/* Portfolio Summary */}
-      <section>
+      {/* <section>
         <SectionTitle
           title="Portfolio Overview"
           description="Your investment summary and key metrics"
@@ -79,7 +78,7 @@ export default function PortfolioTab({
           }
         />
         <EnhancedPortfolioSummary stats={portfolioStats} />
-      </section>
+      </section> */}
 
 
       {/* Holdings Table */}
