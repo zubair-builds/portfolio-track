@@ -31,7 +31,7 @@ export default function KSE100Widget({
 }: KSE100WidgetProps) {
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[138px] flex flex-col justify-between">
+      <div className="h-full bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 flex flex-col justify-between">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1.5">
@@ -58,7 +58,7 @@ export default function KSE100Widget({
 
   if (!index) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 min-h-[100px] flex items-center justify-center">
+      <div className="h-full bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 flex items-center justify-center">
         <p className="text-sm text-slate-600 dark:text-slate-400">No index data available</p>
       </div>
     );

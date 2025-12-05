@@ -389,8 +389,6 @@ export default function Page() {
                   stats={portfolioStats}
                   totalStocks={portfolioStocks.length}
                   isLoading={portfolioLoading && portfolioStocks.length === 0}
-                  benchmarkReturn={kse100 ? kse100.changePercent * 100 : undefined}
-                  benchmarkName="KSE-100"
                   transactionStats={transactionStats}
                 />
               </div>

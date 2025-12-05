@@ -175,7 +175,6 @@ export default function DividendsPage() {
               </p>
             </div>
             <Button
-              variant="primary"
               onClick={() => setShowUploadModal(true)}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

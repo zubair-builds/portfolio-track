@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ProfessionalHeader from '../../components/ProfessionalHeader';
 import CompaniesTable, { Company, FilterOptions } from '../../components/CompaniesTable';
+import CompaniesStatsCards from '../../components/CompaniesStatsCards';
 import { useAuth } from '../../components/AuthProvider';
 
 const ITEMS_PER_PAGE = 50;
@@ -152,6 +153,9 @@ export default function CompaniesPage() {
             Browse all listed companies on PSX
           </p>
         </div>
+
+        <CompaniesStatsCards />
+
         <CompaniesTable
           companies={companies}
           loading={loading}

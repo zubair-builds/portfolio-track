@@ -230,7 +230,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
           {/* Single table view (no tabs) */}
 
           {/* Table */}
-          <div className="overflow-x-auto -mx-6 px-6">
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px] -mx-6 px-6 custom-scrollbar">
             <table className={`table-professional table-sticky-header w-full min-w-[900px]`}>
               <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
                 <tr className="border-b border-slate-200 dark:border-slate-700">
@@ -406,8 +406,8 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                               {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </span>
                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium tabular-nums ${isPositive
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                              : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
                               }`}>
                               {isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%
                             </span>

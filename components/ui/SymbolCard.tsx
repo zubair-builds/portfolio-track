@@ -111,14 +111,17 @@ export default function SymbolCard({
   return (
     <div
       className={`
-        rounded-lg border border-slate-200 bg-white p-4 shadow-sm
-        transition-all duration-200
-        dark:border-slate-700 dark:bg-slate-900/60
-        ${onClick ? 'cursor-pointer hover:shadow-lg hover:scale-[1.01]' : 'hover:shadow-md'}
+        relative overflow-hidden rounded-xl p-5 transition-all duration-300
+        bg-gradient-to-br from-white/80 to-white/40 dark:from-slate-800/80 dark:to-slate-900/40
+        backdrop-blur-md border border-white/20 dark:border-slate-700/50
+        ${onClick ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : 'hover:shadow-md'}
       `}
       onClick={onClick}
     >
-      <div className="space-y-2">
+      {/* Decorative background circle */}
+      <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 space-y-3">
         {/* Row 1: Symbol | Current Price */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -131,12 +134,12 @@ export default function SymbolCard({
               {symbol}
             </Link>
             {isETF && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 ETF
               </span>
             )}
             {isGEM && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                 GEM
               </span>
             )}
@@ -167,7 +170,7 @@ export default function SymbolCard({
             )}
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {formatPrice(currentPrice)}
             </p>
           </div>
@@ -188,7 +191,7 @@ export default function SymbolCard({
         {/* Row 3: Sector Badge | LDCP */}
         <div className="flex items-center justify-between gap-3">
           {sectorName && (
-            <span className="inline-block px-2 py-1 rounded text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
+            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 truncate max-w-[200px]">
               {sectorName}
             </span>
           )}

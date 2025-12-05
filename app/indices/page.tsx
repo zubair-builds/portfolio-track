@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ProfessionalHeader from '@/components/ProfessionalHeader';
 import IndicesTable from '@/components/IndicesTable';
+import IndicesStatsCards from '@/components/IndicesStatsCards';
 import { useAuth } from '@/components/AuthProvider';
 import { sortIndicesByPriority } from '@/lib/constants';
 
@@ -84,6 +85,11 @@ export default function IndicesPage() {
             Browse all PSX indices
           </p>
         </div>
+
+        {!loading && indices.length > 0 && (
+          <IndicesStatsCards indices={indices} />
+        )}
+
         <IndicesTable
           indices={indices}
           loading={loading}

@@ -58,9 +58,20 @@ export async function getUserFromCookies(): Promise<CustomJwtPayload['user'] | n
 export function getUserFromRequest(request: NextRequest): CustomJwtPayload['user'] | null {
   const token = request.cookies.get(TOKEN_NAME);
 
-  if (!token) return null;
+  if (token) {
+    const decoded = verifyToken(token.value);
+    if (decoded) return decoded.user;
+  }
 
-  const decoded = verifyToken(token.value);
-  return decoded ? decoded.user : null;
+  // Fallback to X-User-Id header (for API calls from client components)
+  const xUserId = request.headers.get('x-user-id');
+  if (xUserId) {
+    return {
+      email: xUserId,
+      name: 'User', // Placeholder since we rely on email for DB lookups
+    };
+  }
+
+  return null;
 }
 
