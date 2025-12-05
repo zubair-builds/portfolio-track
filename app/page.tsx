@@ -44,6 +44,30 @@ export default function Page() {
   }, [portfolioStocks, watchlist, kse100]);
   const [refreshingKse100, setRefreshingKse100] = useState(false);
 
+  // Fetch transaction stats for Hero component
+  const [transactionStats, setTransactionStats] = useState<{ totalRealizedGains: number; totalCGTPaid: number } | null>(null);
+
+  useEffect(() => {
+    async function fetchTransactionStats() {
+      if (!user?.email) return;
+      try {
+        const response = await fetch('/api/transactions/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setTransactionStats({
+            totalRealizedGains: data.totalRealizedGains || 0,
+            totalCGTPaid: data.totalCGTPaid || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch transaction stats:', error);
+      }
+    }
+    fetchTransactionStats();
+  }, [user?.email]);
+
+
+
   // Track overall loading state
 
   // Tab state
@@ -334,6 +358,8 @@ export default function Page() {
     );
   }
 
+
+
   return (
     <>
       {/* Main Content */}
@@ -365,6 +391,7 @@ export default function Page() {
                   isLoading={portfolioLoading && portfolioStocks.length === 0}
                   benchmarkReturn={kse100 ? kse100.changePercent * 100 : undefined}
                   benchmarkName="KSE-100"
+                  transactionStats={transactionStats}
                 />
               </div>
             )}

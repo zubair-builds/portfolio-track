@@ -13,6 +13,10 @@ interface PortfolioHeroProps {
   benchmarkName?: string;
   sparklineData?: number[];
   lastUpdated?: Date;
+  transactionStats?: {
+    totalRealizedGains: number;
+    totalCGTPaid: number;
+  } | null;
 }
 
 export default function PortfolioHero({
@@ -22,7 +26,8 @@ export default function PortfolioHero({
   benchmarkReturn,
   benchmarkName = 'KSE-100',
   sparklineData,
-  lastUpdated
+  lastUpdated,
+  transactionStats
 }: PortfolioHeroProps) {
   if (isLoading) {
     return (
@@ -65,6 +70,21 @@ export default function PortfolioHero({
 
   const isPositive = stats.totalGainLoss >= 0;
   const gainLossColor = isPositive
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : 'text-rose-600 dark:text-rose-400';
+
+  // Calculate Realized and Total Gains
+  const realizedGains = transactionStats?.totalRealizedGains || 0;
+  const totalGains = stats.totalGainLoss + realizedGains;
+
+  const isRealizedPositive = realizedGains >= 0;
+  const isTotalPositive = totalGains >= 0;
+
+  const realizedColor = isRealizedPositive
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : 'text-rose-600 dark:text-rose-400';
+
+  const totalColor = isTotalPositive
     ? 'text-emerald-600 dark:text-emerald-400'
     : 'text-rose-600 dark:text-rose-400';
 
@@ -145,7 +165,7 @@ export default function PortfolioHero({
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Investment */}
           <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
@@ -163,53 +183,62 @@ export default function PortfolioHero({
             </p>
           </div>
 
-          {/* ROI */}
-          <div className={`bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border ${isPositive
+          {/* Realized Gains 
+          <div className={`bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border ${isRealizedPositive
             ? 'border-emerald-200/50 dark:border-emerald-800/30'
             : 'border-rose-200/50 dark:border-rose-800/30'
             } hover:shadow-md transition-shadow`}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                ROI
+                Realized Gains
               </p>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPositive
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRealizedPositive
                 ? 'bg-emerald-100 dark:bg-emerald-900/30'
                 : 'bg-rose-100 dark:bg-rose-900/30'
                 }`}>
-                {isPositive ? (
-                  <svg className={`w-4 h-4 ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                <svg className={`w-4 h-4 ${isRealizedPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <p className={`text-xl sm:text-2xl font-bold tabular-nums ${realizedColor}`}>
+              {isRealizedPositive ? '+' : ''}₨{realizedGains.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            {transactionStats && transactionStats.totalCGTPaid > 0 && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                CGT: ₨{transactionStats.totalCGTPaid.toLocaleString('en-PK', { maximumFractionDigits: 0 })}
+              </p>
+            )}
+          </div>
+*/}
+          {/* Total Gains */}
+          <div className={`bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border ${isTotalPositive
+            ? 'border-emerald-200/50 dark:border-emerald-800/30'
+            : 'border-rose-200/50 dark:border-rose-800/30'
+            } hover:shadow-md transition-shadow`}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Total Gains
+              </p>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isTotalPositive
+                ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                : 'bg-rose-100 dark:bg-rose-900/30'
+                }`}>
+                {isTotalPositive ? (
+                  <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                   </svg>
                 ) : (
                   <svg className="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 7l-9.2 9.2M7 7v10h10" />
                   </svg>
                 )}
               </div>
             </div>
-            <p className={`text-xl sm:text-2xl font-bold tabular-nums ${gainLossColor}`}> 
-              {isPositive ? '+' : ''}{stats.totalGainLossPercent.toFixed(2)}%
+            <p className={`text-xl sm:text-2xl font-bold tabular-nums ${totalColor}`}>
+              {isTotalPositive ? '+' : ''}₨{totalGains.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
-
-          {/* Dividend Income */}
-          {typeof stats.totalDividendIncome === 'number' && (
-            <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-yellow-200/50 dark:border-yellow-800/30 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 uppercase tracking-wide">
-                  Dividends
-                </p>
-                <div className="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-xl sm:text-2xl font-bold text-yellow-700 dark:text-yellow-300 tabular-nums">
-                ₨{stats.totalDividendIncome.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-            </div>
-          )}
 
           {/* Number of Positions */}
           <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-md transition-shadow">
@@ -228,40 +257,21 @@ export default function PortfolioHero({
             </p>
           </div>
 
-          {/* Top Performer */}
-          {stats.topGainer ? (
-            <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-emerald-200/50 dark:border-emerald-800/30 hover:shadow-md transition-shadow">
+          {/* Dividend Income */}
+          {typeof stats.totalDividendIncome === 'number' && (
+            <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-yellow-200/50 dark:border-yellow-800/30 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                  Top Performer
+                <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 uppercase tracking-wide">
+                  Dividends
                 </p>
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                <div className="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                 </div>
               </div>
-              <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 mb-0.5">
-                {stats.topGainer.symbol}
-              </p>
-              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                +{stats.topGainer.gainPercent.toFixed(2)}%
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-4 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                  Top Performer
-                </p>
-                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-sm text-slate-400 dark:text-slate-500">
-                No data
+              <p className="text-xl sm:text-2xl font-bold text-yellow-700 dark:text-yellow-300 tabular-nums">
+                ₨{stats.totalDividendIncome.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
           )}
