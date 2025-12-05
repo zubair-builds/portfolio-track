@@ -1,27 +1,57 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-export interface DividendFinancialStats {
-    totalNetDividend: number;
-    totalGrossDividend: number;
-    totalTaxDeducted: number;
-    totalZakatDeducted: number;
-    count: number;
+interface CompanyStats {
+    totalCompanies: number;
+    totalMarketCap: number;
+    totalVolume: number;
+    gainers: number;
+    losers: number;
+    unchanged: number;
 }
 
-interface DividendStatsCardsProps {
-    stats: DividendFinancialStats;
-}
+export default function CompaniesStatsCards() {
+    const [stats, setStats] = useState<CompanyStats | null>(null);
+    const [loading, setLoading] = useState(true);
 
-export default function DividendStatsCards({ stats }: DividendStatsCardsProps) {
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch('/api/companies/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error('Error fetching company stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    const formatNumber = (num: number) => {
+        if (num >= 1_000_000_000_000) return `${(num / 1_000_000_000_000).toFixed(2)}T`;
+        if (num >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(2)}B`;
+        if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
+        if (num >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
+        return num.toLocaleString();
+    };
+
+    if (loading || !stats) {
+        return null; // Or return a skeleton loader if preferred
+    }
+
     const cards = [
         {
-            title: 'Total Payouts',
-            value: stats.count.toLocaleString(),
+            title: 'Total Companies',
+            value: stats.totalCompanies.toLocaleString(),
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
             ),
             color: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100',
@@ -29,8 +59,8 @@ export default function DividendStatsCards({ stats }: DividendStatsCardsProps) {
             borderColor: 'border-indigo-200 dark:border-indigo-800',
         },
         {
-            title: 'Gross Dividend',
-            value: `₨${stats.totalGrossDividend.toLocaleString()}`,
+            title: 'Total Market Cap',
+            value: `₨${formatNumber(stats.totalMarketCap)}`,
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -41,23 +71,11 @@ export default function DividendStatsCards({ stats }: DividendStatsCardsProps) {
             borderColor: 'border-blue-200 dark:border-blue-800',
         },
         {
-            title: 'Tax Paid',
-            value: `₨${stats.totalTaxDeducted.toLocaleString()}`,
+            title: 'Market Breadth',
+            value: `${stats.gainers} Up / ${stats.losers} Down`,
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
-                </svg>
-            ),
-            color: 'bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100',
-            iconBg: 'bg-white/60 dark:bg-rose-800/50',
-            borderColor: 'border-rose-200 dark:border-rose-800',
-        },
-        {
-            title: 'Zakat Deducted',
-            value: `₨${stats.totalZakatDeducted.toLocaleString()}`,
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                 </svg>
             ),
             color: 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100',
@@ -65,11 +83,11 @@ export default function DividendStatsCards({ stats }: DividendStatsCardsProps) {
             borderColor: 'border-amber-200 dark:border-amber-800',
         },
         {
-            title: 'Net Dividend',
-            value: `₨${stats.totalNetDividend.toLocaleString()}`,
+            title: 'Total Volume',
+            value: formatNumber(stats.totalVolume),
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
             ),
             color: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
@@ -79,7 +97,7 @@ export default function DividendStatsCards({ stats }: DividendStatsCardsProps) {
     ];
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {cards.map((card, index) => (
                 <div
                     key={index}

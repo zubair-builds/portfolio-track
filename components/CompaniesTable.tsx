@@ -240,7 +240,7 @@ export default function CompaniesTable({
 
       {/* Companies Table */}
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-4">
           {loading ? (
             <div className="p-12 text-center">
               <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4 dark:border-indigo-900 dark:border-t-indigo-400" />
@@ -259,23 +259,23 @@ export default function CompaniesTable({
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b-2 border-slate-200 dark:border-slate-700">
+            <div className="overflow-x-auto -mx-4 px-4">
+              <table className="table-professional table-sticky-header w-full">
+                <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
                   <tr>
-                    <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    <th className="py-3 px-3 text-left">
                       Symbol
                     </th>
-                    <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    <th className="py-3 px-3 text-left">
                       Company Name
                     </th>
                     {!simplified && (
-                      <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      <th className="py-3 px-3 text-left">
                         Sector
                       </th>
                     )}
-                    <th 
-                      className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                    <th
+                      className={`py-3 px-3 text-right ${onSort ? 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none' : ''}`}
                       onClick={onSort ? () => handleSort('price') : undefined}
                     >
                       <div className="flex items-center justify-end gap-1.5">
@@ -283,8 +283,8 @@ export default function CompaniesTable({
                         {onSort && <SortIcon field="price" />}
                       </div>
                     </th>
-                    <th 
-                      className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-36 ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                    <th
+                      className={`py-3 px-3 text-right w-36 ${onSort ? 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none' : ''}`}
                       onClick={onSort ? () => handleSort('changePercent') : undefined}
                     >
                       <div className="flex items-center justify-end gap-1.5">
@@ -294,11 +294,11 @@ export default function CompaniesTable({
                     </th>
                     {simplified && (
                       <>
-                        <th className="py-4 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <th className="py-3 px-3 text-center">
                           Trend
                         </th>
                         {onAddToWatchlist && (
-                          <th className="py-4 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          <th className="py-3 px-3 text-center">
                             Actions
                           </th>
                         )}
@@ -306,14 +306,14 @@ export default function CompaniesTable({
                     )}
                     {!simplified && (
                       <>
-                        <th className="py-4 px-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <th className="py-3 px-3 text-left">
                           Indices
                         </th>
-                        <th className="py-4 px-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <th className="py-3 px-3 text-center">
                           Shariah
                         </th>
-                        <th 
-                          className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                        <th
+                          className={`py-3 px-3 text-right ${onSort ? 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none' : ''}`}
                           onClick={onSort ? () => handleSort('marketCap') : undefined}
                         >
                           <div className="flex items-center justify-end gap-1.5">
@@ -321,8 +321,8 @@ export default function CompaniesTable({
                             {onSort && <SortIcon field="marketCap" />}
                           </div>
                         </th>
-                        <th 
-                          className={`py-4 px-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${onSort ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors select-none' : ''}`}
+                        <th
+                          className={`py-3 px-3 text-right ${onSort ? 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none' : ''}`}
                           onClick={onSort ? () => handleSort('peRatio') : undefined}
                         >
                           <div className="flex items-center justify-end gap-1.5">
@@ -334,7 +334,7 @@ export default function CompaniesTable({
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+                <tbody>
                   {companies.map((company) => {
                     const indices = getSortedIndices(company.listedIn);
                     const priceChangeColor = (company.priceChangePercent || 0) >= 0
@@ -344,9 +344,9 @@ export default function CompaniesTable({
                     return (
                       <tr
                         key={company.symbol}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                       >
-                        <td className="py-4 px-4">
+                        <td className="py-3 px-3">
                           <Link
                             href={`/symbol/${company.symbol}`}
                             className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline transition-colors"
@@ -354,24 +354,24 @@ export default function CompaniesTable({
                             {company.symbol}
                           </Link>
                         </td>
-                        <td className="py-4 px-4 text-slate-900 dark:text-slate-100">
+                        <td className="py-3 px-3">
                           <span className="font-medium">{company.name}</span>
                         </td>
                         {!simplified && (
-                          <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">
+                          <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400">
                             {company.sectorName}
                           </td>
                         )}
-                        <td className="py-4 px-4 text-right">
+                        <td className="py-3 px-3 text-right">
                           <span className="font-semibold text-slate-900 dark:text-slate-100">
                             {company.currentPrice ? `₨${formatNumber(company.currentPrice)}` : <span className="text-slate-400">N/A</span>}
                           </span>
                         </td>
-                        <td className={`py-4 px-4 text-right font-semibold font-mono w-36 ${priceChangeColor}`}>
+                        <td className={`py-3 px-3 text-right font-semibold font-mono w-36 ${priceChangeColor}`}>
                           {formatPercent(company.priceChangePercent)}
                         </td>
                         {simplified && (
-                          <td className="py-4 px-4 text-center">
+                          <td className="py-3 px-3 text-center">
                             {company.priceHistory && company.priceHistory.length > 0 ? (
                               <MiniSparkline
                                 data={company.priceHistory}
@@ -385,7 +385,7 @@ export default function CompaniesTable({
                         )}
                         {!simplified && (
                           <>
-                            <td className="py-4 px-4">
+                            <td className="py-3 px-3">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {indices.slice(0, 3).map((index) => (
                                   <Badge key={index} variant="neutral" className="text-xs font-medium">
@@ -399,7 +399,7 @@ export default function CompaniesTable({
                                 )}
                               </div>
                             </td>
-                            <td className="py-4 px-4 text-center">
+                            <td className="py-3 px-3 text-center">
                               {company.isNonCompliant !== undefined && (
                                 <span
                                   title={company.isNonCompliant ? 'Non-Shariah Compliant' : 'Shariah Compliant'}
@@ -417,22 +417,22 @@ export default function CompaniesTable({
                                 </span>
                               )}
                             </td>
-                            <td className="py-4 px-4 text-right">
+                            <td className="py-3 px-3 text-right">
                               <span className="font-medium text-slate-700 dark:text-slate-300">
                                 {company.marketCapString || <span className="text-slate-400">N/A</span>}
                               </span>
                             </td>
-                            <td className="py-4 px-4 text-right">
+                            <td className="py-3 px-3 text-right">
                               <span className="font-medium text-slate-700 dark:text-slate-300">
-                                {company.peRatio !== null && company.peRatio !== undefined 
-                                  ? company.peRatio.toFixed(2) 
+                                {company.peRatio !== null && company.peRatio !== undefined
+                                  ? company.peRatio.toFixed(2)
                                   : <span className="text-slate-400">N/A</span>}
                               </span>
                             </td>
                           </>
                         )}
                         {simplified && onAddToWatchlist && (
-                          <td className="py-4 px-4">
+                          <td className="py-3 px-3">
                             <div className="flex items-center justify-center gap-2">
                               <Link
                                 href={`/symbol/${company.symbol}`}
@@ -446,11 +446,10 @@ export default function CompaniesTable({
                               </Link>
                               <button
                                 onClick={() => onAddToWatchlist(company.symbol)}
-                                className={`p-1.5 transition ${
-                                  watchlistSymbols?.has(company.symbol)
-                                    ? 'text-rose-600 dark:text-rose-400'
-                                    : 'text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400'
-                                }`}
+                                className={`p-1.5 transition ${watchlistSymbols?.has(company.symbol)
+                                  ? 'text-rose-600 dark:text-rose-400'
+                                  : 'text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400'
+                                  }`}
                                 title={watchlistSymbols?.has(company.symbol) ? 'Remove from watchlist' : 'Add to watchlist'}
                               >
                                 {watchlistSymbols?.has(company.symbol) ? (
@@ -477,57 +476,58 @@ export default function CompaniesTable({
       </Card>
 
       {/* Pagination */}
-      {showPagination && !loading && totalPages > 1 && onPageChange && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <span className="text-sm text-slate-600 dark:text-slate-400">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="secondary"
-              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-          <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => onPageChange(pageNum)}
-                  className={`px-3 py-1 text-sm rounded-lg transition ${
-                    currentPage === pageNum
+      {
+        showPagination && !loading && totalPages > 1 && onPageChange && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => onPageChange(pageNum)}
+                    className={`px-3 py-1 text-sm rounded-lg transition ${currentPage === pageNum
                       ? 'bg-indigo-600 text-white'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+                      }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 

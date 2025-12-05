@@ -51,7 +51,7 @@ export default function IndicesTable({ indices, loading }: IndicesTableProps) {
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           <div className="space-y-4">
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
@@ -75,35 +75,35 @@ export default function IndicesTable({ indices, loading }: IndicesTableProps) {
 
   return (
     <Card>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-100 dark:bg-slate-800/50">
+      <CardContent className="p-4">
+        <div className="overflow-x-auto -mx-4 px-4">
+          <table className="table-professional table-sticky-header w-full">
+            <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
               <tr>
-                <th className="py-4 px-6 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <th className="py-3 px-3 text-left">
                   Index
                 </th>
-                <th className="py-4 px-6 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <th className="py-3 px-3 text-right">
                   Price
                 </th>
-                <th className="py-4 px-6 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <th className="py-3 px-3 text-right">
                   Change
                 </th>
-                <th className="py-4 px-6 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <th className="py-3 px-3 text-right">
                   Volume
                 </th>
-                <th className="py-4 px-6 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <th className="py-3 px-3 text-right">
                   Trades
                 </th>
-                <th className="py-4 px-6 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <th className="py-3 px-3 text-center">
                   Constituents
                 </th>
-                <th className="py-4 px-6 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Status
+                <th className="py-3 px-3 text-right">
+                  Value
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody>
               {indices.map((index) => {
                 const isPositive = (index.latestPrice?.change ?? 0) >= 0;
                 const changePercent = index.latestPrice?.changePercent ?? 0;
@@ -111,10 +111,10 @@ export default function IndicesTable({ indices, loading }: IndicesTableProps) {
                 return (
                   <tr
                     key={index.symbol}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
-                    <td className="py-4 px-6">
-                      <Link 
+                    <td className="py-3 px-3">
+                      <Link
                         href={`/indices/${index.symbol}`}
                         className="block"
                       >
@@ -126,10 +126,10 @@ export default function IndicesTable({ indices, loading }: IndicesTableProps) {
                         </div>
                       </Link>
                     </td>
-                    <td className="py-4 px-6 text-right font-medium text-slate-900 dark:text-slate-100">
+                    <td className="py-3 px-3 text-right font-medium text-slate-900 dark:text-slate-100">
                       {formatNumber(index.latestPrice?.price)}
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-3 px-3 text-right">
                       <div className={`font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                         {isPositive ? '+' : ''}{formatNumber(index.latestPrice?.change)}
                       </div>
@@ -137,23 +137,19 @@ export default function IndicesTable({ indices, loading }: IndicesTableProps) {
                         {isPositive ? '+' : ''}{formatNumber(changePercent)}%
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-right text-slate-700 dark:text-slate-300">
+                    <td className="py-3 px-3 text-right text-slate-700 dark:text-slate-300">
                       {formatVolume(index.latestPrice?.volume)}
                     </td>
-                    <td className="py-4 px-6 text-right text-slate-700 dark:text-slate-300">
+                    <td className="py-3 px-3 text-right text-slate-700 dark:text-slate-300">
                       {formatNumber(index.latestPrice?.trades, 0)}
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-3 px-3 text-center">
                       <Badge variant="secondary">
                         {index.symbolCount || 0} stocks
                       </Badge>
                     </td>
-                    <td className="py-4 px-6 text-center">
-                      <Badge
-                        variant={index.latestPrice?.marketState === 'OPN' ? 'live' : 'secondary'}
-                      >
-                        {index.latestPrice?.marketState || 'N/A'}
-                      </Badge>
+                    <td className="py-3 px-3 text-right text-slate-700 dark:text-slate-300">
+                      {formatVolume(index.latestPrice?.value)}
                     </td>
                   </tr>
                 );
@@ -162,6 +158,6 @@ export default function IndicesTable({ indices, loading }: IndicesTableProps) {
           </table>
         </div>
       </CardContent>
-    </Card>
+    </Card >
   );
 }

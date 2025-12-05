@@ -113,7 +113,7 @@ export default function DividendBreakdownTable({
 
     return (
         <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                         Dividend Breakdown
@@ -136,12 +136,12 @@ export default function DividendBreakdownTable({
                     </div>
                 </div>
 
-                <div className="overflow-x-auto -mx-6 px-6">
+                <div className="overflow-x-auto -mx-4 px-4">
                     <table className="table-professional table-sticky-header w-full min-w-[900px]">
                         <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
                             <tr className="border-b border-slate-200 dark:border-slate-700">
-                                <th className="text-left py-4 px-4 w-12"></th>
-                                <th className="text-left py-4 px-4">
+                                <th className="text-left py-3 px-3 w-12"></th>
+                                <th className="text-left py-3 px-3">
                                     <button
                                         onClick={() => handleSort('symbol')}
                                         className="flex items-center gap-2 font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -150,7 +150,7 @@ export default function DividendBreakdownTable({
                                         <SortIcon field="symbol" />
                                     </button>
                                 </th>
-                                <th className="text-center py-4 px-4">
+                                <th className="text-center py-3 px-3">
                                     <button
                                         onClick={() => handleSort('count')}
                                         className="flex items-center justify-center gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -159,7 +159,7 @@ export default function DividendBreakdownTable({
                                         <SortIcon field="count" />
                                     </button>
                                 </th>
-                                <th className="text-right py-4 px-4">
+                                <th className="text-right py-3 px-3">
                                     <button
                                         onClick={() => handleSort('totalGrossDividend')}
                                         className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -168,7 +168,7 @@ export default function DividendBreakdownTable({
                                         <SortIcon field="totalGrossDividend" />
                                     </button>
                                 </th>
-                                <th className="text-right py-4 px-4">
+                                <th className="text-right py-3 px-3">
                                     <button
                                         onClick={() => handleSort('totalTaxDeducted')}
                                         className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -177,7 +177,7 @@ export default function DividendBreakdownTable({
                                         <SortIcon field="totalTaxDeducted" />
                                     </button>
                                 </th>
-                                <th className="text-right py-4 px-4">
+                                <th className="text-right py-3 px-3">
                                     <button
                                         onClick={() => handleSort('totalZakatDeducted')}
                                         className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -186,7 +186,7 @@ export default function DividendBreakdownTable({
                                         <SortIcon field="totalZakatDeducted" />
                                     </button>
                                 </th>
-                                <th className="text-right py-4 px-4">
+                                <th className="text-right py-3 px-3">
                                     <button
                                         onClick={() => handleSort('totalNetDividend')}
                                         className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -203,14 +203,14 @@ export default function DividendBreakdownTable({
                                     <tr
                                         onClick={() => onToggleExpand(stat.symbol)}
                                         className={`border-b border-slate-100 dark:border-slate-800 cursor-pointer transition-colors ${expandedSymbol === stat.symbol
-                                                ? 'bg-indigo-50/50 dark:bg-indigo-900/20'
-                                                : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                            ? 'bg-indigo-50/50 dark:bg-indigo-900/20'
+                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
                                             }`}
                                     >
-                                        <td className="py-4 px-4">
+                                        <td className="py-3 px-3">
                                             <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${expandedSymbol === stat.symbol
-                                                    ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400'
-                                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                                ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400'
+                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                                 }`}>
                                                 <svg
                                                     className={`w-4 h-4 transition-transform duration-200 ${expandedSymbol === stat.symbol ? 'rotate-90' : ''}`}
@@ -222,7 +222,7 @@ export default function DividendBreakdownTable({
                                                 </svg>
                                             </div>
                                         </td>
-                                        <td className="py-4 px-4">
+                                        <td className="py-3 px-3">
                                             <div>
                                                 <div className="font-bold text-slate-900 dark:text-white">{stat.symbol}</div>
                                                 <div className="text-xs text-slate-500 dark:text-slate-400 max-w-[200px] truncate">
@@ -230,31 +230,39 @@ export default function DividendBreakdownTable({
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="py-4 px-4 text-center">
+                                        <td className="py-3 px-3 text-center">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
                                                 {stat.count}
                                             </span>
                                         </td>
-                                        <td className="py-4 px-4 text-right font-medium text-blue-600 dark:text-blue-400 tabular-nums">
-                                            {stat.totalGrossDividend.toLocaleString()}
+                                        <td className="py-3 px-3 text-right">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100 tabular-nums">
+                                                {stat.totalGrossDividend.toLocaleString()}
+                                            </span>
                                         </td>
-                                        <td className="py-4 px-4 text-right font-medium text-rose-600 dark:text-rose-400 tabular-nums">
-                                            {stat.totalTaxDeducted.toLocaleString()}
+                                        <td className="py-3 px-3 text-right">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100 tabular-nums">
+                                                {stat.totalTaxDeducted.toLocaleString()}
+                                            </span>
                                         </td>
-                                        <td className="py-4 px-4 text-right font-medium text-amber-600 dark:text-amber-400 tabular-nums">
-                                            {stat.totalZakatDeducted.toLocaleString()}
+                                        <td className="py-3 px-3 text-right">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 tabular-nums">
+                                                {stat.totalZakatDeducted.toLocaleString()}
+                                            </span>
                                         </td>
-                                        <td className="py-4 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                            {stat.totalNetDividend.toLocaleString()}
+                                        <td className="py-3 px-3 text-right">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 tabular-nums">
+                                                {stat.totalNetDividend.toLocaleString()}
+                                            </span>
                                         </td>
                                     </tr>
 
                                     {/* Expanded Details Row */}
                                     {expandedSymbol === stat.symbol && (
-                                        <tr className="bg-slate-50/50 dark:bg-slate-900/50">
-                                            <td colSpan={7} className="px-4 py-4 sm:px-12">
-                                                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-                                                    <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                                        <tr className="bg-slate-50/80 dark:bg-slate-900/80 shadow-inner">
+                                            <td colSpan={7} className="px-4 py-4 sm:px-8">
+                                                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm ring-1 ring-slate-900/5">
+                                                    <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
                                                         <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                                                             Payment History
                                                         </h4>
@@ -287,17 +295,25 @@ export default function DividendBreakdownTable({
                                                                         <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300 tabular-nums font-mono">
                                                                             {detail.shares?.toLocaleString() || '-'}
                                                                         </td>
-                                                                        <td className="px-4 py-2.5 text-right text-blue-600 dark:text-blue-400 tabular-nums">
-                                                                            {detail.grossDividend?.toLocaleString() || '-'}
+                                                                        <td className="px-4 py-2.5 text-right">
+                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100 tabular-nums">
+                                                                                {detail.grossDividend?.toLocaleString() || '-'}
+                                                                            </span>
                                                                         </td>
-                                                                        <td className="px-4 py-2.5 text-right text-rose-600 dark:text-rose-400 tabular-nums">
-                                                                            {detail.taxDeducted?.toLocaleString() || '-'}
+                                                                        <td className="px-4 py-2.5 text-right">
+                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100 tabular-nums">
+                                                                                {detail.taxDeducted?.toLocaleString() || '-'}
+                                                                            </span>
                                                                         </td>
-                                                                        <td className="px-4 py-2.5 text-right text-amber-600 dark:text-amber-400 tabular-nums">
-                                                                            {detail.zakatDeducted?.toLocaleString() || '-'}
+                                                                        <td className="px-4 py-2.5 text-right">
+                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 tabular-nums">
+                                                                                {detail.zakatDeducted?.toLocaleString() || '-'}
+                                                                            </span>
                                                                         </td>
-                                                                        <td className="px-4 py-2.5 text-right font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                                                            {detail.netDividend?.toLocaleString() || '-'}
+                                                                        <td className="px-4 py-2.5 text-right">
+                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 tabular-nums">
+                                                                                {detail.netDividend?.toLocaleString() || '-'}
+                                                                            </span>
                                                                         </td>
                                                                     </tr>
                                                                 ))}

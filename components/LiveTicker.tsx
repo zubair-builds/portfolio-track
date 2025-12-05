@@ -629,13 +629,13 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl shadow-indigo-500/5 ring-1 ring-black/5">
+    <div className="relative h-full overflow-hidden rounded-3xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl shadow-indigo-500/5 ring-1 ring-black/5 flex flex-col justify-center">
       {/* Decorative background gradients */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-50" />
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative p-5 space-y-5">
+      <div className="relative p-4 space-y-3 h-full flex flex-col">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -807,27 +807,29 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
 
         {/* Stopped/Connecting State */}
         {(connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'connecting' || connectionState === 'reconnecting') && updates.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center py-2 text-center min-h-[80px]">
             {(connectionState === 'connecting' || connectionState === 'reconnecting') ? (
-              <>
-                <div className="relative w-12 h-12 mb-4">
-                  <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+              <div className="flex items-center gap-3">
+                <div className="relative w-5 h-5">
+                  <div className="absolute inset-0 rounded-full border-2 border-slate-100 dark:border-slate-800"></div>
+                  <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
                 </div>
-                <p className="text-slate-900 dark:text-white font-medium">
-                  {connectionState === 'connecting' ? 'Connecting to Exchange...' : 'Reconnecting...'}
+                <p className="text-sm text-slate-900 dark:text-white font-medium">
+                  {connectionState === 'connecting' ? 'Connecting...' : 'Reconnecting...'}
                 </p>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-slate-900 dark:text-white font-medium">Live Ticker Paused</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Click Start to resume real-time updates</p>
-              </>
+                <div className="text-left">
+                  <p className="text-sm text-slate-900 dark:text-white font-medium leading-none">Ticker Paused</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Click Start to resume</p>
+                </div>
+              </div>
             )}
           </div>
         )}
