@@ -13,17 +13,10 @@ export default function SettingsPage() {
 
     // Initialize theme state
     useEffect(() => {
-        // Check local storage or system preference
+        // Only sync with existing theme, don't set it
         const savedTheme = localStorage.getItem('theme');
-        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
-            document.documentElement.classList.add('dark');
-            setDarkMode(true);
-        } else {
-            document.documentElement.classList.remove('dark');
-            setDarkMode(false);
-        }
+        const isDark = savedTheme === 'dark';
+        setDarkMode(isDark);
 
         // Observer for changes (in case header toggles it)
         const observer = new MutationObserver((mutations) => {
@@ -31,7 +24,6 @@ export default function SettingsPage() {
                 if (mutation.attributeName === 'class') {
                     const isDarkNow = document.documentElement.classList.contains('dark');
                     setDarkMode(isDarkNow);
-                    localStorage.setItem('theme', isDarkNow ? 'dark' : 'light');
                 }
             });
         });

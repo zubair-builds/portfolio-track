@@ -119,10 +119,25 @@ export default function PriceHistoryChart({
       .sort((a, b) => (a.time as number) - (b.time as number));
   }, [data]);
 
-  // Detect dark mode
-  const isDarkMode = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // Detect dark mode from document class
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check initial state
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+
+    // Watch for changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { 
+      attributes: true, 
+      attributeFilter: ['class'] 
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   // Initialize main chart

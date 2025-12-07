@@ -14,8 +14,30 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const theme = localStorage.getItem('theme');
+                  const root = document.documentElement;
+                  
+                  // Remove any existing dark class first
+                  root.classList.remove('dark');
+                  
+                  // Only add dark class if explicitly saved as dark
+                  if (theme === 'dark') {
+                    root.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={`${inter.variable} font-sans min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 h-full`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
