@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  //https://www.googleapis.com/auth/gmail.readonly
-  const scope = 'openid profile email';
+  //
+  const scope = 'openid profile email https://www.googleapis.com/auth/gmail.readonly';
   const responseType = 'code';
   const accessType = 'offline';
   const prompt = 'consent';

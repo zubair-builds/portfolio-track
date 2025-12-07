@@ -9,7 +9,7 @@ import { getAllIndices, getIndexStats } from '../../../lib/indicesStore';
 export async function GET() {
   try {
     const indices = await getAllIndices();
-    
+
     return NextResponse.json({
       indices: indices.map(idx => ({
         symbol: idx.symbol,
@@ -22,10 +22,11 @@ export async function GET() {
       })),
       count: indices.length,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching indices:', error);
+    console.error('Stack:', error.stack);
     return NextResponse.json(
-      { error: 'Failed to fetch indices' },
+      { error: 'Failed to fetch indices', details: error.message },
       { status: 500 }
     );
   }

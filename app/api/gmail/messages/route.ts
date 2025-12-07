@@ -69,24 +69,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get maxResults and query from params
+    // Get maxResults, query, and pageToken from params
     const { searchParams } = request.nextUrl;
+
     const maxResults = Math.min(parseInt(searchParams.get('maxResults') || '10'), 100);
     const query = searchParams.get('q') || '';
+    const pageToken = searchParams.get('pageToken') || '';
 
-    // Build Gmail API URL with optional search query
+    // Build Gmail API URL with optional search query and pageToken
     let gmailUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`;
     if (query) {
       gmailUrl += `&q=${encodeURIComponent(query)}`;
     }
+    if (pageToken) {
+      gmailUrl += `&pageToken=${pageToken}`;
+    }
 
     // Fetch emails from Gmail API
     const gmailResponse = await fetch(gmailUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
 
     if (!gmailResponse.ok) {
       const errorData = await gmailResponse.json();
@@ -102,7 +106,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch details for each message
     const messageDetails = await Promise.all(
-      messageIds.slice(0, maxResults).map(async (msg: { id: string }) => {
+      messageIds.map(async (msg: { id: string }) => {
         const detailResponse = await fetch(
           `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
           {
@@ -118,12 +122,66 @@ export async function GET(request: NextRequest) {
 
         const detail = await detailResponse.json();
         const headers = detail.payload?.headers || [];
-        
+
         interface EmailHeader {
           name: string;
           value: string;
         }
-        
+
+        interface GmailPayload {
+          mimeType: string;
+          body?: {
+            data?: string;
+          };
+          parts?: GmailPayload[];
+        }
+
+        // Helper to decode base64url
+        const decodeBase64 = (data: string) => {
+          if (!data) return '';
+          // Replace non-url safe chars
+          const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+          return Buffer.from(base64, 'base64').toString('utf-8');
+        };
+
+        // Helper to find specific mime type content
+        const findBodyContent = (payload: GmailPayload, mimeType: string): string | null => {
+          if (!payload) return null;
+
+          if (payload.mimeType === mimeType && payload.body?.data) {
+            return decodeBase64(payload.body.data);
+          }
+
+          if (payload.parts) {
+            for (const part of payload.parts) {
+              const content = findBodyContent(part, mimeType);
+              if (content) return content;
+            }
+          }
+
+          return null;
+        };
+
+        // Get generic body: prefer plain text, fallback to HTML (stripped)
+        const getEmailBody = (payload: GmailPayload): string => {
+          let content = findBodyContent(payload, 'text/plain');
+          if (content) return content;
+
+          content = findBodyContent(payload, 'text/html');
+
+          if (content) {
+            // Basic HTML stripping
+            return content
+              .replace(/<br\s*\/?>/gi, '\n') // Replace <br> with newlines
+              .replace(/<[^>]*>/g, ' ')      // Strip other tags
+              .replace(/&nbsp;/g, ' ')       // HTML entities
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>');
+          }
+
+          return '';
+        };
         return {
           id: detail.id,
           threadId: detail.threadId,
@@ -131,6 +189,7 @@ export async function GET(request: NextRequest) {
           from: (headers as EmailHeader[]).find((h) => h.name === 'From')?.value || '',
           date: (headers as EmailHeader[]).find((h) => h.name === 'Date')?.value || '',
           snippet: detail.snippet,
+          body: getEmailBody(detail.payload as GmailPayload),
         };
       })
     );
@@ -138,6 +197,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       messages: messageDetails.filter(Boolean),
+      nextPageToken: messagesData.nextPageToken,
+      resultSizeEstimate: messagesData.resultSizeEstimate,
       totalResults: messagesData.resultSizeEstimate || 0,
     });
   } catch (error) {
