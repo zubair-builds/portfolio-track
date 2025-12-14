@@ -22,11 +22,11 @@ export async function GET() {
       })),
       count: indices.length,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching indices:', error);
-    console.error('Stack:', error.stack);
+    console.error('Stack:', error instanceof Error ? error.stack : 'Unknown error');
     return NextResponse.json(
-      { error: 'Failed to fetch indices', details: error.message },
+      { error: 'Failed to fetch indices', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

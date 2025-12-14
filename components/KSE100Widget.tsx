@@ -17,17 +17,13 @@ interface IndexData {
 }
 
 interface KSE100WidgetProps {
-  index: IndexData | null;
+  index?: IndexData;
   isLoading?: boolean;
-  onRefresh?: () => void;
-  refreshing?: boolean;
 }
 
 export default function KSE100Widget({
   index,
   isLoading = false,
-  onRefresh,
-  refreshing = false
 }: KSE100WidgetProps) {
   if (isLoading) {
     return (
@@ -99,28 +95,7 @@ export default function KSE100Widget({
             </span>
           </div>
         </div>
-        {onRefresh && (
-          <button
-            onClick={onRefresh}
-            disabled={refreshing}
-            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition disabled:opacity-50 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-700 flex-shrink-0"
-            title="Refresh"
-          >
-            <svg
-              className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          </button>
-        )}
+        {/* Refresh button removed from here */}
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-xs">
