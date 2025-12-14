@@ -8,6 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from './ui/Button';
+import { ConfirmationDialog } from './ui/ConfirmationDialog';
+import type { ReactNode } from 'react';
 import { Badge } from './ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/GlassTable';
 import DateRangeFilter, { type DateRangeValue } from './DateRangeFilter';
@@ -55,6 +57,17 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   // Expanded notes
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message?: ReactNode;
+    confirmLabel?: string;
+    confirmVariant?: 'primary' | 'danger';
+    onConfirm: () => Promise<void> | void;
+  }>({ open: false, title: '', onConfirm: () => {} });
+
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
 
   const fetchTransactions = React.useCallback(async () => {
     setLoading(true);
@@ -101,29 +114,36 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
   }, [fetchTransactions]);
 
   const handleDelete = async (transactionId: string) => {
-    if (!confirm('Are you sure you want to delete this transaction? This cannot be undone.')) {
-      return;
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Delete transaction?',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      confirmVariant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/transactions?transactionId=${transactionId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
 
-    try {
-      const response = await fetch(`/api/transactions?transactionId=${transactionId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+          const result = await response.json();
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        fetchTransactions(); // Refresh list
-      } else {
-        alert(result.error || 'Failed to delete transaction');
-      }
-    } catch (err) {
-      console.error('Error deleting transaction:', err);
-      alert('Failed to delete transaction');
-    }
+          if (response.ok && result.success) {
+            fetchTransactions();
+          } else {
+            alert(result.error || 'Failed to delete transaction');
+          }
+        } catch (err) {
+          console.error('Error deleting transaction:', err);
+          alert('Failed to delete transaction');
+        } finally {
+          closeConfirm();
+        }
+      },
+    });
   };
 
   const toggleNoteExpansion = (id: string) => {
@@ -479,6 +499,18 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
           {error}
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        confirmVariant={confirmDialog.confirmVariant}
+        onCancel={closeConfirm}
+        onConfirm={async () => {
+          await confirmDialog.onConfirm();
+        }}
+      />
     </div>
   );
 }

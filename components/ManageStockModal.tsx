@@ -50,6 +50,8 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
   });
   const [editError, setEditError] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingStock, setDeletingStock] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Sell state
   const [sellShares, setSellShares] = useState('');
@@ -200,6 +202,23 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
       setEditError(err instanceof Error ? err.message : 'Failed to update stock');
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  // Delete handler
+  const handleDeleteClick = async () => {
+    if (!onDelete) return;
+    
+    setDeletingStock(true);
+    try {
+      await onDelete(stock);
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (error) {
+      console.error('Delete failed:', error);
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeletingStock(false);
     }
   };
 
@@ -384,14 +403,23 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
             {onDelete && (
               <button
                 type="button"
-                onClick={() => onDelete(stock)}
-                disabled={savingEdit}
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={savingEdit || deletingStock}
                 className="group px-5 py-2.5 rounded-xl font-semibold text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-all disabled:opacity-50 flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Delete Holding
+                {deletingStock ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete Holding
+                  </>
+                )}
               </button>
             )}
             <div className="ml-auto flex gap-3">
@@ -652,7 +680,45 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
               )}
             </button>
           </div>
+
         </form>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 rounded-2xl">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              Delete {stock.symbol}?
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+              This will remove {stock.shares.toLocaleString()} shares from your portfolio. This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deletingStock}
+                className="px-4 py-2 rounded-lg font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteClick}
+                disabled={deletingStock}
+                className="px-4 py-2 rounded-lg font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {deletingStock ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Modal>
   );

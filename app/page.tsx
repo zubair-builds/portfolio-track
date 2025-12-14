@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Tabs, { Tab } from "../components/Tabs";
 import PortfolioTab from "../components/tabs/PortfolioTab";
@@ -21,6 +22,7 @@ import { useDividendData } from "../hooks/useDividendData";
 import ProfessionalHeader from "../components/ProfessionalHeader";
 import PortfolioHero from "../components/PortfolioHero";
 import KSE100Widget from "../components/KSE100Widget";
+import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 
 export default function Page() {
   const router = useRouter();
@@ -31,6 +33,17 @@ export default function Page() {
   const { indices: [kse100], loading: kse100Loading, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
   const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
   const { dividendStats } = useDividendData(user?.email, { includeBySymbol: true });
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message?: ReactNode;
+    confirmLabel?: string;
+    confirmVariant?: "primary" | "danger";
+    onConfirm: () => Promise<void> | void;
+  }>({ open: false, title: "", onConfirm: () => {} });
+
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
 
   // Extract symbols from portfolio, watchlist, and indices for LiveTicker filter
   const tickerFilteredSymbols = useMemo(() => {
@@ -129,7 +142,6 @@ export default function Page() {
 
   const handleDeleteStock = async (stock: Stock) => {
     if (!user?.email) return;
-    if (!confirm(`Are you sure you want to remove ${stock.symbol} from your portfolio?`)) return;
 
     const response = await fetch(`/api/portfolio?symbol=${stock.symbol}`, {
       method: 'DELETE',
@@ -236,23 +248,30 @@ export default function Page() {
 
   const handleDeleteWatchlist = async (item: WatchlistItem) => {
     if (!user?.email) return;
-    if (!confirm(`Remove ${item.symbol} from watchlist?`)) return;
+    setConfirmDialog({
+      open: true,
+      title: `Remove ${item.symbol}?`,
+      message: `This will remove ${item.symbol} from your watchlist.`,
+      confirmLabel: 'Remove',
+      confirmVariant: 'danger',
+      onConfirm: async () => {
+        const response = await fetch(`/api/watchlist?symbol=${item.symbol}`, {
+          method: 'DELETE',
+          headers: {
+            'X-User-Id': user.email,
+          },
+        });
 
-    const response = await fetch(`/api/watchlist?symbol=${item.symbol}`, {
-      method: 'DELETE',
-      headers: {
-        'X-User-Id': user.email,
+        if (!response.ok) {
+          const data = await response.json();
+          alert(data.error || 'Failed to remove from watchlist');
+          return;
+        }
+
+        await refreshPortfolioData();
+        closeConfirm();
       },
     });
-
-    if (!response.ok) {
-      const data = await response.json();
-      alert(data.error || 'Failed to remove from watchlist');
-      return;
-    }
-
-    // Refresh only portfolio/watchlist data instead of reloading entire page
-    await refreshPortfolioData();
   };
 
   // Calculate portfolio stats for hero component (must be before conditional returns)
@@ -460,6 +479,18 @@ export default function Page() {
             onSave={handleAddWatchlist}
           />
         )}
+
+        <ConfirmationDialog
+          isOpen={confirmDialog.open}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          confirmVariant={confirmDialog.confirmVariant}
+          onCancel={closeConfirm}
+          onConfirm={async () => {
+            await confirmDialog.onConfirm();
+          }}
+        />
 
         {/* Footer */}
         <footer className="mt-auto border-t border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm relative z-10">
