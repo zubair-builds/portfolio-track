@@ -7,7 +7,7 @@ import PortfolioTab from "../components/tabs/PortfolioTab";
 import WatchlistTab from "../components/tabs/WatchlistTab";
 import AnalyticsTab from "../components/tabs/AnalyticsTab";
 import AllocationTab from "../components/tabs/AllocationTab";
-import CacheManager from "../components/CacheManager";
+// CacheManager removed
 import AIFinancialChatbot from "../components/AIFinancialChatbot";
 import AddStockModal from "../components/AddStockModal";
 
@@ -42,7 +42,7 @@ export default function Page() {
     const allSymbols = [...new Set([...portfolioSymbols, ...watchlistSymbols, ...indexSymbols])];
     return allSymbols;
   }, [portfolioStocks, watchlist, kse100]);
-  const [refreshingKse100, setRefreshingKse100] = useState(false);
+  // refreshingKse100 state removed
 
   // Fetch transaction stats for Hero component
   const [transactionStats, setTransactionStats] = useState<{ totalRealizedGains: number; totalCGTPaid: number } | null>(null);
@@ -100,34 +100,7 @@ export default function Page() {
     router.replace('/signin');
   };
 
-  const handleRefreshKse100 = async () => {
-    if (refreshingKse100) return;
-
-    setRefreshingKse100(true);
-    try {
-      // Step 1: Fetch from PSX Terminal API and update DB
-      const response = await fetch('/api/indices/refresh?symbols=KSE100');
-
-      if (!response.ok) {
-        throw new Error(`Failed to refresh: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error('Refresh failed');
-      }
-
-      // Step 2: Re-fetch from database to update UI
-      await refreshKse100();
-
-    } catch (error) {
-      console.error('Error refreshing KSE100:', error);
-      alert('Failed to refresh KSE100 data. Please try again.');
-    } finally {
-      setRefreshingKse100(false);
-    }
-  };
+  // handleRefreshKse100 removed
 
   const handleAddStock = async (stockData: { symbol: string; shares: number; avgBuy: number; purchaseDate?: Date }) => {
     if (!user?.email) return;
@@ -402,8 +375,6 @@ export default function Page() {
                     <KSE100Widget
                       index={kse100}
                       isLoading={kse100Loading}
-                      onRefresh={handleRefreshKse100}
-                      refreshing={refreshingKse100}
                     />
                   </div>
                 </div>
@@ -469,7 +440,7 @@ export default function Page() {
         </main>
 
         {/* Cache Manager */}
-        <CacheManager />
+        {/* Cache Manager removed */}
 
         {/* AI Financial Chatbot */}
         <AIFinancialChatbot stocks={portfolioStocks} />

@@ -310,7 +310,7 @@ export default function TransactionBreakdownTable({
                             {filteredAndSortedStats.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="py-12 text-center text-slate-500">
-                                        No transactions found matching "{searchTerm}"
+                                        No transactions found matching &quot;{searchTerm}&quot;
                                     </td>
                                 </tr>
                             )}

@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import ProfessionalHeader from '@/components/ProfessionalHeader';
+import { useAutoRefresh } from '@/components/AutoRefreshProvider';
 
 export default function SettingsPage() {
     const router = useRouter();
     const { user, initializing, signout } = useAuth();
     const [darkMode, setDarkMode] = useState(false);
     const [importing, setImporting] = useState(false);
+    const { frequency, setFrequency, refreshNow, isRefreshing, lastRefreshed } = useAutoRefresh();
 
     // Initialize theme state
     useEffect(() => {
@@ -193,10 +195,49 @@ export default function SettingsPage() {
                             <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                             </svg>
-                            Data Management
+                            Data Management & Synchronization
                         </h2>
 
                         <div className="space-y-6">
+                            {/* Auto Refresh Frequency */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/50 pb-4">
+                                <div>
+                                    <p className="font-medium text-slate-900 dark:text-white">Auto-Refresh Frequency</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Update data automatically while the app is open
+                                    </p>
+                                    {lastRefreshed && (
+                                        <p className="text-xs text-indigo-500 mt-1">
+                                            Last synced: {lastRefreshed.toLocaleTimeString()}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <select
+                                        value={frequency}
+                                        onChange={(e) => setFrequency(Number(e.target.value))}
+                                        className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                    >
+                                        <option value={0}>Off (Manual)</option>
+                                        <option value={1}>Every 1 Minute</option>
+                                        <option value={5}>Every 5 Minutes</option>
+                                        <option value={15}>Every 15 Minutes</option>
+                                        <option value={30}>Every 30 Minutes</option>
+                                        <option value={60}>Every 1 Hour</option>
+                                    </select>
+
+                                    <button
+                                        onClick={() => refreshNow()}
+                                        disabled={isRefreshing}
+                                        className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                                        title="Sync Now"
+                                    >
+                                        <svg className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                             {/* Export */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/50 pb-4">
                                 <div>

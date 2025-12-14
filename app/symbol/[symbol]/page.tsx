@@ -75,7 +75,7 @@ export default function SymbolDetailPage({
   } = usePriceHistory(symbol, '1d');
 
   const [metadata, setMetadata] = useState<SymbolMetadata | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  // refreshing state removed
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
 
@@ -202,50 +202,7 @@ export default function SymbolDetailPage({
     }
   };
 
-  const handleRefreshSymbol = async () => {
-    if (refreshing) return;
-
-    setRefreshing(true);
-    try {
-      // Refresh price data from PSX Terminal
-      const response = await fetch('/api/symbols/refresh-prices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ symbols: [symbol] }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to refresh: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error('Refresh failed');
-      }
-
-      // Refresh metadata to show updated price
-      const metadataResponse = await fetch(`/api/symbols/metadata?symbol=${symbol}`);
-      if (metadataResponse.ok) {
-        const metadataResult = await metadataResponse.json();
-        if (metadataResult.success && metadataResult.metadata) {
-          setMetadata(metadataResult.metadata);
-        }
-      }
-
-      // Also refresh price history if available
-      if (fetchAndStore) {
-        await fetchAndStore();
-      }
-    } catch (error) {
-      console.error('Error refreshing symbol:', error);
-      alert('Failed to refresh symbol data. Please try again.');
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  // handleRefreshSymbol removed
 
   const handleToggleWatchlist = async () => {
     if (!user?.email || watchlistLoading) return;
@@ -426,8 +383,8 @@ export default function SymbolDetailPage({
           isDebt={metadata?.isDebt}
           isNonCompliant={metadata?.isNonCompliant}
           listedIn={metadata?.listedIn}
-          onRefresh={handleRefreshSymbol}
-          refreshing={refreshing}
+          // onRefresh removed
+          // refreshing removed
           onToggleWatchlist={user ? handleToggleWatchlist : undefined}
           isInWatchlist={isInWatchlist}
           watchlistLoading={watchlistLoading}
