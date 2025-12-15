@@ -14,6 +14,7 @@ import DividendStatsCards from '@/components/DividendStatsCards';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import DividendBreakdownTable from '@/components/DividendBreakdownTable';
+import { PAGE_TITLE_SUFFIX } from '@/lib/constants';
 
 interface Dividend {
   _id: string;
@@ -72,6 +73,10 @@ export default function DividendsPage() {
   const [symbolDetails, setSymbolDetails] = useState<Record<string, Dividend[]>>({});
   const [showUploadModal, setShowUploadModal] = useState(false);
 
+  // Set page title
+  useEffect(() => {
+    document.title = `Dividends${PAGE_TITLE_SUFFIX}`;
+  }, []);
 
   useEffect(() => {
     if (!initializing && !user) {

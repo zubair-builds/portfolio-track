@@ -7,9 +7,12 @@ import { AutoRefreshProvider } from "../components/AutoRefreshProvider";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Pakistan Stocks — Live Prices & Market Overview",
+  title: {
+    template: "%s - PortfolioTrack",
+    default: "PortfolioTrack - PSX Portfolio Management",
+  },
   description:
-    "Plain-language view of the Pakistan Stock Exchange (PSX) with live prices, symbols, and key market stats for everyone.",
+    "Track your Pakistan Stock Exchange (PSX) portfolio with real-time prices, market analytics, and comprehensive investment insights.",
   metadataBase: new URL("https://example.com"),
   icons: {
     icon: [

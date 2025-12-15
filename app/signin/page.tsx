@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '../../components/AuthProvider';
 import { Button } from '../../components/ui/Button';
+import { PAGE_TITLE_SUFFIX } from '../../lib/constants';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -13,6 +14,11 @@ export default function SignInPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Set page title
+  useEffect(() => {
+    document.title = `Sign In${PAGE_TITLE_SUFFIX}`;
+  }, []);
 
   useEffect(() => {
     if (!initializing && user) {

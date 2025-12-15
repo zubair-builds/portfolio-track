@@ -6,6 +6,7 @@ import ProfessionalHeader from '../../components/ProfessionalHeader';
 import CompaniesTable, { Company, FilterOptions } from '../../components/CompaniesTable';
 import CompaniesStatsCards from '../../components/CompaniesStatsCards';
 import { useAuth } from '../../components/AuthProvider';
+import { PAGE_TITLE_SUFFIX } from '../../lib/constants';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -25,6 +26,11 @@ export default function CompaniesPage() {
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({ sectors: [], indices: [] });
   const [sortField, setSortField] = useState<'price' | 'changePercent' | 'marketCap' | 'peRatio' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Set page title
+  useEffect(() => {
+    document.title = `Companies${PAGE_TITLE_SUFFIX}`;
+  }, []);
 
   // Debounce search query
   useEffect(() => {
