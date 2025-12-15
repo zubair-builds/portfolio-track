@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   description:
     "Plain-language view of the Pakistan Stock Exchange (PSX) with live prices, symbols, and key market stats for everyone.",
   metadataBase: new URL("https://example.com"),
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/apple-icon.svg', type: 'image/svg+xml' },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
