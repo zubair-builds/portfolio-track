@@ -177,7 +177,9 @@ export default function DashboardClient() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `portfolio-export-${Date.now()}.${format}`;
+            const now = new Date();
+            const exportTime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            a.download = `portfolio_${user.email}_${exportTime}.${format}`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -502,7 +504,7 @@ export default function DashboardClient() {
                         <div className="flex items-center gap-6">
                             <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy</a>
                             <span className="text-xs bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
-                                Track Portfolio
+                                Financial Research and Portfolio Tracking platform
                             </span>
                         </div>
                     </div>

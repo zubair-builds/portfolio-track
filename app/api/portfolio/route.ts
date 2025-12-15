@@ -191,11 +191,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { positionId, symbol, shares, avgBuy, purchaseDate } = body;
-
-    if (!positionId || typeof positionId !== 'string') {
-      return NextResponse.json({ error: 'positionId is required.' }, { status: 400 });
-    }
+    const { positionId, symbol, shares, avgBuy, purchaseDate, mode } = body;
 
     if (!symbol || typeof symbol !== 'string') {
       return NextResponse.json({ error: 'Invalid symbol.' }, { status: 400 });
@@ -225,12 +221,31 @@ export async function PUT(request: NextRequest) {
     }
 
     const input: PortfolioInput = { symbol, shares, avgBuy, purchaseDate: purchaseDateObj };
-    await updatePortfolioStock(userId, positionId, input);
 
-    return NextResponse.json(
-      { success: true, message: `${symbol.toUpperCase()} position updated.` },
-      { status: 200 }
-    );
+    // Scenario 1: Update specific position by ID
+    if (positionId && typeof positionId === 'string' && mode !== 'consolidate') {
+      await updatePortfolioStock(userId, positionId, input);
+      return NextResponse.json(
+        { success: true, message: `${symbol.toUpperCase()} position updated.` },
+        { status: 200 }
+      );
+    }
+
+    // Scenario 2: Consolidate all positions for symbol (used by Edit modal)
+    // We treat this as an overwrite for the symbol
+    if (symbol) {
+      // Need to import this dynamically or ensure it's imported at top
+      const { updatePortfolioStockBySymbol } = await import('../../../lib/userPortfolio');
+      await updatePortfolioStockBySymbol(userId, symbol, input);
+
+      return NextResponse.json(
+        { success: true, message: `${symbol.toUpperCase()} position updated (consolidated).` },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json({ error: 'Either positionId or symbol is required.' }, { status: 400 });
+
   } catch (error) {
     console.error('Portfolio PUT error:', error);
     return NextResponse.json({ error: 'Failed to update stock position.' }, { status: 500 });

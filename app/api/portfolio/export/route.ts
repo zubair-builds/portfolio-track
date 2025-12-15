@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const jwtUser = getUserFromRequest(request);
     const userId = jwtUser?.email || request.headers.get('X-User-Id');
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required.' },
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       // Return empty export if no holdings
       const exportTime = new Date().toISOString();
       const filename = `portfolio_${userId}_${exportTime}`;
-      
+
       if (format === 'csv') {
         const csv = 'Symbol,Shares,Average Buy Price,Purchase Date,Current Price,Total Dividends\n';
         return new Response(csv, {
@@ -49,10 +49,10 @@ export async function GET(request: NextRequest) {
 
     // Fetch current prices
     const prices = await db
-      .collection('prices')
+      .collection('symbol_prices')
       .find({ symbol: { $in: symbols } })
       .toArray();
-    const priceMap = new Map(prices.map(p => [p.symbol, p.price]));
+    const priceMap = new Map(prices.map(p => [p.symbol, p.currentPrice]));
 
     // Fetch total dividends for each symbol
     const dividends = await db

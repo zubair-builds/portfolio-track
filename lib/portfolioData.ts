@@ -31,11 +31,9 @@ export interface WatchlistItem {
   note?: string;
 }
 
-export const initialPortfolioData: Stock[] = [
-  { symbol: 'DCR', shares: 500, avgBuy: 13.05, currentPrice: 31.9 },
-];
+export const initialPortfolioData: Stock[] = [];
 
-export const initialWatchlistData: WatchlistItem[] = [{ symbol: 'MZNPETF' }];
+export const initialWatchlistData: WatchlistItem[] = [];
 
 export interface PortfolioStats {
   totalInvestment: number;
