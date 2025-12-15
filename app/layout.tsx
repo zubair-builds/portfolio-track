@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://example.com"),
   icons: {
     icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: process.env.NODE_ENV == 'development' ? '/icon-grey.svg' : '/icon.svg', type: 'image/svg+xml' },
     ],
     apple: [
       { url: '/apple-icon.svg', type: 'image/svg+xml' },
