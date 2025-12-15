@@ -177,8 +177,9 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
         });
       } else {
         // Fallback to direct API call when onSave is not provided
+        // Use PUT to update (consolidate) instead of POST (insert new)
         const res = await fetch('/api/portfolio', {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             ...(user?.email ? { 'X-User-Id': user.email } : {}),
@@ -188,6 +189,7 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
             shares: sharesNum,
             avgBuy: avgBuyNum,
             purchaseDate: purchaseDateObj?.toISOString(),
+            mode: 'consolidate', // Flag to tell server to overwrite/consolidate
           }),
         });
         const data = await res.json();
@@ -622,8 +624,8 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
                   </div>
 
                   <div className={`p-4 rounded-xl border flex flex-col justify-center ${fifoPreview.netProfit >= 0
-                      ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50'
-                      : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/50'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50'
+                    : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/50'
                     }`}>
                     <div className="flex justify-between text-xs mb-1">
                       <span className={fifoPreview.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>

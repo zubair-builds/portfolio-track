@@ -36,8 +36,8 @@ export function InvestmentPositionCard({
 
   // Calculate total return including dividends
   const totalReturn = receivedDividend ? gainLoss + receivedDividend : gainLoss;
-  const totalReturnPercent = receivedDividend 
-    ? ((totalReturn) / investment) * 100 
+  const totalReturnPercent = receivedDividend
+    ? ((totalReturn) / investment) * 100
     : gainLossPercent;
   const isTotalReturnPositive = totalReturn >= 0;
 
@@ -118,20 +118,19 @@ export function InvestmentPositionCard({
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Gain/Loss</p>
               {sparklineData.length > 0 && (
-                <MiniSparkline 
-                  data={sparklineData} 
-                  width={60} 
+                <MiniSparkline
+                  data={sparklineData}
+                  width={60}
                   height={20}
                   color={isPositive ? '#10b981' : '#ef4444'}
                 />
               )}
             </div>
             <p
-              className={`text-3xl font-bold font-mono ${
-                isPositive
+              className={`text-3xl font-bold font-mono ${isPositive
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-rose-600 dark:text-rose-400'
-              }`}
+                }`}
             >
               {isPositive ? '+' : ''}₨{formatNumber(gainLoss)}
             </p>
@@ -139,11 +138,10 @@ export function InvestmentPositionCard({
           <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Return %</p>
             <p
-              className={`text-3xl font-bold font-mono ${
-                gainLossPercent >= 0
+              className={`text-3xl font-bold font-mono ${gainLossPercent >= 0
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-rose-600 dark:text-rose-400'
-              }`}
+                }`}
             >
               {formatPercent(gainLossPercent)}
             </p>
@@ -163,7 +161,7 @@ export function InvestmentPositionCard({
         {/* Additional Info Row */}
         {(dividendYield !== undefined || annualDividendIncome !== null || receivedDividend) && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-            {dividendYield !== undefined && (
+            {dividendYield !== undefined && dividendYield !== null && (
               <div>
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Dividend Yield
@@ -218,11 +216,10 @@ export function InvestmentPositionCard({
                 </Badge>
               </div>
               <div className="flex items-baseline gap-2">
-                <p className={`text-3xl font-bold font-mono ${
-                  isTotalReturnPositive
+                <p className={`text-3xl font-bold font-mono ${isTotalReturnPositive
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-rose-600 dark:text-rose-400'
-                }`}>
+                  }`}>
                   {isTotalReturnPositive ? '+' : ''}₨{formatNumber(totalReturn)}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
