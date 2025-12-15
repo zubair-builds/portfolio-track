@@ -25,7 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "lightweight-charts": "^4.1.0",
     "mongodb": "^6.20.0",
-    "next": "latest",
+    "next": "15.5.8",
     "node-fetch": "^3.3.2",
     "react": "latest",
     "react-dom": "latest",
