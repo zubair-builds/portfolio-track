@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import ProfessionalHeader from '@/components/ProfessionalHeader';
 import { useAutoRefresh } from '@/components/AutoRefreshProvider';
+import { PAGE_TITLE_SUFFIX } from '@/lib/constants';
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -12,6 +13,11 @@ export default function SettingsPage() {
     const [darkMode, setDarkMode] = useState(false);
     const [importing, setImporting] = useState(false);
     const { frequency, setFrequency, refreshNow, isRefreshing, lastRefreshed } = useAutoRefresh();
+
+    // Set page title
+    useEffect(() => {
+        document.title = `Settings${PAGE_TITLE_SUFFIX}`;
+    }, []);
 
     // Initialize theme state
     useEffect(() => {

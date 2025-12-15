@@ -11,7 +11,7 @@ import ProfessionalHeader from '@/components/ProfessionalHeader';
 import TransactionsTable from '@/components/TransactionsTable';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/components/AuthProvider';
-import { formatCurrency } from '@/lib/constants';
+import { formatCurrency, PAGE_TITLE_SUFFIX } from '@/lib/constants';
 import TransactionUploadModal from '@/components/TransactionUploadModal';
 import TransactionStatsCards, { TransactionStats } from '@/components/TransactionStatsCards';
 
@@ -23,6 +23,11 @@ export default function TransactionsPage() {
   const [stats, setStats] = useState<TransactionStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Set page title
+  useEffect(() => {
+    document.title = `Transactions${PAGE_TITLE_SUFFIX}`;
+  }, []);
 
   useEffect(() => {
     if (!user && !initializing) {

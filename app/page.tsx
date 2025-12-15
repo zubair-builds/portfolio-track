@@ -23,10 +23,16 @@ import ProfessionalHeader from "../components/ProfessionalHeader";
 import PortfolioHero from "../components/PortfolioHero";
 import KSE100Widget from "../components/KSE100Widget";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
+import { PAGE_TITLE_SUFFIX } from "../lib/constants";
 
 export default function Page() {
   const router = useRouter();
   const { user, initializing, signout } = useAuth();
+
+  // Set page title
+  useEffect(() => {
+    document.title = `Dashboard${PAGE_TITLE_SUFFIX}`;
+  }, []);
 
   // Memoize the symbols array to prevent unnecessary re-fetches
   const kse100Symbols = useMemo(() => ['KSE100'], []);

@@ -6,7 +6,7 @@ import ProfessionalHeader from '@/components/ProfessionalHeader';
 import IndicesTable from '@/components/IndicesTable';
 import IndicesStatsCards from '@/components/IndicesStatsCards';
 import { useAuth } from '@/components/AuthProvider';
-import { sortIndicesByPriority } from '@/lib/constants';
+import { sortIndicesByPriority, PAGE_TITLE_SUFFIX } from '@/lib/constants';
 
 export interface IndexData {
   symbol: string;
@@ -34,6 +34,11 @@ export default function IndicesPage() {
   const { user, initializing, signout } = useAuth();
   const [indices, setIndices] = useState<IndexData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Set page title
+  useEffect(() => {
+    document.title = `Market Indices${PAGE_TITLE_SUFFIX}`;
+  }, []);
 
   useEffect(() => {
     fetchIndices();
