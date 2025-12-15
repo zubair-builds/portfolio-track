@@ -19,6 +19,7 @@ import {
   type TransactionFilter,
 } from '@/lib/transactionModel';
 import { calculateFIFO, validateSellShares } from '@/lib/fifoCalculator';
+import clientPromise from '@/lib/mongodb';
 
 /**
  * GET /api/transactions
@@ -151,6 +152,41 @@ export async function POST(req: NextRequest) {
         holdingPeriodDays: fifoResult.holdingPeriodDays,
         lotsUsed: fifoResult.lotsUsed,
       });
+
+      // Update portfolio after SELL transaction
+      const client = await clientPromise;
+      const db = client.db('portfolioTrack');
+      const portfolioCollection = db.collection('portfolios');
+
+      // Find the portfolio holding for this symbol
+      const portfolio = await portfolioCollection.findOne({
+        userId,
+        symbol: input.symbol,
+      });
+
+      if (portfolio) {
+        // Calculate new shares: currentShares - soldShares
+        const newShares = portfolio.shares - input.shares;
+
+        if (newShares <= 0) {
+          // Remove from portfolio if all shares sold
+          await portfolioCollection.deleteOne({
+            userId,
+            symbol: input.symbol,
+          });
+        } else {
+          // Update shares if partial sale
+          await portfolioCollection.updateOne(
+            { userId, symbol: input.symbol },
+            { 
+              $set: { 
+                shares: newShares,
+                updatedAt: new Date()
+              } 
+            }
+          );
+        }
+      }
 
       return NextResponse.json({
         success: true,

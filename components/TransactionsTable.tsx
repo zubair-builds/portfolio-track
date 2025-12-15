@@ -219,7 +219,10 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
               <input
                 type="text"
                 value={symbolSearch}
-                onChange={(e) => setSymbolSearch(e.target.value)}
+                onChange={(e) => {
+                  setSymbolSearch(e.target.value);
+                  setPage(1); // Reset to first page when searching
+                }}
                 placeholder="Search symbol..."
                 className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all w-full sm:w-48"
               />

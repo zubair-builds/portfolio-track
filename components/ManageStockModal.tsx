@@ -66,7 +66,6 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [fetchingPreview, setFetchingPreview] = useState(false);
   const [fifoPreview, setFifoPreview] = useState<FIFOPreview | null>(null);
-  const [confirmUnderstanding, setConfirmUnderstanding] = useState(false);
 
   const maxShares = stock.shares;
 
@@ -208,7 +207,7 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
   // Delete handler
   const handleDeleteClick = async () => {
     if (!onDelete) return;
-    
+
     setDeletingStock(true);
     try {
       await onDelete(stock);
@@ -252,11 +251,6 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
 
     if (!transactionDate) {
       setSellError('Please select a transaction date');
-      return;
-    }
-
-    if (!confirmUnderstanding) {
-      setSellError('Please confirm you understand this will trigger CGT calculation');
       return;
     }
 
@@ -605,81 +599,87 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm p-4 border border-slate-200 dark:border-slate-700">
-                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Total Cost</p>
-                  <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(fifoPreview.totalCost)}</p>
-                </div>
-                <div className="rounded-xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm p-4 border border-slate-200 dark:border-slate-700">
-                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Proceeds</p>
-                  <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(fifoPreview.totalProceeds)}</p>
-                </div>
-                <div className="rounded-xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm p-4 border border-slate-200 dark:border-slate-700">
-                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Realized Gain</p>
-                  <p className={`text-xl font-bold ${fifoPreview.realizedGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                    }`}>
-                    {fifoPreview.realizedGain >= 0 ? '+' : ''}{formatCurrency(fifoPreview.realizedGain)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 p-4 border-2 border-orange-200 dark:border-orange-800">
-                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 uppercase tracking-wide mb-1">CGT (15%)</p>
-                  <p className="text-xl font-bold text-orange-700 dark:text-orange-400">{formatCurrency(fifoPreview.totalCGT)}</p>
-                </div>
-              </div>
+              <div className="space-y-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">Total Cost</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(fifoPreview.totalCost)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">Proceeds</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(fifoPreview.totalProceeds)}</span>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {fifoPreview.realizedGain >= 0 ? 'Realized Gain' : 'Realized Loss'}
+                      </span>
+                      <span className={`font-bold ${fifoPreview.realizedGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {fifoPreview.realizedGain >= 0 ? '+' : ''}{formatCurrency(fifoPreview.realizedGain)}
+                      </span>
+                    </div>
+                  </div>
 
-              <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-800 p-5 shadow-xl">
-                <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-1">Net Profit (After Tax)</p>
-                <p className={`text-3xl font-bold text-white`}>
-                  {fifoPreview.netProfit >= 0 ? '+' : ''}{formatCurrency(fifoPreview.netProfit)}
-                </p>
+                  <div className={`p-4 rounded-xl border flex flex-col justify-center ${fifoPreview.netProfit >= 0
+                      ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50'
+                      : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/50'
+                    }`}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className={fifoPreview.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                        CGT (15%)
+                      </span>
+                      <span className={fifoPreview.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                        -{formatCurrency(fifoPreview.totalCGT)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className={`block text-xs font-semibold uppercase tracking-wide mb-1 ${fifoPreview.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                        }`}>
+                        {fifoPreview.netProfit >= 0 ? 'Net Profit' : 'Net Loss'}
+                      </span>
+                      <span className={`block text-2xl font-bold ${fifoPreview.netProfit >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'
+                        }`}>
+                        {fifoPreview.netProfit >= 0 ? '+' : ''}{formatCurrency(fifoPreview.netProfit)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {fifoPreview && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-              <input
-                type="checkbox"
-                id="confirm-cgt"
-                checked={confirmUnderstanding}
-                onChange={(e) => setConfirmUnderstanding(e.target.checked)}
-                className="mt-0.5 w-5 h-5 text-indigo-600 border-2 border-amber-400 dark:border-amber-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 cursor-pointer"
-              />
-              <label htmlFor="confirm-cgt" className="text-sm font-medium text-amber-900 dark:text-amber-200 cursor-pointer leading-relaxed">
-                I understand this sale will trigger Capital Gains Tax (CGT) at 15% and permanently update my portfolio holdings.
-              </label>
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={savingSell}
+                className="flex-1 px-6 py-3 rounded-xl font-semibold text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingSell || !stock.symbol || !sellShares || !pricePerShare}
+                className="flex-1 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {savingSell ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Recording Sale...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Confirm Sale
+                  </>
+                )}
+              </button>
             </div>
           )}
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={savingSell}
-              className="flex-1 px-6 py-3 rounded-xl font-semibold text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={savingSell || !stock.symbol || !sellShares || !pricePerShare || !confirmUnderstanding}
-              className="flex-1 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {savingSell ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Recording Sale...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Confirm Sale
-                </>
-              )}
-            </button>
-          </div>
 
         </form>
       )}

@@ -33,7 +33,6 @@ export default function ProfessionalHeader({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const stateInfo = marketState ? getMarketStateInfo(marketState) : null;
 
   const navLinks = [
     { href: '/companies', label: 'Companies' },
@@ -72,25 +71,6 @@ export default function ProfessionalHeader({
               </p>
             </div>
           </Link>
-
-          {/* Market Status Badge */}
-          {stateInfo && (
-            <div className="hidden md:flex items-center">
-              <div className={`h-4 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2`} />
-              <Badge
-                variant={stateInfo.variant}
-                className="text-[10px] px-2 py-0.5 h-6"
-              >
-                {stateInfo.showPulse && (
-                  <span className="relative inline-flex h-1.5 w-1.5 mr-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  </span>
-                )}
-                {stateInfo.label}
-              </Badge>
-            </div>
-          )}
         </div>
 
         {/* Center: Navigation & Search */}
@@ -128,7 +108,7 @@ export default function ProfessionalHeader({
 
         {/* Right: User & Controls */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Theme Toggle */}
+          {/* Theme Toggle 
           <button
             onClick={() => document.documentElement.classList.toggle('dark')}
             className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
@@ -138,7 +118,7 @@ export default function ProfessionalHeader({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
           </button>
-
+*/}
           {/* User Profile */}
           {user && (
             <div className="relative" ref={userMenuRef}>
