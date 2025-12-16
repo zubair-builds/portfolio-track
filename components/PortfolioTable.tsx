@@ -18,7 +18,7 @@ interface PortfolioTableProps {
 
 export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onRefresh }: PortfolioTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<keyof Stock | 'gainLoss' | 'gainLossPercent'>('symbol');
+  const [sortField, setSortField] = useState<keyof Stock | 'gainLoss' | 'gainLossPercent' | 'weight' | 'value'>('symbol');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   // Removed row expansion; Shares will be shown in main row
@@ -40,7 +40,7 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
     if (onRefresh) onRefresh();
   };
 
-  const handleSort = (field: keyof Stock | 'gainLoss' | 'gainLossPercent') => {
+  const handleSort = (field: keyof Stock | 'gainLoss' | 'gainLossPercent' | 'weight' | 'value') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -111,6 +111,13 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
       } else if (sortField === 'gainLossPercent') {
         aValue = ((a.currentPrice - a.avgBuy) / a.avgBuy) * 100;
         bValue = ((b.currentPrice - b.avgBuy) / b.avgBuy) * 100;
+      } else if (sortField === 'weight') {
+        const totalValue = result.reduce((sum, stock) => sum + (stock.shares * stock.currentPrice), 0);
+        aValue = ((a.shares * a.currentPrice) / totalValue) * 100;
+        bValue = ((b.shares * b.currentPrice) / totalValue) * 100;
+      } else if (sortField === 'value') {
+        aValue = a.shares * a.currentPrice;
+        bValue = b.shares * b.currentPrice;
       } else if (sortField === 'symbol') {
         return sortDirection === 'asc'
           ? a.symbol.localeCompare(b.symbol)
@@ -265,16 +272,24 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
 
                   {/* Value (Grouped) */}
                   <th className="text-right py-4 px-4">
-                    <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                    <button
+                      onClick={() => handleSort('value')}
+                      className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
                       Value
-                    </span>
+                      <SortIcon field="value" />
+                    </button>
                   </th>
 
                   {/* Weight */}
                   <th className="text-right py-4 px-4 w-32">
-                    <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                    <button
+                      onClick={() => handleSort('weight')}
+                      className="flex items-center justify-end gap-2 w-full font-semibold text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
                       Weight
-                    </span>
+                      <SortIcon field="weight" />
+                    </button>
                   </th>
 
                   {/* Gain/Loss (Grouped) */}
