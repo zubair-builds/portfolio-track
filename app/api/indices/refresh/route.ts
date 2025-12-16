@@ -123,6 +123,7 @@ export async function GET(request: NextRequest) {
           };
 
           successCount++;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           results[index.symbol] = {
             success: false,

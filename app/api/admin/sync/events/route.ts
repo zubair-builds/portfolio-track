@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
         syncEventEmitter.off('sync-update', listener);
         try {
           controller.close();
-        } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error) {
           // Ignore errors when closing
         }
       });
@@ -41,7 +42,8 @@ export async function GET(request: NextRequest) {
         try {
           const data = `data: ${JSON.stringify({ type: 'heartbeat', timestamp: new Date().toISOString() })}\n\n`;
           controller.enqueue(encoder.encode(data));
-        } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error) {
           clearInterval(heartbeat);
         }
       }, 30000);

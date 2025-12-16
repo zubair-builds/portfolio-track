@@ -318,12 +318,6 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
                   const gainLoss = currentValue - investment;
                   const gainLossPercent = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
                   const isPositive = gainLoss >= 0;
-                  const textColor = isPositive
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400';
-
-                  const bgColor = isPositive ? 'bg-emerald-50/50 dark:bg-emerald-900/50' : 'bg-rose-50/50 dark:bg-rose-900/50';
-
 
                   return (
                     <React.Fragment key={stock.symbol}>

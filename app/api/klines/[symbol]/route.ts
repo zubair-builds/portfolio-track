@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getClosingPrices, getKlineRange, getKlines } from '@/lib/klinesStore';
+import { getKlineRange, getKlines } from '@/lib/klinesStore';
 
 /**
  * GET /api/klines/[symbol]?timeframe=1d&range=1y

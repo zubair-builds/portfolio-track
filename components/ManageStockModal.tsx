@@ -60,6 +60,7 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [notes, setNotes] = useState('');
   const [sellError, setSellError] = useState<string | null>(null);
   const [savingSell, setSavingSell] = useState(false);

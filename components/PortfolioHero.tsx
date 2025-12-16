@@ -1,7 +1,6 @@
 'use client';
 
 import { PortfolioStats } from '../lib/portfolioData';
-import { MiniSparkline } from './MiniSparkline';
 
 interface PortfolioHeroProps {
   stats: PortfolioStats;
@@ -9,21 +8,14 @@ interface PortfolioHeroProps {
   isLoading?: boolean;
   benchmarkReturn?: number;
   benchmarkName?: string;
-  sparklineData?: number[];
   lastUpdated?: Date;
-  transactionStats?: {
-    totalRealizedGains: number;
-    totalCGTPaid: number;
-  } | null;
 }
 
 export default function PortfolioHero({
   stats,
   totalStocks,
   isLoading = false,
-  sparklineData,
-  lastUpdated,
-  transactionStats
+  lastUpdated
 }: PortfolioHeroProps) {
   if (isLoading) {
     return (
@@ -54,21 +46,6 @@ export default function PortfolioHero({
   const gainLossColor = isPositive
     ? 'text-emerald-400'
     : 'text-rose-400';
-
-  // Calculate Realized and Total Gains
-  const realizedGains = transactionStats?.totalRealizedGains || 0;
-  const totalGains = stats.totalGainLoss + realizedGains;
-  const isTotalPositive = totalGains >= 0;
-
-  // Generate sparkline data if not provided
-  const defaultSparklineData = sparklineData || (() => {
-    const points = 20;
-    const trend = stats.currentValue / stats.totalInvestment;
-    return Array.from({ length: points }, (_, i) => {
-      const progress = i / (points - 1);
-      return stats.totalInvestment * (1 + (trend - 1) * progress);
-    });
-  })();
 
   const statCards = [
     {

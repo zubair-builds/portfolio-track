@@ -12,6 +12,7 @@ export async function POST() {
     let successCount = 0;
     let failureCount = 0;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     Object.entries(results).forEach(([indexSymbol, result]: [string, { symbolCount: number; symbols: string[]; error?: string }]) => {
       totalIndices++;
       if (result.error) {

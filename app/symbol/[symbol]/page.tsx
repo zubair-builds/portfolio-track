@@ -56,6 +56,7 @@ export default function SymbolDetailPage({
 
   // Fetch KSE100 for market state
   const kse100Symbols = useMemo(() => ['KSE100'], []);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { indices: [kse100] } = useIndexPrices(kse100Symbols, { autoRefresh: false });
 
   const {
@@ -361,7 +362,6 @@ export default function SymbolDetailPage({
       <ProfessionalHeader
         user={user}
         onSignOut={handleSignOut}
-        marketState={kse100?.marketState}
       />
 
       <main className="space-y-6">

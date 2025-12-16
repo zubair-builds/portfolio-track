@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/jwt';
-import { getPaymentDividends, getPaymentDividendStats } from '@/lib/paymentDividendModel';
+import { getPaymentDividends } from '@/lib/paymentDividendModel';
 
 /**
  * GET /api/dividends/payments

@@ -3,20 +3,16 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Badge } from './ui/Badge';
 import HeaderSymbolSearch from './HeaderSymbolSearch';
-import { getMarketStateInfo } from '@/lib/constants';
 
 interface ProfessionalHeaderProps {
   user: { name: string; email: string } | null;
   onSignOut: () => void;
-  marketState?: string;
 }
 
 export default function ProfessionalHeader({
   user,
   onSignOut,
-  marketState,
 }: ProfessionalHeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);

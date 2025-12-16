@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import SettingsClient from './SettingsClient';
-import { APP_NAME, PAGE_TITLE_SUFFIX } from '@/lib/constants';
+import { PAGE_TITLE_SUFFIX } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: `Settings${PAGE_TITLE_SUFFIX}`,
