@@ -4,7 +4,6 @@ import { getCachedAnalysis, saveAnalysis, saveChatHistory } from '../../../../li
 import { getUserFromRequest } from '../../../../lib/jwt';
 import { saveSymbolPriceData, SymbolPriceData } from '../../../../lib/symbolsStore';
 
-const companyUrl2 = `https://dps.psx.com.pk/company/`;
 const companyUrl = `https://sarmaaya.pk/stocks/`;
 
 
@@ -348,7 +347,7 @@ Begin your stock analysis report now:`;
       const totalInvestment = stocks.reduce((sum, s) => sum + (s.shares * s.avgBuy), 0);
       const currentValue = stocks.reduce((sum, s) => sum + (s.shares * s.currentPrice), 0);
       // Fetch dividend income for user
-      const { netDividend = 0, taxDeducted = 0, zakatDeducted = 0 } = await import('../../../../lib/dividendUtils').then(m => m.getUserDividendIncome(userId));
+      const { netDividend = 0 } = await import('../../../../lib/dividendUtils').then(m => m.getUserDividendIncome(userId));
       const totalReturnAmount = currentValue - totalInvestment + netDividend;
       const totalReturn = (totalReturnAmount / totalInvestment) * 100;
 
@@ -603,13 +602,10 @@ Begin your portfolio review now:`;
       // Detect intent and fetch relevant context
       const messageLower = message.toLowerCase();
       let contextData = '';
-      let portfolioSymbols: string[] | undefined;
-
       // Portfolio context
       if (messageLower.includes('portfolio') || messageLower.includes('holdings') || messageLower.includes('my stocks') || (Array.isArray(stocks) && stocks.length > 0)) {
         if (Array.isArray(stocks) && stocks.length > 0) {
-          portfolioSymbols = stocks.map((s: { symbol: string }) => s.symbol);
-          const { enrichedData, kse100Data } = await fetchEnrichedPortfolioData(stocks);
+          const { kse100Data } = await fetchEnrichedPortfolioData(stocks);
 
           const totalInvestment = stocks.reduce((sum: number, s: { shares: number; avgBuy: number }) => sum + (s.shares * s.avgBuy), 0);
           const currentValue = stocks.reduce((sum: number, s: { shares: number; currentPrice: number }) => sum + (s.shares * s.currentPrice), 0);
@@ -631,7 +627,7 @@ Begin your portfolio review now:`;
       if (context?.symbol || messageLower.match(/\b[A-Z]{2,5}\b/)) {
         const symbolToAnalyze = context?.symbol || message.match(/\b([A-Z]{2,5})\b/)?.[1];
         if (symbolToAnalyze) {
-          const { symbolData, companyData, dividendData, kse100Data } = await fetchEnrichedStockData(symbolToAnalyze);
+          const { symbolData, dividendData } = await fetchEnrichedStockData(symbolToAnalyze);
 
           contextData += `\n\n**SYMBOL CONTEXT - ${symbolToAnalyze.toUpperCase()}:**\n`;
           if (symbolData) {
@@ -692,12 +688,6 @@ Respond to the user's question:`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const contents = [
-      {
-        role: 'user',
-        parts: [{ text: prompt }],
-      },
-    ];
 
     // For symbols mode, extract structured JSON from cached analysis
     if (mode === 'symbols') {

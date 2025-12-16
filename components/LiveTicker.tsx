@@ -478,6 +478,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
         }
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       ws.onerror = (event) => {
         if (!isMountedRef.current) return;
         console.error('WebSocket error occurred'); // Avoid logging the event object directly to prevent potential serialization issues
@@ -581,6 +582,7 @@ export default function LiveTicker({ marketType = 'REG', autoConnect = false, on
 
   // Expose connect/disconnect methods via ref if needed, but for now we'll use state-based approach
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getConnectionStatusColor = (): string => {
     switch (connectionState) {
       case 'connected':

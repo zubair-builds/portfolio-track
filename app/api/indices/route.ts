@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllIndices, getIndexStats } from '../../../lib/indicesStore';
+import { getAllIndices } from '../../../lib/indicesStore';
 
 /**
  * GET /api/indices

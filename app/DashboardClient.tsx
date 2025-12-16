@@ -30,7 +30,7 @@ export default function DashboardClient() {
 
     // Memoize the symbols array to prevent unnecessary re-fetches
     const kse100Symbols = useMemo(() => ['KSE100'], []);
-    const { indices: [kse100], loading: kse100Loading, refresh: refreshKse100 } = useIndexPrices(kse100Symbols, { autoRefresh: false });
+    const { indices: [kse100], loading: kse100Loading } = useIndexPrices(kse100Symbols, { autoRefresh: false });
     const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
     const { dividendStats } = useDividendData(user?.email, { includeBySymbol: true });
 
@@ -58,6 +58,7 @@ export default function DashboardClient() {
     // refreshingKse100 state removed
 
     // Fetch transaction stats for Hero component
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [transactionStats, setTransactionStats] = useState<{ totalRealizedGains: number; totalCGTPaid: number } | null>(null);
 
     useEffect(() => {
@@ -100,7 +101,6 @@ export default function DashboardClient() {
     const [showAddStock, setShowAddStock] = useState(false);
 
     const [showAddWatchlist, setShowAddWatchlist] = useState(false);
-    const [importing, setImporting] = useState(false);
 
     useEffect(() => {
         if (!initializing && !user) {
@@ -157,74 +157,6 @@ export default function DashboardClient() {
         }
 
         await refreshPortfolioData(); // Reload to fetch updated portfolio
-    };
-
-    const handleExport = async (format: 'json' | 'csv') => {
-        if (!user?.email) return;
-
-        try {
-            const response = await fetch(`/api/portfolio/export?format=${format}`, {
-                headers: {
-                    'X-User-Id': user.email,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Export failed');
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const now = new Date();
-            const exportTime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            a.download = `portfolio_${user.email}_${exportTime}.${format}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (err) {
-            console.error('Export error:', err);
-            alert('Failed to export portfolio');
-        }
-    };
-
-    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (!user?.email) return;
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        setImporting(true);
-
-        try {
-            const text = await file.text();
-            const data = JSON.parse(text);
-
-            const response = await fetch('/api/portfolio/import', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-User-Id': user.email,
-                },
-                body: JSON.stringify(data),
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                alert(result.message);
-                window.location.reload();
-            } else {
-                alert(result.error || 'Import failed');
-            }
-        } catch (err) {
-            console.error('Import error:', err);
-            alert('Failed to import portfolio. Please check the file format.');
-        } finally {
-            setImporting(false);
-            event.target.value = ''; // Reset file input
-        }
     };
 
     const handleAddWatchlist = async (itemData: { symbol: string; thesis?: string; targetPrice?: number; note?: string }) => {
@@ -370,7 +302,6 @@ export default function DashboardClient() {
                     <ProfessionalHeader
                         user={user}
                         onSignOut={handleSignOut}
-                        marketState={kse100?.marketState}
                     />
                 </div>
 
@@ -383,7 +314,6 @@ export default function DashboardClient() {
                                     stats={portfolioStats}
                                     totalStocks={portfolioStocks.length}
                                     isLoading={portfolioLoading && portfolioStocks.length === 0}
-                                    transactionStats={transactionStats}
                                 />
                             </div>
                         )}

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import ProfessionalHeader from '@/components/ProfessionalHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { parseTransaction, Transaction, Email } from '@/lib/emailParser';
 import Tabs from '@/components/Tabs';
 import TransactionBreakdownTable from '@/components/TransactionBreakdownTable';
@@ -18,8 +19,10 @@ export default function EmailsPage() {
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [totalResults, setTotalResults] = useState(0);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [searchQuery, setSearchQuery] = useState('from:einfo@cdspak.com.pk subject:"eAlert - Movement of Securities against Market Trade: Executed on"');
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [pageHistory, setPageHistory] = useState<string[]>([]);
@@ -68,6 +71,7 @@ export default function EmailsPage() {
     }
   }, [user, fetchEmails]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNextPage = () => {
     if (nextPageToken) {
       setPageHistory(prev => [...prev, nextPageToken]); // Add CURRENT page token before moving? 
@@ -186,6 +190,7 @@ export default function EmailsPage() {
 
   const [currentPageToken, setCurrentPageToken] = useState<string | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const loadNextPage = () => {
     if (nextPageToken) {
       setPageHistory(prev => [...prev, currentPageToken || '']);
@@ -194,6 +199,7 @@ export default function EmailsPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const loadPreviousPage = () => {
     if (pageHistory.length > 0) {
       const prevToken = pageHistory[pageHistory.length - 1];
@@ -212,6 +218,7 @@ export default function EmailsPage() {
     fetchEmails(currentPageToken);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearch = () => {
     // Reset pagination on search
     setPageHistory([]);
