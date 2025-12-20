@@ -11,6 +11,8 @@ import { saveCompanyData, type CompanyData } from './companiesStore';
 import { saveDividendBatch, type DividendRecord } from './dividendsStore';
 import { updateSymbolFundamentals } from './symbolsStore';
 import { saveIndexPrice, getAllIndices, getIndicesByFrequency, type IndexPriceData } from './indicesStore';
+import { syncNAVForAllFunds, syncNAVForFunds } from './mutualFundNavStore';
+import { getAllMutualFunds } from './mutualFundModel';
 import {
   updateProgress,
   completeSession,
@@ -816,5 +818,103 @@ async function runSyncWithTracking(type: 'companies' | 'dividends' | 'fundamenta
  */
 export function isSyncRunning(type: 'companies' | 'dividends' | 'fundamentals'): boolean {
   return activeSyncs.get(type) || false;
+}
+
+// ============================================================================
+// Mutual Fund NAV Sync
+// ============================================================================
+
+/**
+ * Run mutual fund NAV sync with progress tracking
+ */
+export async function runMutualFundNAVSync(
+  sessionId: string,
+  fundCodes?: string[]
+): Promise<void> {
+  const startTime = Date.now();
+  let successCount = 0;
+  let failedCount = 0;
+  const failedItems: string[] = [];
+
+  try {
+    let fundsToSync: string[];
+
+    if (fundCodes && fundCodes.length > 0) {
+      fundsToSync = fundCodes;
+    } else {
+      // Get all funds
+      const allFunds = await getAllMutualFunds();
+      fundsToSync = allFunds.map(f => f.fundCode);
+    }
+
+    if (fundsToSync.length === 0) {
+      await completeSession(sessionId, 'completed', undefined, 'No funds to sync');
+      return;
+    }
+
+    // Update progress
+    await updateProgress(
+      sessionId,
+      {
+        total: fundsToSync.length,
+        current: 0,
+        percentage: 0,
+        successCount: 0,
+        failedCount: 0,
+      },
+      'running'
+    );
+
+    // Sync NAV for each fund
+    for (let i = 0; i < fundsToSync.length; i++) {
+      const fundCode = fundsToSync[i];
+
+      try {
+        // Use syncNAVForFunds for individual fund
+        const result = await syncNAVForFunds([fundCode]);
+
+        if (result.success && result.fundsUpdated > 0) {
+          successCount++;
+        } else {
+          failedCount++;
+          failedItems.push(fundCode);
+        }
+      } catch (error) {
+        console.error(`Failed to sync NAV for ${fundCode}:`, error);
+        failedCount++;
+        failedItems.push(fundCode);
+      }
+
+      // Update progress
+      const current = i + 1;
+      const percentage = (current / fundsToSync.length) * 100;
+      const elapsedMs = Date.now() - startTime;
+      const eta = calculateETA(current, fundsToSync.length, elapsedMs);
+
+      await updateProgress(sessionId, {
+        current,
+        percentage,
+        currentItem: fundCode,
+        successCount,
+        failedCount,
+        estimatedTimeRemaining: eta,
+      });
+
+      // Rate limiting
+      if (i < fundsToSync.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    // Complete session
+    const duration = Math.round((Date.now() - startTime) / 1000);
+    await completeSession(sessionId, 'completed', duration, undefined);
+
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error('Unknown error');
+    console.error('Mutual Fund NAV sync error:', error);
+
+    await completeSession(sessionId, 'failed', undefined, error.message);
+  }
 }
 
