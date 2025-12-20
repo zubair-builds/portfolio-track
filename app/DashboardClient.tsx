@@ -8,10 +8,12 @@ import PortfolioTab from "../components/tabs/PortfolioTab";
 import WatchlistTab from "../components/tabs/WatchlistTab";
 import AnalyticsTab from "../components/tabs/AnalyticsTab";
 import AllocationTab from "../components/tabs/AllocationTab";
+import MutualFundsTab from "../components/tabs/MutualFundsTab";
 // CacheManager removed
 import AIFinancialChatbot from "../components/AIFinancialChatbot";
 import AddStockModal from "../components/AddStockModal";
-
+import AddMutualFundModal from "../components/AddMutualFundModal";
+import MutualFundTransactionUploadModal from "../components/MutualFundTransactionUploadModal";
 import AddWatchlistModal from "../components/AddWatchlistModal";
 import LiveTicker from "../components/LiveTicker";
 import { Stock, WatchlistItem, calculatePortfolioStats } from "../lib/portfolioData";
@@ -19,6 +21,7 @@ import { useAuth } from "../components/AuthProvider";
 import { useIndexPrices } from "../hooks/useIndexPrices";
 import { usePortfolioData } from "../hooks/usePortfolioData";
 import { useDividendData } from "../hooks/useDividendData";
+import { useMutualFundData } from "../hooks/useMutualFundData";
 import ProfessionalHeader from "../components/ProfessionalHeader";
 import PortfolioHero from "../components/PortfolioHero";
 import KSE100Widget from "../components/KSE100Widget";
@@ -33,6 +36,7 @@ export default function DashboardClient() {
     const { indices: [kse100], loading: kse100Loading } = useIndexPrices(kse100Symbols, { autoRefresh: false });
     const { stocks: portfolioStocks, watchlist, isLoading: portfolioLoading, isLoadingWatchlist, refresh: refreshPortfolioData, loadWatchlist } = usePortfolioData(user?.email, { loadWatchlist: false });
     const { dividendStats } = useDividendData(user?.email, { includeBySymbol: true });
+    const { holdings: mutualFundHoldings, isLoading: mutualFundsLoading, refresh: refreshMutualFunds } = useMutualFundData(user?.email);
 
     const [confirmDialog, setConfirmDialog] = useState<{
         open: boolean;
@@ -99,7 +103,8 @@ export default function DashboardClient() {
 
     // Modal states
     const [showAddStock, setShowAddStock] = useState(false);
-
+    const [showAddMutualFund, setShowAddMutualFund] = useState(false);
+    const [showMutualFundUpload, setShowMutualFundUpload] = useState(false);
     const [showAddWatchlist, setShowAddWatchlist] = useState(false);
 
     useEffect(() => {
@@ -260,6 +265,15 @@ export default function DashboardClient() {
                 </svg>
             ),
         },
+        {
+            id: 'mutual-funds',
+            label: 'Mutual Funds',
+            icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+        },
     ];
 
     if (initializing) {
@@ -386,6 +400,28 @@ export default function DashboardClient() {
                                     <AllocationTab stocks={portfolioStocks} isLoading={portfolioLoading} />
                                 </div>
                             )}
+
+                            {activeTab === 'mutual-funds' && (
+                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <MutualFundsTab
+                                        holdings={mutualFundHoldings}
+                                        isLoading={mutualFundsLoading}
+                                        onDeleteHolding={async (holding) => {
+                                            if (!user?.email) return;
+                                            const response = await fetch(`/api/mutual-funds?fundCode=${holding.fundCode}`, {
+                                                method: 'DELETE',
+                                                headers: { 'X-User-Id': user.email },
+                                            });
+                                            if (response.ok) {
+                                                await refreshMutualFunds();
+                                            }
+                                        }}
+                                        onAddHolding={() => setShowAddMutualFund(true)}
+                                        onUploadTransactions={() => setShowMutualFundUpload(true)}
+                                        onRefresh={refreshMutualFunds}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </main>
@@ -409,6 +445,39 @@ export default function DashboardClient() {
                     <AddWatchlistModal
                         onClose={() => setShowAddWatchlist(false)}
                         onSave={handleAddWatchlist}
+                    />
+                )}
+
+                {/* Add Mutual Fund Modal */}
+                {showAddMutualFund && (
+                    <AddMutualFundModal
+                        onClose={() => setShowAddMutualFund(false)}
+                        onSave={async (data) => {
+                            if (!user?.email) return;
+                            const response = await fetch('/api/mutual-funds', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-User-Id': user.email,
+                                },
+                                body: JSON.stringify(data),
+                            });
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Failed to add mutual fund');
+                            }
+                            await refreshMutualFunds();
+                        }}
+                    />
+                )}
+
+                {/* Mutual Fund Transaction Upload Modal */}
+                {showMutualFundUpload && (
+                    <MutualFundTransactionUploadModal
+                        onClose={() => setShowMutualFundUpload(false)}
+                        onUploadComplete={async () => {
+                            await refreshMutualFunds();
+                        }}
                     />
                 )}
 
