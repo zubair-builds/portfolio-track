@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { syncNAVForAllFunds, syncNAVForFunds } from '../../../../lib/mutualFundNavStore';
-import { getUserFromRequest } from '../../../../lib/jwt';
+import { syncNAVForAllFunds, syncNAVForFunds } from '../../../../../lib/mutualFundNavStore';
+import { getUserFromRequest } from '../../../../../lib/jwt';
 
 function getUserIdFromRequest(request: NextRequest): string | null {
   const jwtUser = getUserFromRequest(request);
