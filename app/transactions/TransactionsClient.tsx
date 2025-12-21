@@ -45,8 +45,8 @@ export default function TransactionsClient() {
         }
     };
 
-    const handleSignOut = () => {
-        signout();
+    const handleSignOut = async () => {
+        await signout();
         router.replace('/signin');
     };
 

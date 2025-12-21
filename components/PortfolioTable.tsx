@@ -236,8 +236,120 @@ export default function PortfolioTable({ stocks, onEditStock, onDeleteStock, onR
 
           {/* Single table view (no tabs) */}
 
-          {/* Table */}
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px] -mx-6 px-6 custom-scrollbar">
+          {/* Mobile Card View (Visible < md) */}
+          <div className="md:hidden space-y-4">
+            {filteredAndSortedStocks.map((stock) => {
+              const investment = stock.shares * stock.avgBuy;
+              const currentValue = stock.shares * stock.currentPrice;
+              const gainLoss = currentValue - investment;
+              const gainLossPercent = ((stock.currentPrice - stock.avgBuy) / stock.avgBuy) * 100;
+              const isPositive = gainLoss >= 0;
+              const meta = metadata.get(stock.symbol.toUpperCase());
+
+              return (
+                <div key={stock.symbol} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+                  {/* Header: Symbol & Price */}
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/symbol/${stock.symbol}`}
+                        className="font-bold text-lg text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                      >
+                        {stock.symbol}
+                      </Link>
+                      {stock.positionCount && stock.positionCount > 1 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                          {stock.positionCount}
+                        </span>
+                      )}
+                      {meta?.isNonCompliant !== undefined && (
+                        <span className="flex items-center">
+                          {meta.isNonCompliant ? (
+                            <svg className="w-4 h-4 text-rose-500 dark:text-rose-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-emerald-500 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="block font-bold text-slate-900 dark:text-white">₨{stock.currentPrice.toFixed(2)}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Avg: ₨{stock.avgBuy.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-4">
+                    <div>
+                      <span className="block text-xs text-slate-500 dark:text-slate-400">Shares</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{stock.shares.toLocaleString('en-PK')}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-xs text-slate-500 dark:text-slate-400">Value</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">₨{currentValue.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs text-slate-500 dark:text-slate-400">Weight</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                        {totalPortfolioValue > 0 ? ((currentValue / totalPortfolioValue) * 100).toFixed(1) : '0.0'}%
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-xs text-slate-500 dark:text-slate-400">Gain/Loss</span>
+                      <div className="flex flex-col items-end">
+                        <span className={`font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {isPositive ? '+' : ''}₨{gainLoss.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </span>
+                        <span className={`text-xs ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          ({isPositive ? '+' : ''}{gainLossPercent.toFixed(2)}%)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  {(onEditStock || onDeleteStock) && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openManageModal(stock);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                        Manage
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {filteredAndSortedStocks.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-slate-400 dark:text-slate-500 mb-4">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                  No stocks found
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Try searching with different keywords.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Table View (Hidden < md) */}
+          <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[600px] -mx-6 px-6 custom-scrollbar">
             <table className={`table-professional table-sticky-header w-full min-w-[900px]`}>
               <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
                 <tr className="border-b border-slate-200 dark:border-slate-700">

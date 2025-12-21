@@ -352,8 +352,8 @@ export default function SymbolDetailPage({
     }
   };
 
-  const handleSignOut = () => {
-    signout();
+  const handleSignOut = async () => {
+    await signout();
     router.replace('/signin');
   };
 

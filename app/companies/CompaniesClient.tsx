@@ -125,8 +125,8 @@ export default function CompaniesClient() {
         setCurrentPage(1); // Reset to first page when sorting changes
     };
 
-    const handleSignOut = () => {
-        signout();
+    const handleSignOut = async () => {
+        await signout();
         router.replace('/signin');
     };
 

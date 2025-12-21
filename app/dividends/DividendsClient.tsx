@@ -73,19 +73,31 @@ export default function DividendsClient() {
     }, [initializing, user, router]);
 
 
+    const [isLoading, setIsLoading] = useState(true);
+
     useEffect(() => {
-        fetchFinancialStats();
-        fetchSymbolStats();
+        const fetchAllData = async () => {
+            setIsLoading(true);
+            try {
+                await Promise.all([
+                    fetchFinancialStats(),
+                    fetchSymbolStats()
+                ]);
+            } catch (error) {
+                console.error('Error fetching dividend data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllData();
     }, []);
 
     const fetchFinancialStats = async () => {
         try {
-            console.log('Fetching financial stats...');
             const response = await fetch('/api/dividends/stats');
-            console.log('Response status:', response.status);
             if (response.ok) {
                 const data = await response.json();
-                console.log('Financial stats data:', data);
                 if (data.success && data.stats) {
                     setFinancialStats({
                         totalNetDividend: data.stats.totalNet,
@@ -94,8 +106,6 @@ export default function DividendsClient() {
                         totalZakatDeducted: data.stats.totalZakat,
                         count: data.stats.count
                     });
-                } else {
-                    console.error('API returned success: false or missing stats', data);
                 }
             }
         } catch (error) {
@@ -185,12 +195,13 @@ export default function DividendsClient() {
                 )}
 
                 {/* Symbol Breakdown */}
-                {symbolStats.length > 0 && (
+                {(isLoading || symbolStats.length > 0) && (
                     <DividendBreakdownTable
                         stats={symbolStats}
                         onToggleExpand={toggleExpand}
                         expandedSymbol={expandedSymbol}
                         symbolDetails={symbolDetails}
+                        isLoading={isLoading}
                     />
                 )}
             </main>

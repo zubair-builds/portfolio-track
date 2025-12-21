@@ -31,6 +31,7 @@ interface DividendBreakdownTableProps {
     expandedSymbol: string | null;
     symbolDetails: Record<string, Dividend[]>;
     isLoadingDetails?: boolean;
+    isLoading?: boolean;
 }
 
 export default function DividendBreakdownTable({
@@ -39,6 +40,7 @@ export default function DividendBreakdownTable({
     expandedSymbol,
     symbolDetails,
     isLoadingDetails = false,
+    isLoading = false,
 }: DividendBreakdownTableProps) {
     const [sortField, setSortField] = useState<keyof DividendSymbolStat>('totalNetDividend');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -136,7 +138,162 @@ export default function DividendBreakdownTable({
                     </div>
                 </div>
 
-                <div className="overflow-x-auto -mx-4 px-4">
+                {/* Mobile Card View (Visible < md) */}
+                <div className="md:hidden space-y-4">
+                    {isLoading ? (
+                        // Mobile Skeletons
+                        Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm animate-pulse">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700" />
+                                        <div className="space-y-2">
+                                            <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
+                                            <div className="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded" />
+                                        </div>
+                                    </div>
+                                    <div className="h-5 w-16 bg-slate-100 dark:bg-slate-800 rounded-full" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                                    <div className="space-y-1">
+                                        <div className="h-3 w-10 bg-slate-100 dark:bg-slate-800 rounded" />
+                                        <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+                                    </div>
+                                    <div className="space-y-1 text-right items-end flex flex-col">
+                                        <div className="h-3 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
+                                        <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="h-3 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
+                                        <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        filteredAndSortedStats.map((stat) => (
+                            <div
+                                key={stat.symbol}
+                                onClick={() => onToggleExpand(stat.symbol)}
+                                className={`bg-white dark:bg-slate-900 rounded-xl border transition-all duration-200 shadow-sm ${expandedSymbol === stat.symbol
+                                    ? 'border-indigo-500 ring-1 ring-indigo-500/20'
+                                    : 'border-slate-200 dark:border-slate-700'
+                                    }`}
+                            >
+                                {/* Card Content */}
+                                <div className="p-4">
+                                    {/* Header: Company & Payouts */}
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${expandedSymbol === stat.symbol
+                                                ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400'
+                                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                                }`}>
+                                                <svg className={`w-4 h-4 transition-transform duration-200 ${expandedSymbol === stat.symbol ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-slate-900 dark:text-white">{stat.symbol}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400 max-w-[150px] truncate">
+                                                    {stat.companyName}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                                            {stat.count} Payouts
+                                        </span>
+                                    </div>
+
+                                    {/* Metrics Grid */}
+                                    <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                                        <div>
+                                            <span className="block text-xs text-slate-500 dark:text-slate-400">Gross</span>
+                                            <span className="font-medium text-slate-700 dark:text-slate-200 tabular-nums">
+                                                {stat.totalGrossDividend.toLocaleString()}
+                                            </span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="block text-xs text-slate-500 dark:text-slate-400">Net Dividend</span>
+                                            <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                                {stat.totalNetDividend.toLocaleString()}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-xs text-slate-500 dark:text-slate-400">Tax / Zakat</span>
+                                            <div className="flex items-center gap-1.5 text-xs">
+                                                <span className="text-rose-600 dark:text-rose-400 tabular-nums">
+                                                    {stat.totalTaxDeducted.toLocaleString()}
+                                                </span>
+                                                <span className="text-slate-300">/</span>
+                                                <span className="text-amber-600 dark:text-amber-400 tabular-nums">
+                                                    {stat.totalZakatDeducted.toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Expanded Details */}
+                                {expandedSymbol === stat.symbol && (
+                                    <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 rounded-b-xl overflow-hidden">
+                                        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Payment History</h4>
+                                            {isLoadingDetails && !symbolDetails[stat.symbol] && (
+                                                <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                            )}
+                                        </div>
+                                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {symbolDetails[stat.symbol]?.map((detail) => (
+                                                <div key={detail._id} className="p-4 space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                                                            {formatDate(detail.paymentDate)}
+                                                        </span>
+                                                        <span className="text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-700">
+                                                            {detail.shares?.toLocaleString()} shares
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <div className="space-x-3 text-xs">
+                                                            <span className="text-slate-500">
+                                                                G: <span className="text-slate-700 dark:text-slate-300 font-medium">{detail.grossDividend?.toLocaleString() || '-'}</span>
+                                                            </span>
+                                                            <span className="text-slate-500">
+                                                                T: <span className="text-rose-600 dark:text-rose-400">{detail.taxDeducted?.toLocaleString() || '-'}</span>
+                                                            </span>
+                                                        </div>
+                                                        <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                            +{detail.netDividend?.toLocaleString() || '-'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {symbolDetails[stat.symbol]?.length === 0 && !isLoadingDetails && (
+                                                <div className="p-4 text-center text-xs text-slate-500">No details available</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+
+                    {!isLoading && filteredAndSortedStats.length === 0 && (
+                        <div className="text-center py-12">
+                            <div className="text-slate-400 dark:text-slate-500 mb-4">
+                                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No records found</h3>
+                            <p className="text-slate-600 dark:text-slate-400">Try adjusting your search</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Desktop Table View (Hidden on mobile) */}
+                <div className="hidden md:block overflow-x-auto -mx-4 px-4">
                     <table className="table-professional table-sticky-header w-full min-w-[900px]">
                         <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
                             <tr className="border-b border-slate-200 dark:border-slate-700">
@@ -198,143 +355,163 @@ export default function DividendBreakdownTable({
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredAndSortedStats.map((stat) => (
-                                <React.Fragment key={stat.symbol}>
-                                    <tr
-                                        onClick={() => onToggleExpand(stat.symbol)}
-                                        className={`border-b border-slate-100 dark:border-slate-800 cursor-pointer transition-colors ${expandedSymbol === stat.symbol
-                                            ? 'bg-indigo-50/50 dark:bg-indigo-900/20'
-                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                                            }`}
-                                    >
+                            {isLoading ? (
+                                // Desktop Skeletons
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={i} className="border-b border-slate-100 dark:border-slate-800 animate-pulse">
+                                        <td className="py-3 px-3"><div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700" /></td>
                                         <td className="py-3 px-3">
-                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${expandedSymbol === stat.symbol
-                                                ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400'
-                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                                                }`}>
-                                                <svg
-                                                    className={`w-4 h-4 transition-transform duration-200 ${expandedSymbol === stat.symbol ? 'rotate-90' : ''}`}
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
+                                            <div className="space-y-1">
+                                                <div className="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded" />
+                                                <div className="h-3 w-32 bg-slate-100 dark:bg-slate-800 rounded" />
                                             </div>
                                         </td>
-                                        <td className="py-3 px-3">
-                                            <div>
-                                                <div className="font-bold text-slate-900 dark:text-white">{stat.symbol}</div>
-                                                <div className="text-xs text-slate-500 dark:text-slate-400 max-w-[200px] truncate">
-                                                    {stat.companyName}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-3 text-center">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
-                                                {stat.count}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100 tabular-nums">
-                                                {stat.totalGrossDividend.toLocaleString()}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100 tabular-nums">
-                                                {stat.totalTaxDeducted.toLocaleString()}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 tabular-nums">
-                                                {stat.totalZakatDeducted.toLocaleString()}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 tabular-nums">
-                                                {stat.totalNetDividend.toLocaleString()}
-                                            </span>
-                                        </td>
+                                        <td className="py-3 px-3 text-center"><div className="h-5 w-8 mx-auto bg-slate-100 dark:bg-slate-800 rounded-full" /></td>
+                                        <td className="py-3 px-3 text-right"><div className="h-5 w-20 ml-auto bg-slate-100 dark:bg-slate-800 rounded-full" /></td>
+                                        <td className="py-3 px-3 text-right"><div className="h-5 w-16 ml-auto bg-slate-100 dark:bg-slate-800 rounded-full" /></td>
+                                        <td className="py-3 px-3 text-right"><div className="h-5 w-16 ml-auto bg-slate-100 dark:bg-slate-800 rounded-full" /></td>
+                                        <td className="py-3 px-3 text-right"><div className="h-5 w-20 ml-auto bg-slate-200 dark:bg-slate-700 rounded-full" /></td>
                                     </tr>
-
-                                    {/* Expanded Details Row */}
-                                    {expandedSymbol === stat.symbol && (
-                                        <tr className="bg-slate-50/80 dark:bg-slate-900/80 shadow-inner">
-                                            <td colSpan={7} className="px-4 py-4 sm:px-8">
-                                                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm ring-1 ring-slate-900/5">
-                                                    <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
-                                                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                                            Payment History
-                                                        </h4>
-                                                        {isLoadingDetails && !symbolDetails[stat.symbol] && (
-                                                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                                <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                                                                Loading details...
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-sm text-left">
-                                                            <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500 dark:text-slate-400 font-medium">
-                                                                <tr>
-                                                                    <th className="px-4 py-2">Date</th>
-                                                                    <th className="px-4 py-2 text-right">Shares</th>
-                                                                    <th className="px-4 py-2 text-right">Gross</th>
-                                                                    <th className="px-4 py-2 text-right">Tax</th>
-                                                                    <th className="px-4 py-2 text-right">Zakat</th>
-                                                                    <th className="px-4 py-2 text-right">Net</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                                {symbolDetails[stat.symbol]?.map((detail) => (
-                                                                    <tr key={detail._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                                                                        <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 tabular-nums">
-                                                                            {formatDate(detail.paymentDate)}
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300 tabular-nums font-mono">
-                                                                            {detail.shares?.toLocaleString() || '-'}
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5 text-right">
-                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100 tabular-nums">
-                                                                                {detail.grossDividend?.toLocaleString() || '-'}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5 text-right">
-                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100 tabular-nums">
-                                                                                {detail.taxDeducted?.toLocaleString() || '-'}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5 text-right">
-                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 tabular-nums">
-                                                                                {detail.zakatDeducted?.toLocaleString() || '-'}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5 text-right">
-                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 tabular-nums">
-                                                                                {detail.netDividend?.toLocaleString() || '-'}
-                                                                            </span>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                                {!symbolDetails[stat.symbol] && !isLoadingDetails && (
-                                                                    <tr>
-                                                                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                                                                            No details available
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </tbody>
-                                                        </table>
+                                ))
+                            ) : (
+                                filteredAndSortedStats.map((stat) => (
+                                    <React.Fragment key={stat.symbol}>
+                                        <tr
+                                            onClick={() => onToggleExpand(stat.symbol)}
+                                            className={`border-b border-slate-100 dark:border-slate-800 cursor-pointer transition-colors ${expandedSymbol === stat.symbol
+                                                ? 'bg-indigo-50/50 dark:bg-indigo-900/20'
+                                                : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                }`}
+                                        >
+                                            <td className="py-3 px-3">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${expandedSymbol === stat.symbol
+                                                    ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400'
+                                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                                    }`}>
+                                                    <svg
+                                                        className={`w-4 h-4 transition-transform duration-200 ${expandedSymbol === stat.symbol ? 'rotate-90' : ''}`}
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-3">
+                                                <div>
+                                                    <div className="font-bold text-slate-900 dark:text-white">{stat.symbol}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400 max-w-[200px] truncate">
+                                                        {stat.companyName}
                                                     </div>
                                                 </div>
                                             </td>
+                                            <td className="py-3 px-3 text-center">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                                                    {stat.count}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-right">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100 tabular-nums">
+                                                    {stat.totalGrossDividend.toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-right">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100 tabular-nums">
+                                                    {stat.totalTaxDeducted.toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-right">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 tabular-nums">
+                                                    {stat.totalZakatDeducted.toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-right">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 tabular-nums">
+                                                    {stat.totalNetDividend.toLocaleString()}
+                                                </span>
+                                            </td>
                                         </tr>
-                                    )}
-                                </React.Fragment>
-                            ))}
 
-                            {filteredAndSortedStats.length === 0 && (
+                                        {/* Expanded Details Row */}
+                                        {expandedSymbol === stat.symbol && (
+                                            <tr className="bg-slate-50/80 dark:bg-slate-900/80 shadow-inner">
+                                                <td colSpan={7} className="px-4 py-4 sm:px-8">
+                                                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm ring-1 ring-slate-900/5">
+                                                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
+                                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                                Payment History
+                                                            </h4>
+                                                            {isLoadingDetails && !symbolDetails[stat.symbol] && (
+                                                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                                    <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                                                    Loading details...
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="overflow-x-auto">
+                                                            <table className="w-full text-sm text-left">
+                                                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500 dark:text-slate-400 font-medium">
+                                                                    <tr>
+                                                                        <th className="px-4 py-2">Date</th>
+                                                                        <th className="px-4 py-2 text-right">Shares</th>
+                                                                        <th className="px-4 py-2 text-right">Gross</th>
+                                                                        <th className="px-4 py-2 text-right">Tax</th>
+                                                                        <th className="px-4 py-2 text-right">Zakat</th>
+                                                                        <th className="px-4 py-2 text-right">Net</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                                                    {symbolDetails[stat.symbol]?.map((detail) => (
+                                                                        <tr key={detail._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                                                            <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 tabular-nums">
+                                                                                {formatDate(detail.paymentDate)}
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300 tabular-nums font-mono">
+                                                                                {detail.shares?.toLocaleString() || '-'}
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-right">
+                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100 tabular-nums">
+                                                                                    {detail.grossDividend?.toLocaleString() || '-'}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-right">
+                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100 tabular-nums">
+                                                                                    {detail.taxDeducted?.toLocaleString() || '-'}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-right">
+                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 tabular-nums">
+                                                                                    {detail.zakatDeducted?.toLocaleString() || '-'}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-right">
+                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 tabular-nums">
+                                                                                    {detail.netDividend?.toLocaleString() || '-'}
+                                                                                </span>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                    {symbolDetails[stat.symbol]?.length === 0 && !isLoadingDetails && (
+                                                                        <tr>
+                                                                            <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                                                                                No details available
+                                                                            </td>
+                                                                        </tr>
+                                                                    )}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                ))
+                            )}
+
+                            {!isLoading && filteredAndSortedStats.length === 0 && (
                                 <tr>
                                     <td colSpan={7} className="py-12 text-center">
                                         <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">

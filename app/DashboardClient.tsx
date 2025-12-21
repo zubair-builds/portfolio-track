@@ -113,8 +113,8 @@ export default function DashboardClient() {
         }
     }, [initializing, user, router]);
 
-    const handleSignOut = () => {
-        signout();
+    const handleSignOut = async () => {
+        await signout();
         router.replace('/signin');
     };
 

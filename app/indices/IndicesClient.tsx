@@ -57,8 +57,8 @@ export default function IndicesClient() {
         }
     };
 
-    const handleSignOut = () => {
-        signout();
+    const handleSignOut = async () => {
+        await signout();
         router.replace('/signin');
     };
 
