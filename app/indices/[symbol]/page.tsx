@@ -101,8 +101,8 @@ export default function IndexDetailPage() {
     fetchIndexData();
   }, [symbol]);
 
-  const handleSignOut = () => {
-    signout();
+  const handleSignOut = async () => {
+    await signout();
     router.replace('/signin');
   };
 
@@ -176,8 +176,8 @@ export default function IndexDetailPage() {
               <button
                 onClick={() => setActiveTab('overview')}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'overview'
-                    ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
                   }`}
               >
                 Overview
@@ -185,8 +185,8 @@ export default function IndexDetailPage() {
               <button
                 onClick={() => setActiveTab('chart')}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'chart'
-                    ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
                   }`}
               >
                 Chart
@@ -194,8 +194,8 @@ export default function IndexDetailPage() {
               <button
                 onClick={() => setActiveTab('constituents')}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'constituents'
-                    ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
                   }`}
               >
                 Constituents ({indexData.constituents?.length || 0})
@@ -388,8 +388,8 @@ export default function IndexDetailPage() {
                       <div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Change</p>
                         <p className={`text-lg font-semibold ${(chartStats.change || 0) >= 0
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-red-600 dark:text-red-400'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-red-600 dark:text-red-400'
                           }`}>
                           {chartStats.change !== undefined
                             ? `${chartStats.change >= 0 ? '+' : ''}${chartStats.change.toFixed(2)}%`

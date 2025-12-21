@@ -15,6 +15,7 @@ export default function ProfessionalHeader({
   onSignOut,
 }: ProfessionalHeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
@@ -29,6 +30,10 @@ export default function ProfessionalHeader({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [pathname]);
 
   const navLinks = [
     { href: '/companies', label: 'Companies' },
@@ -70,7 +75,7 @@ export default function ProfessionalHeader({
         </div>
 
         {/* Center: Navigation & Search */}
-        <div className="flex-1 flex items-center justify-center max-w-3xl px-4 gap-6">
+        <div className="flex-1 flex items-center justify-end lg:justify-center max-w-3xl px-4 gap-6">
           {/* Nav Links - Desktop */}
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
@@ -96,25 +101,32 @@ export default function ProfessionalHeader({
             })}
           </nav>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md w-full">
+          {/* Search Bar - Hidden on small mobile, visible on larger screens */}
+          <div className="hidden sm:block flex-1 max-w-md w-full">
             <HeaderSymbolSearch />
           </div>
         </div>
 
         {/* Right: User & Controls */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Theme Toggle 
+
+          {/* Mobile Menu Button */}
           <button
-            onClick={() => document.documentElement.classList.toggle('dark')}
-            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            title="Toggle dark mode"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="lg:hidden p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+            aria-label="Toggle mobile menu"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
+            {showMobileMenu ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
           </button>
-*/}
+
           {/* User Profile */}
           {user && (
             <div className="relative" ref={userMenuRef}>
@@ -171,6 +183,42 @@ export default function ProfessionalHeader({
           )}
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div className="lg:hidden absolute top-16 left-0 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-lg animate-in slide-in-from-top-4 fade-in duration-200">
+
+          {/* Mobile Search - Visible only on small screens where main search is hidden */}
+          <div className="sm:hidden p-4 border-b border-slate-100 dark:border-slate-800">
+            <HeaderSymbolSearch />
+          </div>
+
+          <nav className="flex flex-col p-2 space-y-1">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setShowMobileMenu(false)}
+                  className={`
+                    flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-all duration-200
+                    ${isActive
+                      ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }
+                  `}
+                >
+                  {link.label}
+                  {isActive && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

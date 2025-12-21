@@ -15,7 +15,7 @@ interface AuthContextValue {
   initializing: boolean;
   signup: (input: { name: string; email: string; password: string }) => Promise<void>;
   signin: (input: { email: string; password: string }) => Promise<void>;
-  signout: () => void;
+  signout: () => Promise<void>;
 }
 
 const CURRENT_USER_KEY = 'portfolioTrack.currentUser';
@@ -140,9 +140,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     setUser(data.user);
   }, []);
 
-  const signout = useCallback(() => {
-    persistCurrentUser(null);
-    setUser(null);
+  const signout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' });
+    } catch (error) {
+      console.error('Signout failed:', error);
+    } finally {
+      persistCurrentUser(null);
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(

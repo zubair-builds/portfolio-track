@@ -234,8 +234,8 @@ export default function EmailsPage() {
     setTransactionPage(1);
   }, [emails]);
 
-  const handleSignOut = () => {
-    signout();
+  const handleSignOut = async () => {
+    await signout();
     router.replace('/signin');
   };
 
