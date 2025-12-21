@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure fund exists
-    let fund = await getMutualFund(fundCode);
+    const fund = await getMutualFund(fundCode);
     if (!fund) {
       return NextResponse.json(
         { error: `Fund with code ${fundCode} not found. Please create the fund first.` },

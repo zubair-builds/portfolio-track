@@ -5,7 +5,6 @@ import {
   deleteMutualFundHolding,
   syncHoldingsFromTransactions,
   createOrUpdateMutualFund,
-  getMutualFund,
   type MutualFundHoldingInput,
 } from '../../../lib/mutualFundModel';
 import { getCurrentNAV } from '../../../lib/mutualFundNavStore';

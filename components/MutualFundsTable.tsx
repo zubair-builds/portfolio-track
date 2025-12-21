@@ -7,10 +7,9 @@ import { Card, CardContent } from './ui/Card';
 interface MutualFundsTableProps {
   holdings: MutualFundHolding[];
   onDeleteHolding?: (holding: MutualFundHolding) => void;
-  onRefresh?: () => void;
 }
 
-export default function MutualFundsTable({ holdings, onDeleteHolding, onRefresh }: MutualFundsTableProps) {
+export default function MutualFundsTable({ holdings, onDeleteHolding }: MutualFundsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<keyof MutualFundHolding | 'gainLoss' | 'gainLossPercent'>('fundCode');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -38,7 +37,9 @@ export default function MutualFundsTable({ holdings, onDeleteHolding, onRefresh 
 
     // Sort
     result.sort((a, b) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let aVal: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let bVal: any;
 
       if (sortField === 'gainLoss') {
@@ -193,11 +194,10 @@ export default function MutualFundsTable({ holdings, onDeleteHolding, onRefresh 
                     <td className="px-4 py-3 text-sm text-right">
                       {holding.gainLoss !== undefined ? (
                         <span
-                          className={`font-medium ${
-                            holding.gainLoss >= 0
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-rose-600 dark:text-rose-400'
-                          }`}
+                          className={`font-medium ${holding.gainLoss >= 0
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-rose-600 dark:text-rose-400'
+                            }`}
                         >
                           {formatCurrency(holding.gainLoss)} ({formatPercent(holding.gainLossPercent)})
                         </span>

@@ -4,7 +4,6 @@ import {
   getLatestNAV,
   getAllMutualFunds,
   updateMutualFundNAV,
-  type MutualFundNAVInput,
 } from './mutualFundModel';
 
 /**
@@ -67,7 +66,8 @@ export async function getNAVHistoryForChart(
  * This function can be extended to fetch from external APIs
  */
 export async function syncNAVForAllFunds(): Promise<NAVSyncResult> {
-  const funds = await getAllMutualFunds();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _funds = await getAllMutualFunds();
   const result: NAVSyncResult = {
     success: true,
     fundsUpdated: 0,
@@ -102,7 +102,8 @@ export async function syncNAVForAllFunds(): Promise<NAVSyncResult> {
 /**
  * Sync NAV for specific funds
  */
-export async function syncNAVForFunds(fundCodes: string[]): Promise<NAVSyncResult> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function syncNAVForFunds(_fundCodes: string[]): Promise<NAVSyncResult> {
   const result: NAVSyncResult = {
     success: true,
     fundsUpdated: 0,
@@ -152,7 +153,7 @@ export async function getNAVStats(fundCode: string, days: number = 30): Promise<
   from.setDate(from.getDate() - days);
 
   const history = await getMutualFundNAVHistory(fundCode, from, new Date(), 1000);
-  
+
   if (history.length === 0) {
     return {
       currentNAV: null,
