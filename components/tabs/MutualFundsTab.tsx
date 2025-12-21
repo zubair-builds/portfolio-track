@@ -20,7 +20,7 @@ export default function MutualFundsTab({
   onDeleteHolding,
   onAddHolding,
   onUploadTransactions,
-  onRefresh,
+
 }: MutualFundsTabProps) {
   if (isLoading && holdings.length === 0) {
     return (
@@ -71,11 +71,10 @@ export default function MutualFundsTab({
           <div className="rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-4">
             <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Gain/Loss</div>
             <div
-              className={`text-2xl font-bold ${
-                totalGainLoss >= 0
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-rose-600 dark:text-rose-400'
-              }`}
+              className={`text-2xl font-bold ${totalGainLoss >= 0
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-rose-600 dark:text-rose-400'
+                }`}
             >
               {totalGainLoss >= 0 ? '+' : ''}
               ₨{totalGainLoss.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -123,7 +122,7 @@ export default function MutualFundsTab({
         <MutualFundsTable
           holdings={holdings}
           onDeleteHolding={onDeleteHolding}
-          onRefresh={onRefresh}
+
         />
       </section>
     </div>

@@ -151,7 +151,7 @@ function normalizeTransactionType(type: string | undefined): 'BUY' | 'SELL' | 'R
   if (!type) return null;
 
   const normalized = type.trim().toUpperCase();
-  
+
   if (normalized.includes('BUY') || normalized.includes('PURCHASE') || normalized.includes('INVEST')) {
     return 'BUY';
   }
@@ -295,8 +295,10 @@ export function parseAndValidate(buffer: Buffer): ParseResult {
 export async function parsePDFFile(buffer: Buffer): Promise<ParseResult> {
   try {
     // Dynamic import to avoid issues if pdf-parse is not installed
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     const pdfParse = await import('pdf-parse').catch(() => null);
-    
+
     if (!pdfParse || !pdfParse.default) {
       return {
         success: false,

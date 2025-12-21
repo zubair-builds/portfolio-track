@@ -11,7 +11,7 @@ import { saveCompanyData, type CompanyData } from './companiesStore';
 import { saveDividendBatch, type DividendRecord } from './dividendsStore';
 import { updateSymbolFundamentals } from './symbolsStore';
 import { saveIndexPrice, getAllIndices, getIndicesByFrequency, type IndexPriceData } from './indicesStore';
-import { syncNAVForAllFunds, syncNAVForFunds } from './mutualFundNavStore';
+import { syncNAVForFunds } from './mutualFundNavStore';
 import { getAllMutualFunds } from './mutualFundModel';
 import {
   updateProgress,
@@ -907,8 +907,13 @@ export async function runMutualFundNAVSync(
     }
 
     // Complete session
-    const duration = Math.round((Date.now() - startTime) / 1000);
-    await completeSession(sessionId, 'completed', duration, undefined);
+    // const duration = Math.round((Date.now() - startTime) / 1000);
+    await completeSession(sessionId, 'completed', {
+      processed: fundsToSync.length,
+      successful: successCount,
+      failed: failedCount,
+      failedItems: failedItems.length > 0 ? failedItems : undefined,
+    });
 
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Unknown error');
