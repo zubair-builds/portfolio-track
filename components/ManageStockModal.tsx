@@ -24,6 +24,15 @@ interface FIFOLotPreview {
   gain: number;
 }
 
+interface Transaction {
+  _id: string;
+  transactionDate: string;
+  transactionType: 'BUY' | 'SELL';
+  shares: number;
+  pricePerShare: number;
+  totalAmount: number;
+}
+
 interface FIFOPreview {
   lotsUsed: FIFOLotPreview[];
   totalCost: number;
@@ -36,7 +45,12 @@ interface FIFOPreview {
 
 export default function ManageStockModal({ stock, onClose, onSave, onDelete, onSellComplete, onUpdated }: ManageStockModalProps) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'edit' | 'sell'>('edit');
+  const [activeTab, setActiveTab] = useState<'edit' | 'sell' | 'history'>('edit');
+
+  // History state
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   // Edit state
   const [shares, setShares] = useState(stock.shares.toString());
@@ -113,6 +127,61 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
       setFetchingPreview(false);
     }
   }, [stock.symbol, sellShares, pricePerShare, transactionDate]);
+
+  // Fetch history
+  const fetchHistory = useCallback(async () => {
+    if (!stock.symbol) return;
+    setLoadingHistory(true);
+    setHistoryError(null);
+    try {
+      const response = await fetch(`/api/transactions?symbol=${stock.symbol}&userId=${user?.email}&sortOrder=desc`);
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setTransactions(result.data.transactions);
+      } else {
+        setHistoryError('Failed to load transaction history');
+      }
+    } catch (err) {
+      console.error('Error fetching history:', err);
+      setHistoryError('Failed to load transaction history');
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [stock.symbol, user?.email]);
+
+  // Load history when tab changes
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchHistory();
+    }
+  }, [activeTab, fetchHistory]);
+
+  const handleDeleteTransaction = async (txId: string) => {
+    if (!confirm('Are you sure you want to delete this transaction? This will recalculate your portfolio position.')) return;
+
+    try {
+      const response = await fetch(`/api/transactions?transactionId=${txId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Refresh history
+        fetchHistory();
+        // Notify parent to refresh portfolio if needed
+        if (onUpdated) onUpdated();
+      } else {
+        alert(result.error || 'Failed to delete transaction');
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      alert('Failed to delete transaction');
+    }
+  };
 
   // Auto-fetch FIFO preview when shares or price changes
   useEffect(() => {
@@ -327,6 +396,20 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
               Record Sale
+            </div>
+          </button>
+          <button
+            className={`flex-1 px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${activeTab === 'history'
+              ? 'bg-white text-indigo-700 shadow-lg shadow-indigo-900/20'
+              : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
+            onClick={() => setActiveTab('history')}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History
             </div>
           </button>
         </div>
@@ -685,6 +768,94 @@ export default function ManageStockModal({ stock, onClose, onSave, onDelete, onS
           )}
 
         </form>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Transaction History</h3>
+            <button
+              onClick={fetchHistory}
+              className="p-2 text-slate-500 hover:text-indigo-600 transition-colors"
+              title="Refresh History"
+            >
+              <svg className={`w-5 h-5 ${loadingHistory ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          {historyError && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-sm rounded-lg">
+              {historyError}
+            </div>
+          )}
+
+          {loadingHistory && transactions.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-sm text-slate-500">Loading history...</p>
+            </div>
+          ) : transactions.length > 0 ? (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-400">Date</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-400">Type</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-400">Shares</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-400">Price</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-400">Total</th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-400">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                    {transactions.map((tx) => (
+                      <tr key={tx._id} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td className="px-4 py-3 text-slate-900 dark:text-slate-100">
+                          {new Date(tx.transactionDate).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${tx.transactionType === 'BUY'
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                            }`}>
+                            {tx.transactionType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100">
+                          {formatNumber(tx.shares)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">
+                          {formatCurrency(tx.pricePerShare)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100">
+                          {formatCurrency(tx.totalAmount)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleDeleteTransaction(tx._id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                            title="Delete Transaction"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+              <p className="text-slate-500 dark:text-slate-400">No transaction history found</p>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Delete Confirmation Dialog */}

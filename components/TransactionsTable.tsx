@@ -34,9 +34,11 @@ interface Transaction {
 interface TransactionsTableProps {
   userId: string;
   className?: string;
+  onTransactionChange?: () => void;
 }
 
-export default function TransactionsTable({ className = '' }: TransactionsTableProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function TransactionsTable({ userId, className = '', onTransactionChange }: TransactionsTableProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +57,6 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
   // Sorting
   const [sortField, setSortField] = useState<string>('transactionDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  // Expanded notes
-  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -65,7 +65,7 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
     confirmLabel?: string;
     confirmVariant?: 'primary' | 'danger';
     onConfirm: () => Promise<void> | void;
-  }>({ open: false, title: '', onConfirm: () => {} });
+  }>({ open: false, title: '', onConfirm: () => { } });
 
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
 
@@ -117,7 +117,7 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
     setConfirmDialog({
       open: true,
       title: 'Delete transaction?',
-      message: 'This cannot be undone.',
+      message: 'This cannot be undone and will affect your portfolio history.',
       confirmLabel: 'Delete',
       confirmVariant: 'danger',
       onConfirm: async () => {
@@ -133,6 +133,7 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
 
           if (response.ok && result.success) {
             fetchTransactions();
+            if (onTransactionChange) onTransactionChange();
           } else {
             alert(result.error || 'Failed to delete transaction');
           }
@@ -146,18 +147,8 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
     });
   };
 
-  const toggleNoteExpansion = (id: string) => {
-    const newExpanded = new Set(expandedNotes);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedNotes(newExpanded);
-  };
-
   const exportToCSV = () => {
-    const headers = ['Date', 'Symbol', 'Type', 'Shares', 'Price', 'Total', 'Realized Gain', 'CGT', 'Notes'];
+    const headers = ['Date', 'Symbol', 'Type', 'Shares', 'Price', 'Total', 'Realized Gain', 'CGT'];
     const rows = transactions.map(tx => [
       new Date(tx.transactionDate).toLocaleDateString(),
       tx.symbol,
@@ -167,7 +158,6 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
       tx.totalAmount.toFixed(2),
       tx.realizedGain?.toFixed(2) || '',
       tx.cgtAmount?.toFixed(2) || '',
-      tx.notes || '',
     ]);
 
     const csvContent = [headers, ...rows]
@@ -245,8 +235,8 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
                   key={type}
                   onClick={() => setTypeFilter(type)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${typeFilter === type
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                     }`}
                 >
                   {type === 'all' ? 'All' : type === 'BUY' ? 'Buys' : 'Sells'}
@@ -332,7 +322,6 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
                     Gain/Loss <SortIcon field="realizedGain" />
                   </div>
                 </TableHead>
-                <TableHead>Notes</TableHead>
                 <TableHead className="text-center w-16">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -370,8 +359,8 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
                   <TableCell className="text-center">
                     {tx.holdingPeriodDays !== undefined && (
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${tx.holdingPeriodDays >= 365
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                         }`}>
                         {tx.holdingPeriodDays}d
                       </span>
@@ -394,27 +383,11 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="max-w-xs">
-                    {tx.notes && (
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        <p className={expandedNotes.has(tx._id) ? '' : 'truncate'}>
-                          {tx.notes}
-                        </p>
-                        {tx.notes.length > 50 && (
-                          <button
-                            onClick={() => toggleNoteExpansion(tx._id)}
-                            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 mt-0.5 font-medium"
-                          >
-                            {expandedNotes.has(tx._id) ? 'Show less' : 'Show more'}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
+
                   <TableCell className="text-center">
                     <button
                       onClick={() => handleDelete(tx._id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all dark:text-slate-500 dark:hover:text-rose-400 dark:hover:bg-rose-900/20"
+                      className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all shadow-sm border border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 dark:border-rose-900/50"
                       title="Delete transaction"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -460,8 +433,8 @@ export default function TransactionsTable({ className = '' }: TransactionsTableP
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
                         className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${page === pageNum
-                            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                           }`}
                       >
                         {pageNum}
