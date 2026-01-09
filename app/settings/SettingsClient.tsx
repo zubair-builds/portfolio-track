@@ -171,7 +171,7 @@ export default function SettingsClient() {
                         </div>
                     </section>
 
-                    {/* Section: Appearance */}
+                    {/* Section: Appearance 
                     <section className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                             <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +194,7 @@ export default function SettingsClient() {
                             </button>
                         </div>
                     </section>
-
+*/}
                     {/* Section: Data Management */}
                     <section className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">

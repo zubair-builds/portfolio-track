@@ -38,6 +38,54 @@ export default function DashboardClient() {
     const { dividendStats } = useDividendData(user?.email, { includeBySymbol: true });
     const { holdings: mutualFundHoldings, isLoading: mutualFundsLoading, refresh: refreshMutualFunds } = useMutualFundData(user?.email);
 
+    // Available cash state
+    const [availableCash, setAvailableCash] = useState(0);
+
+    const refreshCash = async () => {
+        if (!user?.email) return;
+        try {
+            const response = await fetch('/api/cash', {
+                headers: { 'X-User-Id': user.email }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setAvailableCash(data.availableCash);
+            }
+        } catch (error) {
+            console.error('Failed to fetch cash:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.email) {
+            refreshCash();
+        }
+    }, [user?.email]);
+
+    const handleUpdateCash = async (amount: number) => {
+        if (!user?.email) return;
+        try {
+            const response = await fetch('/api/cash', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': user.email
+                },
+                body: JSON.stringify({ amount })
+            });
+
+            if (response.ok) {
+                await refreshCash();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to update cash');
+            }
+        } catch (error) {
+            console.error('Failed to update cash:', error);
+            alert('Failed to update cash');
+        }
+    };
+
     const [confirmDialog, setConfirmDialog] = useState<{
         open: boolean;
         title: string;
@@ -222,8 +270,8 @@ export default function DashboardClient() {
             zakatDeducted: dividendStats.totalZakat,
         } : undefined;
 
-        return calculatePortfolioStats(portfolioStocks, 0, dividendData);
-    }, [portfolioStocks, dividendStats]);
+        return calculatePortfolioStats(portfolioStocks, 0, dividendData, availableCash);
+    }, [portfolioStocks, dividendStats, availableCash]);
 
     // Define tabs
     const tabs: Tab[] = [
@@ -328,6 +376,7 @@ export default function DashboardClient() {
                                     stats={portfolioStats}
                                     totalStocks={portfolioStocks.length}
                                     isLoading={portfolioLoading && portfolioStocks.length === 0}
+                                    onUpdateCash={handleUpdateCash}
                                 />
                             </div>
                         )}
