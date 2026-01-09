@@ -10,6 +10,7 @@ export interface UserDocument {
   googleAccessToken?: string;
   googleRefreshToken?: string;
   googleTokenExpiry?: Date;
+  availableCash?: number;
   createdAt: Date;
   updatedAt: Date;
 }

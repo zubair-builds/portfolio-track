@@ -42,14 +42,15 @@ export interface PortfolioStats {
   totalGainLossPercent: number;
   topGainer: { symbol: string; gainPercent: number } | null;
   topLoser: { symbol: string; lossPercent: number } | null;
-  totalDividendIncome?: number; // Net dividend income received
-  grossDividendIncome?: number; // Before tax
-  dividendTaxDeducted?: number; // Total WHT
+  totalDividendIncome?: number;
+  grossDividendIncome?: number;
+  dividendTaxDeducted?: number;
   totalDividendTax?: number;
   totalDividendZakat?: number;
-  dividendYield?: number; // Dividend income as % of investment
-  totalReturnWithDividends?: number; // Gain/Loss + Dividends
-  totalReturnPercent?: number; // Total return as % of investment
+  dividendYield?: number;
+  totalReturnWithDividends?: number;
+  totalReturnPercent?: number;
+  availableCash: number;
 }
 
 export function calculatePortfolioStats(
@@ -60,8 +61,10 @@ export function calculatePortfolioStats(
     grossDividend?: number;
     taxDeducted?: number;
     zakatDeducted?: number;
-  }
+  },
+  availableCash?: number
 ): PortfolioStats {
+
   let totalInvestment = 0;
   let currentValue = 0;
   let topGainer = null;
@@ -109,6 +112,7 @@ export function calculatePortfolioStats(
     dividendYield,
     totalReturnWithDividends: totalGainLoss,
     totalReturnPercent: totalGainLossPercent,
+    availableCash: availableCash ?? 0,
   };
 }
 
