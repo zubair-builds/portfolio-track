@@ -178,11 +178,11 @@ export async function POST(req: NextRequest) {
           // Update shares if partial sale
           await portfolioCollection.updateOne(
             { userId, symbol: input.symbol },
-            { 
-              $set: { 
+            {
+              $set: {
                 shares: newShares,
                 updatedAt: new Date()
-              } 
+              }
             }
           );
         }
@@ -316,18 +316,96 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const success = await deleteTransaction(userId, transactionId);
-
-    if (!success) {
+    // Get the transaction before deleting to know the symbol
+    const transaction = await getTransactionById(userId, transactionId);
+    if (!transaction) {
       return NextResponse.json(
-        { success: false, error: 'Transaction not found or already deleted' },
+        { success: false, error: 'Transaction not found' },
         { status: 404 }
       );
     }
 
+    const success = await deleteTransaction(userId, transactionId);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to delete transaction' },
+        { status: 500 }
+      );
+    }
+
+    // --- RECALCULATE PORTFOLIO ---
+    const symbol = transaction.symbol;
+
+    // Get all active BUY transactions for this symbol
+    const buyTransactions = await getBuyTransactionsForSymbol(userId, symbol);
+
+    // Get all active SELL transactions for this symbol (to subtract sold shares)
+    const { getTransactions } = await import('@/lib/transactionModel');
+    const sellTransactionsResult = await getTransactions({
+      userId,
+      symbol,
+      transactionType: 'SELL',
+      status: 'active'
+    });
+
+    // Calculate total bought
+    let totalBuyShares = 0;
+    let totalBuyCost = 0;
+
+    buyTransactions.forEach(tx => {
+      totalBuyShares += tx.shares;
+      totalBuyCost += (tx.shares * tx.pricePerShare);
+    });
+
+    // Calculate total sold
+    let totalSoldShares = 0;
+    sellTransactionsResult.transactions.forEach(tx => {
+      totalSoldShares += tx.shares;
+    });
+
+    // Net position
+    const netShares = totalBuyShares - totalSoldShares;
+
+    // We recalculate weighted average based on remaining BUYS effectively.
+    // However, simple weighted average of ALL buys is usually kept until shares run out.
+    // But if we delete a BUY, we should re-average.
+    // Logic: 
+    // If netShares <= 0, remove from portfolio.
+    // If netShares > 0, update portfolio.
+    // For AvgBuy: simpler approach for MVP is: totalBuyCost / totalBuyShares (of all active buys).
+    // This assumes "Average Cost" method, not FIFO for the portfolio view itself (which is typical for display).
+    // Note: This approach doesn't account for SPECIFIC shares sold (FIFO) adjusting the cost basis, 
+    // but it's consistent with the "consolidate" logic used elsewhere.
+
+    const client = await clientPromise;
+    const db = client.db('portfolioTrack');
+    const portfolioCollection = db.collection('portfolios');
+
+    if (netShares <= 0) {
+      // Remove from portfolio
+      await portfolioCollection.deleteOne({ userId, symbol });
+    } else {
+      // Update portfolio
+      const weightedAvgBuy = totalBuyShares > 0 ? totalBuyCost / totalBuyShares : 0;
+
+      await portfolioCollection.updateOne(
+        { userId, symbol },
+        {
+          $set: {
+            shares: netShares,
+            avgBuy: weightedAvgBuy,
+            updatedAt: new Date()
+          }
+        },
+        { upsert: true }
+      );
+    }
+    // -----------------------------
+
     return NextResponse.json({
       success: true,
-      message: 'Transaction deleted successfully',
+      message: 'Transaction deleted and portfolio updated',
     });
   } catch (error) {
     console.error('Error deleting transaction:', error);

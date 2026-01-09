@@ -84,7 +84,10 @@ export default function TransactionsClient() {
                 <TransactionStatsCards stats={stats} loading={loadingStats} />
 
                 {/* Transactions Table */}
-                <TransactionsTable userId={user.email} />
+                <TransactionsTable
+                    userId={user.email}
+                    onTransactionChange={fetchStats}
+                />
             </main>
 
             <TransactionUploadModal
