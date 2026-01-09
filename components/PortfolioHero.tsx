@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { PortfolioStats } from '../lib/portfolioData';
 
 interface PortfolioHeroProps {
@@ -9,14 +11,19 @@ interface PortfolioHeroProps {
   benchmarkReturn?: number;
   benchmarkName?: string;
   lastUpdated?: Date;
+  onUpdateCash?: (amount: number) => Promise<void>;
 }
 
 export default function PortfolioHero({
   stats,
   totalStocks,
   isLoading = false,
-  lastUpdated
+  lastUpdated,
+  onUpdateCash
 }: PortfolioHeroProps) {
+  const [isEditingCash, setIsEditingCash] = useState(false);
+  const [editCashValue, setEditCashValue] = useState('');
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -47,6 +54,15 @@ export default function PortfolioHero({
     ? 'text-emerald-400'
     : 'text-rose-400';
 
+  const handleSaveCash = async () => {
+    if (!onUpdateCash) return;
+    const amount = parseFloat(editCashValue);
+    if (isNaN(amount) || amount < 0) return;
+
+    await onUpdateCash(amount);
+    setIsEditingCash(false);
+  };
+
   const statCards = [
     {
       title: 'Invested Amount',
@@ -59,6 +75,66 @@ export default function PortfolioHero({
       color: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100',
       iconBg: 'bg-white/60 dark:bg-indigo-800/50',
       borderColor: 'border-indigo-200 dark:border-indigo-800',
+    },
+    {
+      title: 'Available Cash',
+      value: isEditingCash ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            value={editCashValue}
+            onChange={(e) => setEditCashValue(e.target.value)}
+            className="w-full px-2 py-1 text-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            placeholder="Amount"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveCash();
+              if (e.key === 'Escape') setIsEditingCash(false);
+            }}
+          />
+          <button
+            onClick={handleSaveCash}
+            className="p-1 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setIsEditingCash(false)}
+            className="p-1 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between group">
+          <span>₨{(stats.availableCash || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          {onUpdateCash && (
+            <button
+              onClick={() => {
+                setEditCashValue(stats.availableCash?.toString() || '0');
+                setIsEditingCash(true);
+              }}
+              className="p-1 text-slate-400 hover:text-emerald-600 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+          )}
+        </div>
+      ),
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      color: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
+      iconBg: 'bg-white/60 dark:bg-emerald-800/50',
+      borderColor: 'border-emerald-200 dark:border-emerald-800',
     },
     {
       title: 'Current Positions',
@@ -124,7 +200,7 @@ export default function PortfolioHero({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, index) => (
           <div
             key={index}
@@ -140,9 +216,9 @@ export default function PortfolioHero({
                 <p className="text-sm font-medium opacity-80 mb-1">
                   {card.title}
                 </p>
-                <h3 className="text-2xl font-bold tracking-tight">
+                <div className="text-2xl font-bold tracking-tight">
                   {card.value}
-                </h3>
+                </div>
               </div>
             </div>
 
