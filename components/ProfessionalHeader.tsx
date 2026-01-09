@@ -38,6 +38,7 @@ export default function ProfessionalHeader({
   const navLinks = [
     { href: '/companies', label: 'Companies' },
     { href: '/indices', label: 'Indices' },
+    { href: '/ibkr', label: 'International' },
     { href: '/transactions', label: 'Transactions' },
     { href: '/dividends', label: 'Dividends' },
   ];
