@@ -16,8 +16,23 @@ export interface MutualFundDocument {
   fundName: string;
   amc?: string; // Asset Management Company
   category?: string; // Equity, Debt, Balanced, etc.
+  sector?: string; // Open-End Funds, etc.
+  rating?: string; // AA+(f), AAA(f), etc.
+  benchmark?: string; // Benchmark index
   currentNAV?: number;
   lastNAVUpdate?: Date;
+  // Performance metrics (returns in percentage)
+  ytdReturn?: number; // Year to Date return %
+  mtdReturn?: number; // Month to Date return %
+  return1Day?: number; // 1 Day return %
+  return15Days?: number; // 15 Days return %
+  return30Days?: number; // 30 Days return %
+  return90Days?: number; // 90 Days return %
+  return180Days?: number; // 180 Days return %
+  return270Days?: number; // 270 Days return %
+  return365Days?: number; // 365 Days return %
+  return2Years?: number; // 2 Years return %
+  return3Years?: number; // 3 Years return %
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +86,21 @@ export interface MutualFundInput {
   fundName: string;
   amc?: string;
   category?: string;
+  sector?: string;
+  rating?: string;
+  benchmark?: string;
+  // Performance metrics (returns in percentage)
+  ytdReturn?: number;
+  mtdReturn?: number;
+  return1Day?: number;
+  return15Days?: number;
+  return30Days?: number;
+  return90Days?: number;
+  return180Days?: number;
+  return270Days?: number;
+  return365Days?: number;
+  return2Years?: number;
+  return3Years?: number;
 }
 
 export interface MutualFundTransactionInput {
@@ -163,16 +193,33 @@ export async function createOrUpdateMutualFund(input: MutualFundInput): Promise<
   const collection = await getMutualFundsCollection();
   const now = new Date();
 
+  const updateFields: any = {
+    fundCode: input.fundCode.toUpperCase(),
+    fundName: input.fundName,
+    updatedAt: now,
+  };
+
+  if (input.amc !== undefined) updateFields.amc = input.amc;
+  if (input.category !== undefined) updateFields.category = input.category;
+  if (input.sector !== undefined) updateFields.sector = input.sector;
+  if (input.rating !== undefined) updateFields.rating = input.rating;
+  if (input.benchmark !== undefined) updateFields.benchmark = input.benchmark;
+  if (input.ytdReturn !== undefined) updateFields.ytdReturn = input.ytdReturn;
+  if (input.mtdReturn !== undefined) updateFields.mtdReturn = input.mtdReturn;
+  if (input.return1Day !== undefined) updateFields.return1Day = input.return1Day;
+  if (input.return15Days !== undefined) updateFields.return15Days = input.return15Days;
+  if (input.return30Days !== undefined) updateFields.return30Days = input.return30Days;
+  if (input.return90Days !== undefined) updateFields.return90Days = input.return90Days;
+  if (input.return180Days !== undefined) updateFields.return180Days = input.return180Days;
+  if (input.return270Days !== undefined) updateFields.return270Days = input.return270Days;
+  if (input.return365Days !== undefined) updateFields.return365Days = input.return365Days;
+  if (input.return2Years !== undefined) updateFields.return2Years = input.return2Years;
+  if (input.return3Years !== undefined) updateFields.return3Years = input.return3Years;
+
   const result = await collection.findOneAndUpdate(
     { fundCode: input.fundCode.toUpperCase() },
     {
-      $set: {
-        fundCode: input.fundCode.toUpperCase(),
-        fundName: input.fundName,
-        amc: input.amc,
-        category: input.category,
-        updatedAt: now,
-      },
+      $set: updateFields,
       $setOnInsert: {
         createdAt: now,
       },

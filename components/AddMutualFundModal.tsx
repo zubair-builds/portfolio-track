@@ -1,7 +1,20 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { Modal } from './ui/Modal';
+
+interface MutualFund {
+  _id?: string;
+  fundCode: string;
+  fundName: string;
+  amc?: string;
+  category?: string;
+  sector?: string;
+  rating?: string;
+  benchmark?: string;
+  currentNAV?: number;
+  lastNAVUpdate?: Date;
+}
 
 interface AddMutualFundModalProps {
   onClose: () => void;
@@ -17,35 +30,98 @@ interface AddMutualFundModalProps {
 }
 
 export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundModalProps) {
-  const [fundCode, setFundCode] = useState('');
-  const [fundName, setFundName] = useState('');
+  const [funds, setFunds] = useState<MutualFund[]>([]);
+  const [loadingFunds, setLoadingFunds] = useState(true);
+  const [selectedFundCode, setSelectedFundCode] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
   const [totalUnits, setTotalUnits] = useState('');
   const [averageNAV, setAverageNAV] = useState('');
   const [firstPurchaseDate, setFirstPurchaseDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
-  const [amc, setAmc] = useState('');
-  const [category, setCategory] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch funds on mount
+  useEffect(() => {
+    const fetchFunds = async () => {
+      try {
+        setLoadingFunds(true);
+        const response = await fetch('/api/mutual-funds/list?limit=1000');
+        if (response.ok) {
+          const data = await response.json();
+          setFunds(data.funds || []);
+        }
+      } catch (error) {
+        console.error('Error fetching funds:', error);
+      } finally {
+        setLoadingFunds(false);
+      }
+    };
+    fetchFunds();
+  }, []);
+
+  // Get selected fund
+  const selectedFund = funds.find(f => f.fundCode === selectedFundCode);
+
+  // Filter funds based on search query
+  const filteredFunds = funds.filter(fund =>
+    fund.fundName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    fund.fundCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (fund.amc && fund.amc.toLowerCase().includes(searchQuery.toLowerCase()))
+  ).slice(0, 20); // Limit to 20 results for performance
+
+  // Auto-populate fields when fund is selected
+  useEffect(() => {
+    if (selectedFund) {
+      if (selectedFund.currentNAV && !averageNAV) {
+        setAverageNAV(selectedFund.currentNAV.toString());
+      }
+    }
+  }, [selectedFund, averageNAV]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showDropdown]);
+
+  const handleFundSelect = (fundCode: string) => {
+    setSelectedFundCode(fundCode);
+    setShowDropdown(false);
+    setSearchQuery('');
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    if (!selectedFundCode) {
+      setError('Please select a mutual fund');
+      return;
+    }
+
+    const selectedFund = funds.find(f => f.fundCode === selectedFundCode);
+    if (!selectedFund) {
+      setError('Selected fund not found');
+      return;
+    }
+
     const unitsNum = Number(totalUnits);
     const navNum = Number(averageNAV);
-
-    if (!fundCode.trim()) {
-      setError('Fund code is required');
-      return;
-    }
-
-    if (!fundName.trim()) {
-      setError('Fund name is required');
-      return;
-    }
 
     if (isNaN(unitsNum) || unitsNum <= 0) {
       setError('Total units must be a positive number');
@@ -61,13 +137,13 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
     try {
       const purchaseDateObj = firstPurchaseDate ? new Date(firstPurchaseDate) : undefined;
       await onSave({
-        fundCode: fundCode.trim().toUpperCase(),
-        fundName: fundName.trim(),
+        fundCode: selectedFund.fundCode,
+        fundName: selectedFund.fundName,
         totalUnits: unitsNum,
         averageNAV: navNum,
         firstPurchaseDate: purchaseDateObj,
-        amc: amc.trim() || undefined,
-        category: category.trim() || undefined,
+        amc: selectedFund.amc,
+        category: selectedFund.category,
       });
       onClose();
     } catch (err) {
@@ -100,68 +176,94 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-4">
-            <div className="group">
-              <label htmlFor="fundCode" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                Fund Code *
+            <div className="group relative" ref={dropdownRef}>
+              <label htmlFor="fundSelect" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                Select Mutual Fund *
               </label>
-              <input
-                id="fundCode"
-                type="text"
-                required
-                value={fundCode}
-                onChange={(e) => setFundCode(e.target.value)}
-                placeholder="e.g., MUFAP001"
-                className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-900 dark:text-slate-100 transition-all focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
-                disabled={saving}
-              />
-            </div>
-
-            <div className="group">
-              <label htmlFor="fundName" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                Fund Name *
-              </label>
-              <input
-                id="fundName"
-                type="text"
-                required
-                value={fundName}
-                onChange={(e) => setFundName(e.target.value)}
-                placeholder="e.g., ABC Equity Fund"
-                className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-900 dark:text-slate-100 transition-all focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
-                disabled={saving}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="group">
-                <label htmlFor="amc" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                  AMC (Optional)
-                </label>
-                <input
-                  id="amc"
-                  type="text"
-                  value={amc}
-                  onChange={(e) => setAmc(e.target.value)}
-                  placeholder="Asset Management Company"
-                  className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-900 dark:text-slate-100 transition-all focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
-                  disabled={saving}
-                />
-              </div>
-
-              <div className="group">
-                <label htmlFor="category" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                  Category (Optional)
-                </label>
-                <input
-                  id="category"
-                  type="text"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Equity, Debt, Balanced"
-                  className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-900 dark:text-slate-100 transition-all focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
-                  disabled={saving}
-                />
-              </div>
+              {loadingFunds ? (
+                <div className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-500 dark:text-slate-400">
+                  Loading funds...
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <input
+                      id="fundSelect"
+                      type="text"
+                      required
+                      value={selectedFund ? selectedFund.fundName : searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setShowDropdown(true);
+                        if (!e.target.value) {
+                          setSelectedFundCode('');
+                        }
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      placeholder="Search and select a mutual fund..."
+                      className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-900 dark:text-slate-100 transition-all focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+                      disabled={saving}
+                    />
+                    {selectedFund && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFundCode('');
+                          setSearchQuery('');
+                          setShowDropdown(false);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {showDropdown && (searchQuery || !selectedFund) && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {filteredFunds.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                          No funds found
+                        </div>
+                      ) : (
+                        filteredFunds.map((fund) => (
+                          <button
+                            key={fund.fundCode}
+                            type="button"
+                            onClick={() => handleFundSelect(fund.fundCode)}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0"
+                          >
+                            <div className="font-medium text-slate-900 dark:text-slate-100">{fund.fundName}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {fund.fundCode} {fund.amc && `• ${fund.amc}`} {fund.category && `• ${fund.category}`}
+                            </div>
+                            {fund.currentNAV && (
+                              <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                                NAV: ₨ {fund.currentNAV.toLocaleString('en-PK', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                              </div>
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {selectedFund && (
+                    <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                        <div><span className="font-medium">Code:</span> {selectedFund.fundCode}</div>
+                        {selectedFund.amc && <div><span className="font-medium">AMC:</span> {selectedFund.amc}</div>}
+                        {selectedFund.category && <div><span className="font-medium">Category:</span> {selectedFund.category}</div>}
+                        {selectedFund.currentNAV && (
+                          <div>
+                            <span className="font-medium">Current NAV:</span> ₨ {selectedFund.currentNAV.toLocaleString('en-PK', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="group">
