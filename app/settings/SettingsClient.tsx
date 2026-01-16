@@ -9,7 +9,7 @@ import { useAutoRefresh } from '@/components/AutoRefreshProvider';
 export default function SettingsClient() {
     const router = useRouter();
     const { user, initializing, signout } = useAuth();
-    const [darkMode, setDarkMode] = useState(false);
+    // darkMode state removed
     const [importing, setImporting] = useState(false);
     const [exporting, setExporting] = useState(false);
     const { frequency, setFrequency, refreshNow, isRefreshing, lastRefreshed } = useAutoRefresh();
@@ -22,10 +22,10 @@ export default function SettingsClient() {
 
         if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
             document.documentElement.classList.add('dark');
-            setDarkMode(true);
+            // setDarkMode(true); removed
         } else {
             document.documentElement.classList.remove('dark');
-            setDarkMode(false);
+            // setDarkMode(false); removed
         }
 
         // Observer for changes (in case header toggles it)
@@ -33,7 +33,7 @@ export default function SettingsClient() {
             mutations.forEach((mutation) => {
                 if (mutation.attributeName === 'class') {
                     const isDarkNow = document.documentElement.classList.contains('dark');
-                    setDarkMode(isDarkNow);
+                    // setDarkMode(isDarkNow); removed
                     localStorage.setItem('theme', isDarkNow ? 'dark' : 'light');
                 }
             });
@@ -50,12 +50,7 @@ export default function SettingsClient() {
         }
     }, [initializing, user, router]);
 
-    const toggleTheme = () => {
-        const isDark = document.documentElement.classList.toggle('dark');
-        setDarkMode(isDark);
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    };
-
+    // toggleTheme removed
     const handleExport = async (format: 'json' | 'csv') => {
         if (!user?.email) return;
         setExporting(true);

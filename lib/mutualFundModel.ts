@@ -193,7 +193,7 @@ export async function createOrUpdateMutualFund(input: MutualFundInput): Promise<
   const collection = await getMutualFundsCollection();
   const now = new Date();
 
-  const updateFields: any = {
+  const updateFields: Partial<MutualFundDocument> = {
     fundCode: input.fundCode.toUpperCase(),
     fundName: input.fundName,
     updatedAt: now,

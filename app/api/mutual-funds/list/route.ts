@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllMutualFunds, getMutualFund } from '../../../../lib/mutualFundModel';
+// getAllMutualFunds and getMutualFund imports removed
 import type { Filter } from 'mongodb';
 import type { MutualFundDocument } from '../../../../lib/mutualFundModel';
 import clientPromise from '../../../../lib/mongodb';
@@ -91,6 +91,17 @@ export async function GET(request: NextRequest) {
         benchmark: fund.benchmark,
         currentNAV: fund.currentNAV,
         lastNAVUpdate: fund.lastNAVUpdate,
+        ytdReturn: fund.ytdReturn,
+        mtdReturn: fund.mtdReturn,
+        return1Day: fund.return1Day,
+        return15Days: fund.return15Days,
+        return30Days: fund.return30Days,
+        return90Days: fund.return90Days,
+        return180Days: fund.return180Days,
+        return270Days: fund.return270Days,
+        return365Days: fund.return365Days,
+        return2Years: fund.return2Years,
+        return3Years: fund.return3Years,
         createdAt: fund.createdAt,
         updatedAt: fund.updatedAt,
       })),
