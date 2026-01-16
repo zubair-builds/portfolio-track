@@ -20,6 +20,18 @@ export interface MutualFund {
   benchmark?: string;
   currentNAV?: number;
   lastNAVUpdate?: Date;
+  // Performance metrics (returns in percentage)
+  ytdReturn?: number;
+  mtdReturn?: number;
+  return1Day?: number;
+  return15Days?: number;
+  return30Days?: number;
+  return90Days?: number;
+  return180Days?: number;
+  return270Days?: number;
+  return365Days?: number;
+  return2Years?: number;
+  return3Years?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -151,6 +163,12 @@ export default function MutualFundsClient() {
   const formatNAV = (nav: number | undefined) => {
     if (nav === undefined || nav === null) return 'N/A';
     return `₨ ${nav.toLocaleString('en-PK', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+  };
+
+  const formatReturn = (value: number | undefined): string => {
+    if (value === undefined || value === null || isNaN(value)) return 'N/A';
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${value.toFixed(2)}%`;
   };
 
   return (
@@ -346,7 +364,7 @@ export default function MutualFundsClient() {
               <>
                 {/* Desktop Table View */}
                 <div className="hidden md:block overflow-x-auto -mx-4 px-4">
-                  <table className="table-professional table-sticky-header w-full min-w-[800px]">
+                  <table className="table-professional table-sticky-header w-full min-w-[1000px]">
                     <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
                       <tr>
                         <th className="py-3 px-3 text-center w-16">
@@ -361,87 +379,173 @@ export default function MutualFundsClient() {
                         <th className="py-3 px-3 text-right">
                           NAV
                         </th>
+                        <th className="py-3 px-3 text-right">
+                          YTD
+                        </th>
+                        <th className="py-3 px-3 text-right">
+                          1 Year
+                        </th>
+                        <th className="py-3 px-3 text-right">
+                          3 Years
+                        </th>
                         <th className="py-3 px-3 text-left">
                           Category
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {funds.map((fund, index) => (
-                        <tr
-                          key={fund._id || fund.fundCode}
-                          className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                        >
-                          <td className="py-3 px-3 text-center">
-                            <div className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-                              {((currentPage - 1) * ITEMS_PER_PAGE) + index + 1}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3">
-                            <div className="font-medium text-slate-900 dark:text-slate-100">
-                              {fund.fundName}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3">
-                            <div className="text-slate-600 dark:text-slate-400">
-                              {fund.amc || 'N/A'}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <div className="font-medium text-slate-900 dark:text-slate-100 tabular-nums">
-                              {formatNAV(fund.currentNAV)}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3">
-                            <div className="text-slate-600 dark:text-slate-400">
-                              {fund.category || 'N/A'}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {funds.map((fund, index) => {
+                        const ytdReturn = fund.ytdReturn;
+                        const return1Year = fund.return365Days;
+                        const return3Years = fund.return3Years;
+                        const isYtdPositive = ytdReturn !== undefined && ytdReturn >= 0;
+                        const is1YearPositive = return1Year !== undefined && return1Year >= 0;
+                        const is3YearsPositive = return3Years !== undefined && return3Years >= 0;
+
+                        return (
+                          <tr
+                            key={fund._id || fund.fundCode}
+                            className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                          >
+                            <td className="py-3 px-3 text-center">
+                              <div className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+                                {((currentPage - 1) * ITEMS_PER_PAGE) + index + 1}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="font-medium text-slate-900 dark:text-slate-100">
+                                {fund.fundName}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="text-slate-600 dark:text-slate-400">
+                                {fund.amc || 'N/A'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className="font-medium text-slate-900 dark:text-slate-100 tabular-nums">
+                                {formatNAV(fund.currentNAV)}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className={`font-medium tabular-nums ${
+                                ytdReturn === undefined || ytdReturn === null
+                                  ? 'text-slate-500 dark:text-slate-400'
+                                  : isYtdPositive
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-rose-600 dark:text-rose-400'
+                              }`}>
+                                {formatReturn(ytdReturn)}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className={`font-medium tabular-nums ${
+                                return1Year === undefined || return1Year === null
+                                  ? 'text-slate-500 dark:text-slate-400'
+                                  : is1YearPositive
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-rose-600 dark:text-rose-400'
+                              }`}>
+                                {formatReturn(return1Year)}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className={`font-medium tabular-nums ${
+                                return3Years === undefined || return3Years === null
+                                  ? 'text-slate-500 dark:text-slate-400'
+                                  : is3YearsPositive
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-rose-600 dark:text-rose-400'
+                              }`}>
+                                {formatReturn(return3Years)}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="text-slate-600 dark:text-slate-400">
+                                {fund.category || 'N/A'}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
 
                 {/* Mobile Card View */}
                 <div className="md:hidden space-y-4">
-                  {funds.map((fund, index) => (
-                    <div
-                      key={fund._id || fund.fundCode}
-                      className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums font-medium">
-                            #{((currentPage - 1) * ITEMS_PER_PAGE) + index + 1}
-                          </span>
-                          <div className="font-bold text-lg text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
-                            {fund.fundName}
-                          </div>
-                        </div>
-                        <div className="text-right ml-4">
-                          <div className="font-bold text-slate-900 dark:text-white tabular-nums">
-                            {formatNAV(fund.currentNAV)}
-                          </div>
-                        </div>
-                      </div>
+                  {funds.map((fund, index) => {
+                    const ytdReturn = fund.ytdReturn;
+                    const return1Year = fund.return365Days;
+                    const isYtdPositive = ytdReturn !== undefined && ytdReturn >= 0;
+                    const is1YearPositive = return1Year !== undefined && return1Year >= 0;
 
-                      <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                        <div>
-                          <span className="block text-xs text-slate-500 dark:text-slate-400">AMC</span>
-                          <span className="font-medium text-slate-700 dark:text-slate-200">
-                            {fund.amc || 'N/A'}
-                          </span>
+                    return (
+                      <div
+                        key={fund._id || fund.fundCode}
+                        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums font-medium">
+                              #{((currentPage - 1) * ITEMS_PER_PAGE) + index + 1}
+                            </span>
+                            <div className="font-bold text-lg text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+                              {fund.fundName}
+                            </div>
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className="font-bold text-slate-900 dark:text-white tabular-nums">
+                              {formatNAV(fund.currentNAV)}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="block text-xs text-slate-500 dark:text-slate-400">Category</span>
-                          <span className="font-medium text-slate-700 dark:text-slate-200">
-                            {fund.category || 'N/A'}
-                          </span>
+
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-3">
+                          <div>
+                            <span className="block text-xs text-slate-500 dark:text-slate-400">AMC</span>
+                            <span className="font-medium text-slate-700 dark:text-slate-200">
+                              {fund.amc || 'N/A'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="block text-xs text-slate-500 dark:text-slate-400">Category</span>
+                            <span className="font-medium text-slate-700 dark:text-slate-200">
+                              {fund.category || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Performance Metrics */}
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                          <div>
+                            <span className="block text-xs text-slate-500 dark:text-slate-400">YTD Return</span>
+                            <span className={`font-medium tabular-nums ${
+                              ytdReturn === undefined || ytdReturn === null
+                                ? 'text-slate-600 dark:text-slate-400'
+                                : isYtdPositive
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}>
+                              {formatReturn(ytdReturn)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="block text-xs text-slate-500 dark:text-slate-400">1 Year Return</span>
+                            <span className={`font-medium tabular-nums ${
+                              return1Year === undefined || return1Year === null
+                                ? 'text-slate-600 dark:text-slate-400'
+                                : is1YearPositive
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}>
+                              {formatReturn(return1Year)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Pagination */}

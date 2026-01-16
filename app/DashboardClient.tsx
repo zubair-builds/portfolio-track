@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Tabs, { Tab } from "../components/Tabs";
@@ -41,7 +41,7 @@ export default function DashboardClient() {
     // Available cash state
     const [availableCash, setAvailableCash] = useState(0);
 
-    const refreshCash = async () => {
+    const refreshCash = useCallback(async () => {
         if (!user?.email) return;
         try {
             const response = await fetch('/api/cash', {
@@ -54,13 +54,13 @@ export default function DashboardClient() {
         } catch (error) {
             console.error('Failed to fetch cash:', error);
         }
-    };
+    }, [user?.email]);
 
     useEffect(() => {
         if (user?.email) {
             refreshCash();
         }
-    }, [user?.email]);
+    }, [user?.email, refreshCash]);
 
     const handleUpdateCash = async (amount: number) => {
         if (!user?.email) return;
