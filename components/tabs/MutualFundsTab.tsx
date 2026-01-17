@@ -19,8 +19,7 @@ export default function MutualFundsTab({
   isLoading = false,
   onDeleteHolding,
   onAddHolding,
-  onUploadTransactions,
-
+  onUploadTransactions: _onUploadTransactions, // Prefixed with _ to indicate intentionally unused (commented out feature)
 }: MutualFundsTabProps) {
   if (isLoading && holdings.length === 0) {
     return (

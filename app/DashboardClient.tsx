@@ -137,8 +137,8 @@ export default function DashboardClient() {
 
     // Track overall loading state
 
-    // Define valid tab IDs
-    const validTabIds = ['portfolio', 'watchlist', 'analytics', 'allocation', 'mutual-funds'];
+    // Define valid tab IDs - memoized to prevent unnecessary re-renders
+    const validTabIds = useMemo(() => ['portfolio', 'watchlist', 'analytics', 'allocation', 'mutual-funds'], []);
     
     // Helper to get valid tab from URL
     const getTabFromUrl = (): string => {
