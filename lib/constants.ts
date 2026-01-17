@@ -157,35 +157,59 @@ export const PRIORITY_SECTORS = [
 
 /**
  * Asset Management Companies (AMCs) for mutual funds
- * Predefined list of all AMCs in Pakistan with their display names
+ * Predefined list of all AMCs in Pakistan
  */
 export const MUTUAL_FUND_AMCS = [
-  { amc: 'abl', name: 'ABL Mutual Fund' },
-  { amc: 'akd', name: 'AKD Mutual Fund' },
-  { amc: 'alhabib', name: 'AL Habib Mutual Fund' },
-  { amc: 'awt', name: 'AWT Mutual Fund' },
-  { amc: 'almeezan', name: 'Al Meezan Mutual Fund' },
-  { amc: 'alfalah', name: 'Alfalah Mutual Fund' },
-  { amc: 'alfalahghp', name: 'Alfalah GHP Mutual Fund' },
-  { amc: 'alhamra', name: 'Alhamra Mutual Fund' },
-  { amc: 'allied', name: 'Allied Mutual Fund' },
-  { amc: 'askari', name: 'Askari Mutual Fund' },
-  { amc: 'atlas', name: 'Atlas Mutual Fund' },
-  { amc: 'faysal', name: 'Faysal Mutual Fund' },
-  { amc: 'firstcapital', name: 'First Capital Mutual Fund' },
-  { amc: 'js', name: 'JS Mutual Fund' },
-  { amc: 'lakson', name: 'Lakson Mutual Fund' },
-  { amc: 'lucky', name: 'Lucky Mutual Fund' },
-  { amc: 'mcb', name: 'MCB Mutual Fund' },
-  { amc: 'mahaana', name: 'Mahaana Mutual Fund' },
-  { amc: 'meezan', name: 'Meezan Mutual Fund' },
-  { amc: 'nbp', name: 'NBP Mutual Fund' },
-  { amc: 'nit', name: 'NIT Mutual Fund' },
-  { amc: 'national', name: 'National Mutual Fund' },
-  { amc: 'pakoman', name: 'Pak Oman Mutual Fund' },
-  { amc: 'pakqatar', name: 'Pak-Qatar Mutual Fund' },
-  { amc: 'ubl', name: 'UBL Mutual Fund' },
-  { amc: 'unit', name: 'Unit Mutual Fund' },
+  "ABL Mutual Fund",
+  "AKD Mutual Fund",
+  "AL Habib Mutual Fund",
+  "AWT Mutual Fund",
+  "Alfalah Mutual Fund",
+  "Alfalah GHP Mutual Fund",
+  "Alhamra Mutual Fund",
+  "Allied Mutual Fund",
+  "Askari Mutual Fund",
+  "Atlas Mutual Fund",
+  "Faysal Mutual Fund",
+  "First Capital Mutual Fund",
+  "JS Mutual Fund",
+  "Lakson Mutual Fund",
+  "Lucky Mutual Fund",
+  "MCB Mutual Fund",
+  "Mahaana Mutual Fund",
+  "Meezan Mutual Fund",
+  "NBP Mutual Fund",
+  "NIT Mutual Fund",
+  "National Mutual Fund",
+  "Pak Oman Mutual Fund",
+  "Pak-Qatar Mutual Fund",
+  "UBL Mutual Fund",
+  "Unit Mutual Fund"
+] as const;
+
+/**
+ * Mutual fund categories
+ * Predefined list of all mutual fund categories in Pakistan
+ */
+export const MUTUAL_FUND_CATEGORIES = [
+  "Income (Annualized Return)",
+  "Money Market",
+  "Income",
+  "Aggressive Income",
+  "Fixed Rate / Capital Protected",
+  "Equity",
+  "Index Tracker",
+  "Balanced",
+  "Asset Allocation",
+  "Shariah Compliant Equity",
+  "Shariah Compliant Income",
+  "Shariah Compliant Money Market",
+  "Shariah Compliant Asset Allocation",
+  "Shariah Compliant Aggressive Income",
+  "Shariah Compliant Fixed Rate / Capital Protected",
+  "Commodity",
+  "Fund of Funds",
+  "Pension Fund"
 ] as const;
 
 /**

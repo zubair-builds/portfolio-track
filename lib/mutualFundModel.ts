@@ -374,6 +374,23 @@ export async function deleteMutualFundTransaction(
   return result.modifiedCount > 0;
 }
 
+export async function deleteAllMutualFundTransactionsForFund(
+  userId: string,
+  fundCode: string
+): Promise<number> {
+  const collection = await getMutualFundTransactionsCollection();
+  const result = await collection.updateMany(
+    { userId, fundCode: fundCode.toUpperCase(), status: 'active' },
+    {
+      $set: {
+        status: 'deleted',
+        lastModified: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount;
+}
+
 // ============================================================================
 // Holdings Operations
 // ============================================================================

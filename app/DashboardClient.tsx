@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Tabs, { Tab } from "../components/Tabs";
 import PortfolioTab from "../components/tabs/PortfolioTab";
 import WatchlistTab from "../components/tabs/WatchlistTab";
@@ -29,6 +29,7 @@ import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 
 export default function DashboardClient() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, initializing, signout } = useAuth();
 
     // Memoize the symbols array to prevent unnecessary re-fetches
@@ -136,8 +137,40 @@ export default function DashboardClient() {
 
     // Track overall loading state
 
-    // Tab state
-    const [activeTab, setActiveTab] = useState('portfolio');
+    // Define valid tab IDs
+    const validTabIds = ['portfolio', 'watchlist', 'analytics', 'allocation', 'mutual-funds'];
+    
+    // Helper to get valid tab from URL
+    const getTabFromUrl = (): string => {
+        const tabParam = searchParams.get('tab');
+        if (tabParam && validTabIds.includes(tabParam)) {
+            return tabParam;
+        }
+        return 'portfolio';
+    };
+
+    // Tab state - initialize from URL
+    const [activeTab, setActiveTab] = useState(() => getTabFromUrl());
+
+    // Sync activeTab with URL changes (browser back/forward)
+    useEffect(() => {
+        const tabFromUrl = getTabFromUrl();
+        setActiveTab(tabFromUrl);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
+
+    // Handler to update both state and URL when tab changes
+    const handleTabChange = useCallback((tabId: string) => {
+        // Validate tab ID
+        if (!validTabIds.includes(tabId)) {
+            console.warn(`Invalid tab ID: ${tabId}. Defaulting to 'portfolio'.`);
+            tabId = 'portfolio';
+        }
+        
+        setActiveTab(tabId);
+        // Update URL without adding to history (using replace)
+        router.replace(`/?tab=${tabId}`, { scroll: false });
+    }, [router, validTabIds]);
 
     // Lazy load watchlist when watchlist tab is opened
     const prevTabRef = useRef<string>('portfolio');
@@ -407,7 +440,7 @@ export default function DashboardClient() {
                         {/* Tabs Navigation */}
                         <div className="sticky top-4 z-40">
                             <div className="rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-lg shadow-indigo-500/5 ring-1 ring-black/5 p-1.5 transition-all duration-300">
-                                <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+                                <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
                             </div>
                         </div>
 
@@ -457,12 +490,22 @@ export default function DashboardClient() {
                                         isLoading={mutualFundsLoading}
                                         onDeleteHolding={async (holding) => {
                                             if (!user?.email) return;
-                                            const response = await fetch(`/api/mutual-funds?fundCode=${holding.fundCode}`, {
-                                                method: 'DELETE',
-                                                headers: { 'X-User-Id': user.email },
-                                            });
-                                            if (response.ok) {
-                                                await refreshMutualFunds();
+                                            try {
+                                                const response = await fetch(`/api/mutual-funds?fundCode=${holding.fundCode}`, {
+                                                    method: 'DELETE',
+                                                    headers: { 'X-User-Id': user.email },
+                                                });
+                                                
+                                                const data = await response.json();
+                                                
+                                                if (response.ok) {
+                                                    await refreshMutualFunds();
+                                                } else {
+                                                    alert(data.error || 'Failed to delete mutual fund holding');
+                                                }
+                                            } catch (error) {
+                                                console.error('Error deleting mutual fund holding:', error);
+                                                alert('Failed to delete mutual fund holding');
                                             }
                                         }}
                                         onAddHolding={() => setShowAddMutualFund(true)}
