@@ -69,6 +69,7 @@ export default function TransactionsClient() {
                             Complete record of your trading activity
                         </p>
                     </div>
+                    {/*
                     <Button
                         onClick={() => setIsUploadModalOpen(true)}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105"
@@ -78,6 +79,7 @@ export default function TransactionsClient() {
                         </svg>
                         Upload Transactions
                     </Button>
+                    */}
                 </div>
 
                 {/* Statistics Cards */}

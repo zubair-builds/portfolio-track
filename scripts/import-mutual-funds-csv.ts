@@ -147,9 +147,19 @@ function parseCSV(filePath: string): CSVRow[] {
     throw new Error('CSV file must have at least 2 rows (header + data)');
   }
 
+  // Get the first row to check for amc_clean column name
+  const firstRow = lines[0];
+  const firstRowValues = parseCSVLine(firstRow);
+  const lastColumnName = firstRowValues[firstRowValues.length - 1]?.trim() || 'amc_clean';
+
   // Skip first row (title row), use second row as headers
   const headerLine = lines[1];
   const headers = headerLine.split(',').map(h => h.trim());
+
+  // Fix last header if it's empty (due to trailing comma)
+  if (headers.length > 0 && (!headers[headers.length - 1] || headers[headers.length - 1] === '')) {
+    headers[headers.length - 1] = lastColumnName;
+  }
 
   const rows: CSVRow[] = [];
 
@@ -204,7 +214,7 @@ async function main() {
   console.log('     Mutual Funds CSV Import Utility');
   console.log('═══════════════════════════════════════════════════════\n');
 
-  const csvPath = path.join(process.cwd(), 'Performance_Summary_MUTUAL_FUNDS_ASSOCIATION_OF_PAKISTAN_CLEAN_AMC.csv');
+  const csvPath = path.join(process.cwd(), 'MUTUAL_FUNDS_DATA.csv');
 
   if (!fs.existsSync(csvPath)) {
     console.error(`❌ CSV file not found: ${csvPath}`);
@@ -252,7 +262,9 @@ async function main() {
         const sector = row.Sector?.trim() || undefined;
         const rating = row.Rating?.trim() || undefined;
         const benchmark = row.Benchmark?.trim() || undefined;
-        const amc = row.amc_clean?.trim() || undefined;
+        // Extract AMC from amc_clean column (last column) - header is fixed to 'amc_clean' in parseCSV
+        const amcValue = row.amc_clean?.trim();
+        const amc = amcValue && amcValue !== '' ? amcValue : undefined;
         const navStr = row.NAV?.trim();
         const nav = navStr && !isNaN(parseFloat(navStr)) ? parseFloat(navStr) : undefined;
         const validityDate = parseDate(row['Validity Date']?.trim() || '');

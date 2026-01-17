@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import ProfessionalHeader from '../../components/ProfessionalHeader';
 import { useAuth } from '../../components/AuthProvider';
 import { Card, CardContent } from '../../components/ui/Card';
-import { MUTUAL_FUND_AMCS } from '../../lib/constants';
+import { MUTUAL_FUND_AMCS, MUTUAL_FUND_CATEGORIES } from '../../lib/constants';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -48,7 +48,6 @@ export default function MutualFundsClient() {
   const [shariahCompliantOnly, setShariahCompliantOnly] = useState(true); // Default to showing only Shariah compliant
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [categories, setCategories] = useState<string[]>([]);
 
   // Debounce search query
   useEffect(() => {
@@ -77,14 +76,6 @@ export default function MutualFundsClient() {
         const data = await response.json();
         setFunds(data.funds || []);
         setTotal(data.total || 0);
-
-        // Extract unique categories
-        if (data.funds) {
-          const uniqueCategories = Array.from(
-            new Set(data.funds.map((f: MutualFund) => f.category).filter(Boolean))
-          ).sort() as string[];
-          setCategories(uniqueCategories);
-        }
       } else {
         console.error('Failed to fetch mutual funds');
       }
@@ -98,25 +89,6 @@ export default function MutualFundsClient() {
   useEffect(() => {
     fetchFunds();
   }, [fetchFunds]);
-
-  // Fetch all categories on mount
-  useEffect(() => {
-    const fetchFilterOptions = async () => {
-      try {
-        const response = await fetch('/api/mutual-funds/list?limit=1000');
-        if (response.ok) {
-          const data = await response.json();
-          const uniqueCategories = Array.from(
-            new Set(data.funds?.map((f: MutualFund) => f.category).filter(Boolean) || [])
-          ).sort() as string[];
-          setCategories(uniqueCategories);
-        }
-      } catch (error) {
-        console.error('Error fetching filter options:', error);
-      }
-    };
-    fetchFilterOptions();
-  }, []);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -227,7 +199,7 @@ export default function MutualFundsClient() {
                   className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 >
                   <option value="">All Categories</option>
-                  {categories.map((cat) => (
+                  {MUTUAL_FUND_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
@@ -241,9 +213,9 @@ export default function MutualFundsClient() {
                   className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 >
                   <option value="">All AMCs</option>
-                  {MUTUAL_FUND_AMCS.map((amcItem) => (
-                    <option key={amcItem.amc} value={amcItem.amc}>
-                      {amcItem.name}
+                  {MUTUAL_FUND_AMCS.map((amcName) => (
+                    <option key={amcName} value={amcName}>
+                      {amcName}
                     </option>
                   ))}
                 </select>
@@ -310,7 +282,7 @@ export default function MutualFundsClient() {
                   Categories
                 </p>
                 <h3 className="text-2xl font-bold tracking-tight tabular-nums">
-                  {categories.length}
+                  {MUTUAL_FUND_CATEGORIES.length}
                 </h3>
               </div>
             </div>

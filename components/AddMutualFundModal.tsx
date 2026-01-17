@@ -31,9 +31,11 @@ interface AddMutualFundModalProps {
 
 export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundModalProps) {
   const [funds, setFunds] = useState<MutualFund[]>([]);
-  const [loadingFunds, setLoadingFunds] = useState(true);
+  const [loadingFunds, setLoadingFunds] = useState(false);
   const [selectedFundCode, setSelectedFundCode] = useState('');
+  const [selectedFund, setSelectedFund] = useState<MutualFund | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [totalUnits, setTotalUnits] = useState('');
   const [averageNAV, setAverageNAV] = useState('');
@@ -44,35 +46,74 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Fetch funds on mount
+  // Debounce search query
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch funds when debounced search query changes
+  useEffect(() => {
+    // Clear funds if search query is empty
+    if (!debouncedSearchQuery.trim()) {
+      setFunds([]);
+      setLoadingFunds(false);
+      return;
+    }
+
+    // Abort previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     const fetchFunds = async () => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       try {
         setLoadingFunds(true);
-        const response = await fetch('/api/mutual-funds/list?limit=1000');
-        if (response.ok) {
-          const data = await response.json();
+        const response = await fetch(`/api/mutual-funds/list?q=${encodeURIComponent(debouncedSearchQuery)}&limit=20`, {
+          signal: controller.signal,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch funds');
+        }
+
+        const data = await response.json();
+        
+        // Only update if this request hasn't been aborted
+        if (!controller.signal.aborted) {
           setFunds(data.funds || []);
         }
       } catch (error) {
-        console.error('Error fetching funds:', error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error fetching funds:', error);
+          if (!controller.signal.aborted) {
+            setFunds([]);
+          }
+        }
       } finally {
-        setLoadingFunds(false);
+        if (!controller.signal.aborted) {
+          setLoadingFunds(false);
+          abortControllerRef.current = null;
+        }
       }
     };
+
     fetchFunds();
-  }, []);
 
-  // Get selected fund
-  const selectedFund = funds.find(f => f.fundCode === selectedFundCode);
-
-  // Filter funds based on search query
-  const filteredFunds = funds.filter(fund =>
-    fund.fundName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    fund.fundCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (fund.amc && fund.amc.toLowerCase().includes(searchQuery.toLowerCase()))
-  ).slice(0, 20); // Limit to 20 results for performance
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [debouncedSearchQuery]);
 
   // Auto-populate fields when fund is selected
   useEffect(() => {
@@ -99,10 +140,12 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
     }
   }, [showDropdown]);
 
-  const handleFundSelect = (fundCode: string) => {
-    setSelectedFundCode(fundCode);
+  const handleFundSelect = (fund: MutualFund) => {
+    setSelectedFundCode(fund.fundCode);
+    setSelectedFund(fund);
     setShowDropdown(false);
     setSearchQuery('');
+    setFunds([]); // Clear search results
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -114,7 +157,6 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
       return;
     }
 
-    const selectedFund = funds.find(f => f.fundCode === selectedFundCode);
     if (!selectedFund) {
       setError('Selected fund not found');
       return;
@@ -180,12 +222,7 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
               <label htmlFor="fundSelect" className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
                 Select Mutual Fund *
               </label>
-              {loadingFunds ? (
-                <div className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-500 dark:text-slate-400">
-                  Loading funds...
-                </div>
-              ) : (
-                <>
+              <>
                   <div className="relative">
                     <input
                       id="fundSelect"
@@ -193,24 +230,37 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
                       required
                       value={selectedFund ? selectedFund.fundName : searchQuery}
                       onChange={(e) => {
-                        setSearchQuery(e.target.value);
+                        const value = e.target.value;
+                        setSearchQuery(value);
                         setShowDropdown(true);
-                        if (!e.target.value) {
+                        if (!value) {
                           setSelectedFundCode('');
+                          setSelectedFund(null);
                         }
                       }}
-                      onFocus={() => setShowDropdown(true)}
-                      placeholder="Search and select a mutual fund..."
+                      onFocus={() => {
+                        if (searchQuery || !selectedFund) {
+                          setShowDropdown(true);
+                        }
+                      }}
+                      placeholder={selectedFund ? selectedFund.fundName : "Type to search mutual funds..."}
                       className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 text-base text-slate-900 dark:text-slate-100 transition-all focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
                       disabled={saving}
                     />
+                    {loadingFunds && !selectedFund && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                      </div>
+                    )}
                     {selectedFund && (
                       <button
                         type="button"
                         onClick={() => {
                           setSelectedFundCode('');
+                          setSelectedFund(null);
                           setSearchQuery('');
                           setShowDropdown(false);
+                          setFunds([]);
                         }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                       >
@@ -222,16 +272,25 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
                   </div>
                   {showDropdown && (searchQuery || !selectedFund) && (
                     <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                      {filteredFunds.length === 0 ? (
+                      {loadingFunds ? (
+                        <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                          Searching...
+                        </div>
+                      ) : !debouncedSearchQuery.trim() ? (
+                        <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                          Type to search for mutual funds...
+                        </div>
+                      ) : funds.length === 0 ? (
                         <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                           No funds found
                         </div>
                       ) : (
-                        filteredFunds.map((fund) => (
+                        funds.map((fund) => (
                           <button
                             key={fund.fundCode}
                             type="button"
-                            onClick={() => handleFundSelect(fund.fundCode)}
+                            onClick={() => handleFundSelect(fund)}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0"
                           >
                             <div className="font-medium text-slate-900 dark:text-slate-100">{fund.fundName}</div>
@@ -263,7 +322,6 @@ export default function AddMutualFundModal({ onClose, onSave }: AddMutualFundMod
                     </div>
                   )}
                 </>
-              )}
             </div>
 
             <div className="group">

@@ -100,6 +100,7 @@ export default function MutualFundsTab({
             }
           />
           <div className="flex gap-2">
+            {/*
             <Button
               onClick={onUploadTransactions}
               variant="outline"
@@ -109,6 +110,8 @@ export default function MutualFundsTab({
               </svg>
               Upload Transactions
             </Button>
+            */}
+
             <Button
               onClick={onAddHolding}
             >

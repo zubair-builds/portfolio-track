@@ -5,6 +5,7 @@ import {
   deleteMutualFundHolding,
   syncHoldingsFromTransactions,
   createOrUpdateMutualFund,
+  deleteAllMutualFundTransactionsForFund,
   type MutualFundHoldingInput,
 } from '../../../lib/mutualFundModel';
 import { getCurrentNAV } from '../../../lib/mutualFundNavStore';
@@ -162,12 +163,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'fundCode parameter is required.' }, { status: 400 });
     }
 
+    // Delete all related transactions first
+    const deletedTxCount = await deleteAllMutualFundTransactionsForFund(userId, fundCode);
+    
+    // Then delete the holding
     await deleteMutualFundHolding(userId, fundCode);
 
-    return NextResponse.json(
-      { success: true, message: 'Mutual fund holding removed from portfolio.' },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
+      message: `Mutual fund holding and ${deletedTxCount} transaction(s) removed from portfolio.`,
+    }, { status: 200 });
   } catch (error) {
     console.error('Mutual Funds DELETE error:', error);
     return NextResponse.json({ error: 'Failed to delete mutual fund holding.' }, { status: 500 });
