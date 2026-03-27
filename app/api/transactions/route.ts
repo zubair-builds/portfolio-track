@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error fetching transactions:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch transactions' },
+      { success: false, error: 'Failed to fetch transactions' },
       { status: 500 }
     );
   }
@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error creating transaction:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to create transaction' },
+      { success: false, error: 'Failed to create transaction' },
       { status: 500 }
     );
   }
@@ -287,7 +287,7 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     console.error('Error updating transaction:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to update transaction' },
+      { success: false, error: 'Failed to update transaction' },
       { status: 500 }
     );
   }
@@ -410,7 +410,7 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     console.error('Error deleting transaction:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to delete transaction' },
+      { success: false, error: 'Failed to delete transaction' },
       { status: 500 }
     );
   }

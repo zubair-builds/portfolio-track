@@ -205,8 +205,7 @@ export async function GET(
     return NextResponse.json(
       { 
         error: 'Failed to query K-Lines',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+              },
       { status: 500 }
     );
   }

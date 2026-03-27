@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getSyncStatus } from '@/lib/syncProgressStore';
+import { requireAdmin } from '@/lib/adminAuth';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) return authError;
+
   try {
     const companiesStatus = await getSyncStatus('companies');
     const dividendsStatus = await getSyncStatus('dividends');

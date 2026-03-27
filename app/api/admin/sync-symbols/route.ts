@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { populateAllIndicesComposition } from '@/lib/indicesStore';
+import { requireAdmin } from '@/lib/adminAuth';
 
-export async function POST() {
+export async function POST(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) return authError;
+
   try {
     console.log('Starting indices symbols sync...');
     const results = await populateAllIndicesComposition();
@@ -41,8 +45,7 @@ export async function POST() {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to sync indices symbols',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Failed to sync indices symbols'
       },
       { status: 500 }
     );

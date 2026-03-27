@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     // Get user from JWT
     const jwtUser = getUserFromRequest(request);
-    const userId = jwtUser?.email || request.headers.get('X-User-Id');
+    const userId = jwtUser?.email;
     
     if (!userId) {
       return NextResponse.json(

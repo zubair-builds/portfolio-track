@@ -6,7 +6,7 @@ import clientPromise from '../../../../lib/mongodb';
 export async function GET(request: NextRequest) {
   try {
     const jwtUser = getUserFromRequest(request);
-    const userId = jwtUser?.email || request.headers.get('X-User-Id');
+    const userId = jwtUser?.email;
 
     if (!userId) {
       return NextResponse.json(

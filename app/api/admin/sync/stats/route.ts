@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getProgress, getSyncStatus } from '@/lib/syncProgressStore';
+import { requireAdmin } from '@/lib/adminAuth';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) return authError;
+
   try {
     const [companiesProgress, dividendsProgress, fundamentalsProgress, companiesStatus, dividendsStatus, fundamentalsStatus] = await Promise.all([
       getProgress('companies'),

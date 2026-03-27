@@ -177,8 +177,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to fetch K-Lines',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+              },
       { status: 500 }
     );
   }

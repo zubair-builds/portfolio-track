@@ -9,9 +9,7 @@ import { getUserFromRequest } from '../../../../lib/jwt';
 
 function getUserIdFromRequest(request: NextRequest): string | null {
   const jwtUser = getUserFromRequest(request);
-  if (jwtUser) return jwtUser.email;
-  const userIdHeader = request.headers.get('X-User-Id');
-  return userIdHeader;
+  return jwtUser?.email ?? null;
 }
 
 export async function GET(request: NextRequest) {
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'Authentication required. Please provide X-User-Id header.' },
+        { error: 'Authentication required.' },
         { status: 401 }
       );
     }
@@ -66,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'Authentication required. Please provide X-User-Id header.' },
+        { error: 'Authentication required.' },
         { status: 401 }
       );
     }
@@ -134,7 +132,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'Authentication required. Please provide X-User-Id header.' },
+        { error: 'Authentication required.' },
         { status: 401 }
       );
     }

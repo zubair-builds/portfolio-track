@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getProgress } from '@/lib/syncProgressStore';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export async function GET(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as 'companies' | 'dividends' | 'fundamentals' | null;

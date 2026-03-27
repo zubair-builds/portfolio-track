@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error calculating FIFO preview:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to calculate preview' },
+      { success: false, error: 'Failed to calculate preview' },
       { status: 500 }
     );
   }

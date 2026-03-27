@@ -24,9 +24,8 @@ export async function GET() {
     });
   } catch (error: unknown) {
     console.error('Error fetching indices:', error);
-    console.error('Stack:', error instanceof Error ? error.stack : 'Unknown error');
     return NextResponse.json(
-      { error: 'Failed to fetch indices', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to fetch indices' },
       { status: 500 }
     );
   }

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { startBackgroundSync } from '@/lib/backgroundSync';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export async function POST(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) return authError;
+
   try {
     const { type } = await request.json();
     

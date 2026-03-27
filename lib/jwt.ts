@@ -1,9 +1,23 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { parse as parseCookie } from 'cookie';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const TOKEN_NAME = 'auth_token';
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('Missing JWT_SECRET environment variable.');
+  }
+  return secret;
+}
+
+function getTokenFromCookieHeader(cookieHeader: string | null): string | null {
+  if (!cookieHeader) return null;
+  const parsed = parseCookie(cookieHeader);
+  return parsed[TOKEN_NAME] || null;
+}
 
 export interface CustomJwtPayload extends JwtPayload {
   user: {
@@ -14,14 +28,14 @@ export interface CustomJwtPayload extends JwtPayload {
 }
 
 export function generateToken(payload: object): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: '7d', // Token expires in 7 days
   });
 }
 
 export function verifyToken(token: string): CustomJwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as CustomJwtPayload;
+    return jwt.verify(token, getJwtSecret()) as CustomJwtPayload;
   } catch {
     return null;
   }
@@ -55,21 +69,21 @@ export async function getUserFromCookies(): Promise<CustomJwtPayload['user'] | n
   return decoded ? decoded.user : null;
 }
 
-export function getUserFromRequest(request: NextRequest): CustomJwtPayload['user'] | null {
-  const token = request.cookies.get(TOKEN_NAME);
+export function getUserFromRequest(request: NextRequest | Request): CustomJwtPayload['user'] | null {
+  const cookieToken = 'cookies' in request
+    ? request.cookies.get(TOKEN_NAME)?.value ?? null
+    : getTokenFromCookieHeader(request.headers.get('cookie'));
 
-  if (token) {
-    const decoded = verifyToken(token.value);
+  if (cookieToken) {
+    const decoded = verifyToken(cookieToken);
     if (decoded) return decoded.user;
   }
 
-  // Fallback to X-User-Id header (for API calls from client components)
-  const xUserId = request.headers.get('x-user-id');
-  if (xUserId) {
-    return {
-      email: xUserId,
-      name: 'User', // Placeholder since we rely on email for DB lookups
-    };
+  const authHeader = request.headers.get('authorization');
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  if (bearerToken) {
+    const decoded = verifyToken(bearerToken);
+    if (decoded) return decoded.user;
   }
 
   return null;

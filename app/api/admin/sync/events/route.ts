@@ -1,10 +1,14 @@
 import { NextRequest } from 'next/server';
 import { syncEventEmitter } from '@/lib/syncEventEmitter';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  const authError = requireAdmin(request);
+  if (authError) return authError;
+
   // Create a TransformStream for SSE
   const encoder = new TextEncoder();
 

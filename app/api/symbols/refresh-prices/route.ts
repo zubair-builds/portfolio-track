@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { refreshSymbolPrices } from '../../../../lib/symbolsStore';
 import { getUserPortfolio, getUserWatchlist } from '../../../../lib/userPortfolio';
+import { getUserFromRequest } from '../../../../lib/jwt';
 
 /**
  * POST /api/symbols/refresh-prices
@@ -13,7 +14,8 @@ import { getUserPortfolio, getUserWatchlist } from '../../../../lib/userPortfoli
  */
 export async function POST(request: NextRequest) {
   try {
-    const userEmail = request.headers.get('X-User-Id');
+    const user = getUserFromRequest(request);
+    const userEmail = user?.email;
     let symbolsToRefresh: string[] = [];
     
     // Try to get symbols from request body
@@ -65,8 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Failed to refresh prices',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+              },
       { status: 500 }
     );
   }

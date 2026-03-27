@@ -17,12 +17,17 @@ import * as path from 'path';
 // Configuration
 // ============================================================================
 
-const ATLAS_URI = 'mongodb+srv://zubairhaider31_db_user:wwvMfQQWM5af1tDI@prepacross.qtkva4o.mongodb.net/sample_mflix?retryWrites=true&w=majority';
+const ATLAS_URI = process.env.ATLAS_URI || process.env.MONGODB_URI || '';
 const DB_NAME = 'sample_mflix';
 const OUTPUT_DIR = path.join(__dirname, '..', 'backups', `${DB_NAME}-${Date.now()}`);
 const LOG_FILE = path.join(__dirname, 'download-log.txt');
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 5000; // 5 seconds
+
+if (!ATLAS_URI) {
+  console.error('❌ Missing Atlas connection string. Set ATLAS_URI or MONGODB_URI in your environment.');
+  process.exit(1);
+}
 
 // ============================================================================
 // Utilities

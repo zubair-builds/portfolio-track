@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error fetching transaction stats:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch stats' },
+      { success: false, error: 'Failed to fetch stats' },
       { status: 500 }
     );
   }
