@@ -1,144 +1,245 @@
 # PortfolioTrack
 
-PortfolioTrack is a Next.js App Router dashboard that helps you monitor a Pakistan Stock Exchange (PSX) equity portfolio. It blends a curated baseline of holdings with live quotes pulled from PSX Terminal, giving you allocation insights, gain/loss analytics, and watchlist context in a single view.
+PortfolioTrack is a full-stack PSX (Pakistan Stock Exchange) portfolio intelligence platform built with Next.js App Router. It combines holdings management, mutual fund tracking, transaction/dividend workflows, and AI-assisted market analysis in one authenticated workspace.
 
-## Feature Highlights
-- **User Authentication** - Secure sign up/sign in with MongoDB-backed accounts and JWT cookies
-- **Personalized Portfolios** - Each user has their own portfolio and watchlist stored in MongoDB
-- **Portfolio Management** - Add, edit, and delete holdings with modal interfaces
-- **Portfolio overview cards** summarise invested capital, current value, absolute performance, and top movers
-- **Allocation analytics** combine a donut chart and stacked bar to visualise diversification across positions
-- **Holdings table** with search, sorting, edit/delete actions, and detailed stock modals
-- **Watchlist management** - Track symbols with investment thesis, target prices, and notes
-- **AI-Powered Insights** - Gemini AI integration for stock analysis and market trends with MongoDB caching
-- **Symbol Data Extraction** - Fetch structured PSX data and save to database for enhanced analytics
-- **Export/Import** - Download portfolio as JSON or CSV, import from JSON files
-- **Analytics API** - User-specific portfolio metrics and concentration risk analysis
-- **Responsive, dark-mode friendly UI** powered by reusable primitives under `components/ui`
+## Why This Project
 
-## Architecture at a Glance
-- `lib/portfolioData.ts` seeds holdings, watchlist metadata, and exposes `calculatePortfolioStats` for the dashboard cards.
-- `hooks/usePortfolioData.ts` orchestrates quote loading, memoises derived state, and tracks last-updated timestamps.
-- `lib/stockApi.ts` fetches data from PSX Terminal via the rewrite defined in `next.config.js`, caches responses in `localStorage`, and provides helpers to inspect or clear that cache.
-- `lib/symbolsStore.ts` persists symbol price data to MongoDB and exposes helpers for price management and refresh.
-- `app/page.tsx` composes the client-side dashboard, handles modal state, and formats timestamps for badges.
+This repository demonstrates production-style frontend and backend engineering in a single codebase:
 
-## Directory Layout
-```
-portfolioTrack/
-├─ app/
-│  ├─ api/                 # Next.js App Router API routes and rewrites
-│  ├─ globals.css          # Tailwind layer + design tokens
-│  ├─ layout.tsx           # Root document, font setup
-│  └─ page.tsx             # Portfolio dashboard (client component)
-├─ components/
-│  ├─ CacheManager.tsx
-│  ├─ PortfolioAllocation.tsx
-│  ├─ PortfolioSummary.tsx
-│  ├─ PortfolioTable.tsx
-│  ├─ StockDetailsModal.tsx
-│  ├─ Watchlist.tsx
-│  └─ ui/                  # Shared Card/Badge/Button/Skeleton primitives
-├─ hooks/usePortfolioData.ts
-├─ lib/
-│  ├─ portfolioData.ts
-│  └─ stockApi.ts
-└─ next.config.js          # PSX proxy rewrite
+- Multi-page financial product with authenticated user sessions.
+- API-first architecture using App Router route handlers.
+- Data persistence with MongoDB and typed models/stores.
+- Financial analytics and charting workflows for real use-cases.
+- AI feature integration (Gemini) with server-side caching.
+
+## Core Feature Matrix
+
+### Portfolio Workspace
+
+- Multi-tab dashboard (`portfolio`, `watchlist`, `analytics`, `allocation`, `mutual-funds`) with URL-synced state.
+- Holdings CRUD flows with modal UX and server persistence.
+- Watchlist management with thesis, target price, and notes.
+- Available cash tracking and portfolio-level summary cards.
+- Filtered live ticker and KSE-100 integration.
+
+### Research & Discovery
+
+- Symbol detail pages with company data, position context, dividend history, and sector peers.
+- Companies explorer with filters/sort/pagination.
+- Indices listing and index detail pages with history and constituents.
+- Dividend pages with stats and per-symbol breakdown.
+- Transactions pages with historical records and derived stats.
+
+### Mutual Funds
+
+- Dedicated mutual funds route with search and domain filters.
+- Mutual-fund holdings integrated into dashboard analytics.
+- NAV sync/read APIs and upload workflows for transactions.
+
+### Analytics & Export
+
+- Concentration risk and top-holdings analytics.
+- Allocation views by stock and sector with diversification metrics.
+- API-backed portfolio analytics endpoint.
+- Portfolio import/export support (JSON/CSV pathways in APIs).
+
+### AI Capabilities
+
+- Gemini-powered insights endpoint for market/portfolio analysis.
+- AI history/chat endpoints for persisted assistant interactions.
+- Cached analysis responses to reduce repeated token cost.
+
+## Technical Architecture
+
+### Frontend
+
+- Next.js App Router pages under `app/` with client-heavy interactive surfaces (`DashboardClient`, table modules, modal workflows).
+- React state management through hooks (`useState`, `useEffect`, `useMemo`, `useCallback`) and custom data hooks (no Redux/Zustand/React Query dependency).
+- Reusable UI primitives under `components/ui` plus domain-specific components for analytics, charts, and tables.
+
+### Backend (Route Handlers)
+
+- API routes under `app/api/**/route.ts` grouped by domain:
+  - `auth`, `portfolio`, `watchlist`, `cash`
+  - `transactions`, `dividends`, `companies`, `indices`
+  - `symbols`, `mutual-funds`
+  - `ai` and `admin/sync`
+- Most domain routes use typed MongoDB access via store/model modules in `lib/`.
+
+### Data & Persistence
+
+- MongoDB official driver via `lib/mongodb.ts`.
+- Per-domain data access modules (examples: `userPortfolio`, `companiesStore`, `dividendsStore`, `transactionModel`, `symbolsStore`, `mutualFundModel`).
+- User-scoped data model for portfolio, watchlist, transactions, and related analytics inputs.
+
+### Integration Boundaries
+
+- PSX REST integration through Next.js rewrite:
+  - `/api/psx/:path*` -> `https://psxterminal.com/api/:path*` (`next.config.js`)
+- Optional realtime market feed via `NEXT_PUBLIC_WS_URL` (WebSocket-based components).
+- Gemini AI via `GEMINI_API_KEY` in server route handlers.
+
+## Engineering Skills Demonstrated
+
+- **Full-stack TypeScript/React**: App Router UI + backend route handlers in one repository.
+- **Authentication & session security**: bcrypt password hashing, JWT signing/verification, `httpOnly` cookies, production-only secure flag.
+- **API design**: structured domain routes, status handling, and route-level runtime usage.
+- **Data modeling & persistence**: typed MongoDB collections, aggregation-style analytics, import/export workflows.
+- **Data visualization**: `lightweight-charts` integration, portfolio analytics views, chart overlays and range tools.
+- **Operational tooling**: data seeding/sync scripts, admin sync endpoints, lint/build-ready workflow.
+- **External service integration**: PSX market data, Gemini AI, optional Google/Gmail OAuth flows.
+
+## Tech Stack
+
+- **Framework/runtime**: Next.js 15, React, TypeScript.
+- **Styling/UI**: Tailwind CSS, PostCSS, reusable component primitives, `clsx`, `tailwind-merge`.
+- **Data/backend**: MongoDB Node driver.
+- **Auth/security**: `bcryptjs`, `jsonwebtoken`, `cookie`.
+- **AI**: `@google/generative-ai` (Gemini integration).
+- **Charting**: `lightweight-charts`.
+- **Data ingestion/parsing**: `xlsx`, `pdf-parse`.
+- **Tooling**: ESLint (Next config), `tsx` for script execution.
+
+## Project Structure
+
+```text
+app/
+  api/                         # Domain route handlers (auth, portfolio, analytics, AI, admin sync, etc.)
+  DashboardClient.tsx          # Main dashboard orchestration
+  page.tsx                     # Dashboard entry page
+  symbol/[symbol]/page.tsx     # Symbol detail experience
+  companies/page.tsx           # Companies explorer
+  indices/page.tsx             # Indices overview
+  transactions/page.tsx        # Transactions view
+  dividends/page.tsx           # Dividends view
+  mutual-funds/page.tsx        # Mutual funds explorer
+components/
+  tabs/                        # Dashboard tab surfaces
+  ui/                          # Shared UI primitives
+hooks/                         # Client data hooks
+lib/                           # Data stores, models, auth, API helpers
+scripts/                       # Setup/migration/utility scripts
 ```
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18 or newer
-- npm, pnpm, or yarn
 
-### Installation
-1. Clone the repository.
-```
-git clone git@github.com:your-user/portfolioTrack.git
-cd portfolioTrack
-```
-2. Install dependencies.
-```
+- Node.js 18+
+- npm
+- MongoDB (local or Atlas)
+
+### Install & Run
+
+```bash
+git clone <your-repo-url>
+cd web-portfolioTrack
 npm install
-```
-3. Configure environment variables: create a `.env` file (ignored by git) using the template below.
-```
-# .env
-NEXT_PUBLIC_API_BASE=https://psxterminal.com/api
-NEXT_PUBLIC_API_PROXY=
-CACHE_TTL_SECONDS=8
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net
-# Optional override (defaults to "portfolioTrack")
-MONGODB_DB=
-# Gemini AI API Key for market insights
-GEMINI_API_KEY=
-```
-   The app uses a Next.js rewrite (`next.config.js`) to forward `/api/psx/*` to PSX Terminal. Leave `NEXT_PUBLIC_API_PROXY` blank for same-origin requests, or set it to a custom reverse proxy base path when deploying behind a CDN or API gateway.
-
-4. Start the development server.
-```
 npm run dev
 ```
-5. Visit `http://localhost:3000` to view the dashboard.
 
-### Environment Variable Reference
-- `NEXT_PUBLIC_API_BASE` (optional): full URL for the PSX Terminal REST API. Defaults to `https://psxterminal.com/api` if unset.
-- `NEXT_PUBLIC_API_PROXY` (optional): prefix applied to API calls when you serve the app from a separate domain/path.
-- `CACHE_TTL_SECONDS` (optional): future hook for server-side caching. Client-side caching is managed via `CacheManager` today.
-- `MONGODB_URI` (required): MongoDB connection string used to persist user accounts, portfolios, and watchlists.
-- `MONGODB_DB` (optional): database name to use for MongoDB operations. Falls back to `portfolioTrack`.
-- `GEMINI_API_KEY` (optional): Google Gemini API key for AI-powered market insights and portfolio analysis.
-- `JWT_SECRET` (required for production): Secret key for JWT token generation. Use `openssl rand -base64 32` to generate a secure key.
+Open `http://localhost:3000`.
 
-## Authentication & Persistence
-- User registration persists accounts to MongoDB with bcrypt-hashed passwords via App Router APIs under `app/api/auth/*`.
-- **JWT Authentication**: Secure httpOnly cookies store JWT tokens (7-day expiry) for session management.
-- Each user has their own portfolio and watchlist stored in separate MongoDB collections (`portfolios`, `watchlists`).
-- First-time users are auto-initialized with default holdings from `initialPortfolioData`.
-- Sign up or sign in through `/signup` and `/signin`; the dashboard (`/`) redirects to `/signin` if not authenticated.
+### Production Build
 
-## AI-Powered Insights
-- Click the "AI Insights" button in the dashboard header to access:
-  - **Portfolio Prices**: Get latest price data for all holdings
-  - **Market Trends**: PSX market overview, indices, and sentiment
-  - **Stock Analysis**: Comprehensive analysis for individual stocks
-  - **Symbol Data Extraction**: Fetch structured PSX data and save to MongoDB
-- AI responses are cached in MongoDB for 24 hours to reduce API costs
-- Click "Refresh Analysis" to generate fresh insights
-- Requires `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/app/apikey)
+```bash
+npm run build
+npm run start
+```
 
-## Portfolio Management
-- **Add Holdings**: Click "Add Stock" button to add new positions
-- **Edit Holdings**: Click edit icon in table to update shares or average buy price
-- **Delete Holdings**: Click delete icon with confirmation prompt
-- **Export Data**: Download portfolio and watchlist as JSON or CSV
-- **Import Data**: Upload JSON file to bulk import holdings and watchlist items
-- All changes persist to MongoDB and are user-specific
+### Lint
 
-## Analytics & Insights
-- Access user-specific analytics via `/api/analytics`
-- Metrics include: total stocks, investment amount, average holding size, largest position, concentration risk
-- Top 5 holdings analysis with percentage breakdown
+```bash
+npm run lint
+```
 
-## Available Scripts
-- `npm run dev` – start the development server with fast refresh.
-- `npm run build` – create a production build.
-- `npm run start` – serve the production build.
-- `npm run lint` – run ESLint using Next.js defaults.
+## Environment Variables
 
-## Working with Data & Caching
-- Quotes are cached per symbol in `localStorage` under `psx_stock_prices`. `CacheManager` shows how many entries exist, the oldest cache, and the last saved timestamp.
-- To force-refresh data, open the Cache widget and clear the cache; the next render will fetch fresh quotes.
-- Requests to `/api/psx/ticks/REG/:symbol` are rate limited upstream. `fetchAllStockPrices` staggers requests by 100 ms to stay polite.
+Create a `.env` file in the project root.
 
-## Optional Modules
-Several legacy components – for example `LiveTicker`, `MarketStats`, and chart clients under `components/` – ship with the codebase but are not mounted on the main page. Feel free to wire them back in if you expand the dashboard; some of them expect extra environment variables such as `NEXT_PUBLIC_WS_URL` for realtime feeds.
+```bash
+# Required
+MONGODB_URI=
+JWT_SECRET=
 
-## Troubleshooting
-- If you see "Failed to load some stock prices", the app fell back to seeded prices. Check network access to `https://psxterminal.com/api` or adjust the proxy settings.
-- Clearing browser storage resets cached quotes and will force new API calls on the next load.
-- When deploying behind a different domain, update `next.config.js` or supply `NEXT_PUBLIC_API_PROXY` so API calls remain same-origin.
+# Optional (defaults to "portfolioTrack")
+MONGODB_DB=
+
+# Optional for AI features
+GEMINI_API_KEY=
+
+# Optional PSX API override (defaults to https://psxterminal.com/api)
+NEXT_PUBLIC_API_BASE=
+
+# Optional CORS allowlist for /api routes (comma-separated origins)
+CORS_ALLOWED_ORIGINS=
+
+# Optional websocket endpoint for live ticker
+NEXT_PUBLIC_WS_URL=wss://psxterminal.com/
+
+# Optional base URL / OAuth and Gmail-related flows
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+GMAIL_CLIENT_ID=
+GMAIL_CLIENT_SECRET=
+GMAIL_CALLBACK_URL=
+
+# Optional admin access control
+ADMIN_EMAILS=
+
+# Optional Atlas backup script input
+ATLAS_URI=
+```
+
+## Scripts
+
+### App Lifecycle
+
+- `npm run dev` - start local development server.
+- `npm run build` - create production build.
+- `npm run start` - run production server.
+- `npm run lint` - run ESLint.
+
+### Data / Operations
+
+- `npm run sync-symbols` - initial symbol metadata sync.
+- `npm run cleanup-symbols` - symbols cleanup/validation utility.
+- `npm run download-atlas-db` - Atlas backup utility.
+- `npm run seed-indices` - seed indices metadata.
+- `npm run fetch-index-prices` - fetch current index prices.
+- `npm run migrate:transactions` - migrate legacy portfolio data to transaction model.
+- `npm run import-mutual-funds` - import mutual fund transactions from CSV.
+
+For recurring sync operations, the project also exposes admin sync APIs and `/admin` UI workflows.
+
+## API Domains (High-Level)
+
+- `auth/*`: signup/signin/signout/check + optional Google callback flow.
+- `portfolio/*` + `watchlist/*` + `cash/*`: user portfolio state operations.
+- `analytics/*`: portfolio-level computed metrics.
+- `transactions/*`: transaction CRUD/upload/stats/fifo preview.
+- `dividends/*`: dividend records, uploads, stats, payment workflows.
+- `companies/*` + `indices/*` + `symbols/*`: market datasets, filters, refresh, metadata, sector peers.
+- `mutual-funds/*`: list, NAV, and mutual fund transaction management.
+- `ai/*`: insights and AI chat/history persistence.
+- `admin/sync/*`: long-running market-data sync control/status/progress/events.
+
+## Deployment & Operational Notes
+
+- The app uses a rewrite proxy for PSX data (`next.config.js`) to reduce client-side cross-origin issues.
+- Middleware-level CORS handling is applied to `/api/*`; configure `CORS_ALLOWED_ORIGINS` for non-local environments.
+- Auth cookies are `httpOnly`, `sameSite=lax`, and only marked `secure` in production.
+- Some admin and AI endpoints use Node runtime explicitly for server capabilities.
+- Keep `JWT_SECRET` and `MONGODB_URI` secure in deployment secrets.
+
+## Roadmap
+
+- Add automated tests for critical route handlers and financial calculations.
+- Introduce role-based controls for admin sync routes.
+- Add background job queueing for long-running ingestion tasks.
+- Expand observability (structured logs, metrics, failure dashboards).
+- Add CI pipeline for lint/build/test gates on pull requests.
 
 ## License
-This project is provided as-is for personal portfolio tracking. Adapt or extend licensing notes here to match your needs.
+
+No `LICENSE` file is currently included in this repository.  
+By default, this means all rights are reserved by the repository owner until a license is explicitly added.
