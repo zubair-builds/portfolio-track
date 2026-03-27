@@ -231,6 +231,18 @@ For recurring sync operations, the project also exposes admin sync APIs and `/ad
 - Some admin and AI endpoints use Node runtime explicitly for server capabilities.
 - Keep `JWT_SECRET` and `MONGODB_URI` secure in deployment secrets.
 
+## CI/CD Setup
+
+- **CI (GitHub Actions):** `.github/workflows/ci.yml` runs on PRs and pushes to `main` with:
+  - `npm ci`
+  - `npm run lint`
+  - `npm run build`
+  - `npm run secret-scan`
+- **CD (Vercel):** deployment is handled by Vercel Git integration after successful pushes/merges.
+- Recommended branch protection:
+  - require the CI workflow to pass before merging into `main`.
+  - keep deployment managed only by Vercel to avoid duplicate pipelines.
+
 ## Roadmap
 
 - Add automated tests for critical route handlers and financial calculations.
