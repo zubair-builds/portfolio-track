@@ -49,8 +49,8 @@ PSX calls go through a Next rewrite (`/api/psx/*` → `https://psxterminal.com/a
 Needs Node 18+, npm, and MongoDB (local or Atlas).
 
 ```bash
-git clone https://github.com/zubair-builds/trackPortfolio.git
-cd trackPortfolio
+git clone https://github.com/zubair-builds/portfolio-track.git
+cd portfolio-track
 cp .env.example .env
 # fill MONGODB_URI and JWT_SECRET
 npm install
